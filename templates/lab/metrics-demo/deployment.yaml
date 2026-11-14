@@ -1,18 +1,19 @@
-# Argo CD syncs this workload into the Application’s destination namespace.
+# Argo CD syncs this sample app. It uses a pinned Prometheus binary only to serve
+# /metrics. The monitoring Prometheus, installed separately, collects those metrics.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: metrics-demo
+  name: sample-app
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: metrics-demo
+      app: sample-app
   template:
     metadata:
       labels:
         # The lab’s generated Service selects this label.
-        app: metrics-demo
+        app: sample-app
     spec:
       automountServiceAccountToken: false
       securityContext:
@@ -24,7 +25,7 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       containers:
-        - name: metrics-demo
+        - name: sample-app
           # Reuse the official image as a predictable /metrics endpoint.
           image: quay.io/prometheus/prometheus:v3.16.0@sha256:9332054523223e2ddc18d8101799d54a4a8d823b030c53216f063a6c117773cd
           ports:
