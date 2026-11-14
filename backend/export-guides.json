@@ -8,8 +8,8 @@
   ],
   "argo-cd": [
     "These commands assume the Helm release is named argo-cd in the argocd namespace.",
-    "After install: forward the Argo CD HTTPS Service and open https://localhost:8080.",
-    "kubectl port-forward svc/argo-cd-argocd-server -n argocd 8080:443",
+    "After install: forward the Argo CD HTTPS Service and open https://localhost:8081.",
+    "kubectl port-forward svc/argo-cd-argocd-server -n argocd 8081:443",
     "Run this in another terminal to retrieve the generated password for the admin account. Never commit real secrets to Git.",
     "argocd admin initial-password -n argocd",
     "Source: https://argo-cd.readthedocs.io/en/stable/getting_started/"

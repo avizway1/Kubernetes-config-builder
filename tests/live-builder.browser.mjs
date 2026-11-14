@@ -235,7 +235,11 @@ test('both tools update both preview formats, highlight edits, and explain YAML 
         assert.match(values, /Indentation groups settings/);
         assert.match(readme, /After install:/);
         assert.match(readme, /^kubectl .*port-forward/m);
-        if (tool === 'argo-cd') assert.match(readme, /argocd admin initial-password/);
+        if (tool === 'argo-cd') {
+          assert.match(readme, /localhost:8081/);
+          assert.match(readme, /port-forward .* 8081:443/);
+          assert.match(readme, /argocd admin initial-password/);
+        }
         execFileSync('helm', ['template', tool, './' + filename, '-f', `${tool}-values.yaml`], {
           cwd: scratch, stdio: ['ignore', 'ignore', 'pipe'], env: { ...process.env, HELM_CONFIG_HOME: scratch, HELM_CACHE_HOME: scratch, HELM_DATA_HOME: scratch },
         });
@@ -270,6 +274,9 @@ test('both tools update both preview formats, highlight edits, and explain YAML 
         }
       } else {
         assert.match(yaml.text, /# argocd admin initial-password/);
+        assert.match(yaml.text, /# kubectl port-forward .* 8081:443/);
+        await page.getByText('After install', { exact: true }).click();
+        assert.match(await page.getByLabel('Access commands').innerText(), /localhost:8081.*\n.*port-forward .* 8081:443/);
       }
     }
     assert.equal(await preset.inputValue(), 'minimal');

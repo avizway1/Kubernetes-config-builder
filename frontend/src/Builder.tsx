@@ -194,6 +194,10 @@ export function Builder({ tool, chartVersion, kubernetesVersion, preset }: {
           Compare Helm and Kubernetes YAML manifest
         </button>
         <pre aria-label="Install commands"><code>{commands.join('\n')}</code></pre>
+        <details>
+          <summary>After install</summary>
+          <pre aria-label="Access commands"><code>{exportGuides[tool].join('\n')}</code></pre>
+        </details>
         {currentManifest && (
           <div aria-label="Included components">
             <h3>Included components</h3>
