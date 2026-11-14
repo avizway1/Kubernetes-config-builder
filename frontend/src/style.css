@@ -5,8 +5,8 @@
 }
 
 main {
-  max-width: 74rem;
-  margin: 3rem auto;
+  max-width: 84rem;
+  margin: 2rem auto;
   padding: 0 1.25rem;
 }
 
@@ -102,6 +102,12 @@ main:has(.builder-comparing) {
   white-space: pre-wrap;
 }
 
+.usage-field-error {
+  display: block;
+  color: #9b2020;
+  overflow-wrap: anywhere;
+}
+
 .comparison-ranges {
   max-height: 16rem;
   overflow: auto;
@@ -114,6 +120,26 @@ main:has(.builder-comparing) {
 
 .step {
   margin-block: 1rem;
+}
+
+.builder {
+  display: grid;
+  grid-template-columns: minmax(17rem, 1fr) minmax(0, 2.1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.builder-comparing {
+  grid-template-columns: minmax(17rem, 1fr) minmax(0, 3fr);
+}
+
+.builder > .step {
+  min-width: 0;
+  margin-block-start: 0;
+}
+
+.pane-jump {
+  display: none;
 }
 
 .step > h2 {
@@ -135,13 +161,79 @@ main:has(.builder-comparing) {
 }
 
 .builder-options {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
+}
+
+.builder-options select {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.builder-options small {
+  overflow-wrap: anywhere;
+}
+
+.example-button {
+  justify-self: start;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #8295af;
+  border-radius: 0.4rem;
+  color: #153763;
+  background: #eef4ff;
+  font: inherit;
+  cursor: pointer;
 }
 
 .builder-output {
   display: block;
   min-width: 0;
+}
+
+.output-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.5rem 1rem;
+  margin-block: 0.5rem;
+}
+
+.output-controls label {
+  min-width: 0;
+}
+
+.output-controls select {
+  max-width: 100%;
+}
+
+.output-controls .export-actions button {
+  margin-block: 0;
+}
+
+@media (min-width: 901px) {
+  .builder-options {
+    box-sizing: border-box;
+    max-height: clamp(18rem, calc(100dvh - 17rem), 45rem);
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 900px) {
+  .builder,
+  .builder-comparing {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .pane-jump {
+    display: inline-block;
+    justify-self: start;
+    color: #153763;
+  }
+
+  .builder-output .pane-jump {
+    margin-block: 0.5rem;
+  }
 }
 
 .builder-output pre {

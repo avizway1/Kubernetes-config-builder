@@ -10,23 +10,28 @@ import { ValidationStatus } from './ValidationStatus';
 import { manifestComponents } from './manifest-components';
 import { explainManifestField, renderExplainedChart } from './render-chart';
 
-export function Builder({ tool, chartVersion, kubernetesVersion, preset }: {
+export type InstallDraft = {
+  current: Record<string, Value>;
+  previous: Record<string, Value>;
+  format: 'values' | 'manifests';
+  commentDensity: 'learning' | 'compact';
+};
+
+export function Builder({ tool, chartVersion, kubernetesVersion, preset, draft, onDraftChange }: {
   tool: keyof typeof catalogs;
   chartVersion: string;
   preset: Preset;
   kubernetesVersion: string;
+  draft?: InstallDraft;
+  onDraftChange: (draft: InstallDraft) => void;
 }) {
   const chartCatalog = catalogForChart(tool, chartVersion);
   const catalog = tool === 'argo-cd' ? argoPresetCatalog(chartCatalog, preset) : chartCatalog;
   const hasAcceptedRisks = acceptedRisks.charts[tool].pinnedChart === chartVersion &&
     Object.values(acceptedRisks.images).some(entry => entry.tool === tool);
-  const [{ current, previous }, setValues] = useState(() => {
-    const defaults = presetValues(catalog, tool === 'prometheus' ? preset : 'full');
-    return { current: defaults, previous: defaults };
-  });
-
-  const [format, setFormat] = useState<'values' | 'manifests'>('values');
-  const [commentDensity, setCommentDensity] = useState<'learning' | 'compact'>('learning');
+  const defaults = presetValues(catalog, tool === 'prometheus' ? preset : 'full');
+  const settings: InstallDraft = draft ?? { current: defaults, previous: defaults, format: 'values', commentDensity: 'learning' };
+  const { current, previous, format, commentDensity } = settings;
   const [compare, setCompare] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [jump, setJump] = useState<{ name: string }>();
@@ -63,7 +68,7 @@ export function Builder({ tool, chartVersion, kubernetesVersion, preset }: {
   }, [tool, kubernetesVersion, currentPreview.text, commentDensity, renderKey]);
 
   function update(path: string, value: Value) {
-    setValues(({ current }) => ({ current: { ...current, [path]: value }, previous: current }));
+    onDraftChange({ ...settings, current: { ...current, [path]: value }, previous: current });
   }
 
   const currentManifest = manifest.key === renderKey ? manifest.current : '';
@@ -96,7 +101,7 @@ export function Builder({ tool, chartVersion, kubernetesVersion, preset }: {
   }, [jump]);
 
   function jumpToComponent(name: string) {
-    setFormat('manifests');
+    onDraftChange({ ...settings, format: 'manifests' });
     setCompare(false);
     setOpenSections(open => ({ ...open, [name]: true }));
     setJump({ name });
@@ -104,7 +109,8 @@ export function Builder({ tool, chartVersion, kubernetesVersion, preset }: {
   return (
     <div className={compare ? "builder builder-comparing" : "builder"}>
       <section aria-labelledby="customize" className="step builder-options">
-        <h2 id="customize">2. Customize (optional)</h2>
+        <h2 id="customize" tabIndex={-1}>2. Customize (optional)</h2>
+        <a className="pane-jump" href="#deploy">Jump to live YAML</a>
         {catalog.options.map(option => {
           const value = current[option.path];
           const hint = dependencyHint(catalog, option, current);
@@ -158,54 +164,35 @@ export function Builder({ tool, chartVersion, kubernetesVersion, preset }: {
         })}
       </section>
       <section className="step builder-output" aria-labelledby="deploy">
-        <h2 id="deploy">3. Deploy</h2>
-        <p>{tool === 'prometheus' ? 'Prometheus' : 'Argo CD'} chart <strong>{chartVersion}</strong></p>
-        {hasAcceptedRisks && (
-          <p className="security-note">
-            <strong>Chart image security note.</strong> The pinned {tool === 'argo-cd' ? 'Argo CD' : 'Prometheus'} chart
-            includes images with known vulnerabilities that remain in the latest official chart reviewed.
-            Review date <time dateTime={acceptedRisks.reviewDate}>{acceptedRisks.reviewDate}</time>.
-          </p>
-        )}
-        <ValidationStatus tool={tool} kubernetesVersion={kubernetesVersion} values={currentPreview.text} />
-        <label>
-          Template
-          <select value={format} onChange={event => setFormat(event.target.value === 'manifests' ? 'manifests' : 'values')}>
-            <option value="values">Helm chart + values</option>
-            <option value="manifests">YAML manifest</option>
-          </select>
-          <small>Format to copy, download, and deploy.</small>
-        </label>
-        {format === 'manifests' && (
+        <h2 id="deploy" tabIndex={-1}>3. Deploy</h2>
+        <a className="pane-jump" href="#customize">Back to settings</a>
+        <div className="output-controls">
           <label>
-            Comment density
-            <select value={commentDensity} onChange={event =>
-              setCommentDensity(event.target.value === 'compact' ? 'compact' : 'learning')
-            }>
-              <option value="learning">Learning</option>
-              <option value="compact">Compact</option>
+            Template
+            <select value={format} onChange={event => onDraftChange({ ...settings, format: event.target.value === 'manifests' ? 'manifests' : 'values' })}>
+              <option value="values">Helm chart + values</option>
+              <option value="manifests">YAML manifest</option>
             </select>
           </label>
-        )}
-        <ExportActions key={format} text={format === 'values' ? valuesExport : currentManifest}
-          filename={format === 'values' ? `${tool}-helm-bundle.zip` : `${tool}-manifests.yaml`}
-          loadBundle={format === 'values' ? loadBundle : undefined} />
+          {format === 'manifests' && (
+            <label>
+              Comment density
+              <select value={commentDensity} onChange={event =>
+                onDraftChange({ ...settings, commentDensity: event.target.value === 'compact' ? 'compact' : 'learning' })
+              }>
+                <option value="learning">Learning</option>
+                <option value="compact">Compact</option>
+              </select>
+            </label>
+          )}
+          <ExportActions key={format} text={format === 'values' ? valuesExport : currentManifest}
+            filename={format === 'values' ? `${tool}-helm-bundle.zip` : `${tool}-manifests.yaml`}
+            loadBundle={format === 'values' ? loadBundle : undefined} />
+        </div>
         <button className="compare-toggle" type="button" aria-pressed={compare} onClick={() => setCompare(open => !open)}>
           Compare Helm and Kubernetes YAML manifest
         </button>
-        <pre aria-label="Install commands"><code>{commands.join('\n')}</code></pre>
-        <details>
-          <summary>After install</summary>
-          <pre aria-label="Access commands"><code>{exportGuides[tool].join('\n')}</code></pre>
-        </details>
-        {currentManifest && (
-          <div aria-label="Included components">
-            <h3>Included components</h3>
-            <ul>{rendered.map(({ name, lines }) => (
-              <li key={name}><button type="button" onClick={() => jumpToComponent(name)}>{name} · about {lines} lines</button></li>
-            ))}</ul>
-          </div>
-        )}
+        <ValidationStatus tool={tool} kubernetesVersion={kubernetesVersion} values={currentPreview.text} />
         {compare ? (
           <ChartComparison catalog={catalog} tool={tool} kubernetesVersion={kubernetesVersion} values={current} />
         ) : format === 'values' ? (
@@ -237,6 +224,27 @@ export function Builder({ tool, chartVersion, kubernetesVersion, preset }: {
             })}
           </>
         )}
+        {currentManifest && (
+          <div aria-label="Included components">
+            <h3>Included components</h3>
+            <ul>{rendered.map(({ name, lines }) => (
+              <li key={name}><button type="button" onClick={() => jumpToComponent(name)}>{name} · about {lines} lines</button></li>
+            ))}</ul>
+          </div>
+        )}
+        <p>{tool === 'prometheus' ? 'Prometheus' : 'Argo CD'} chart <strong>{chartVersion}</strong></p>
+        {hasAcceptedRisks && (
+          <p className="security-note">
+            <strong>Chart image security note.</strong> The pinned {tool === 'argo-cd' ? 'Argo CD' : 'Prometheus'} chart
+            includes images with known vulnerabilities that remain in the latest official chart reviewed.
+            Review date <time dateTime={acceptedRisks.reviewDate}>{acceptedRisks.reviewDate}</time>.
+          </p>
+        )}
+        <pre aria-label="Install commands"><code>{commands.join('\n')}</code></pre>
+        <details>
+          <summary>After install</summary>
+          <pre aria-label="Access commands"><code>{exportGuides[tool].join('\n')}</code></pre>
+        </details>
       </section>
     </div>
   );

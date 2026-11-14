@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { presets, type Preset } from './builder-values';
-import { UsageBuilder } from './UsageBuilder';
-import { Builder } from './Builder';
+import { UsageBuilder, type UsageDraft } from './UsageBuilder';
+import { Builder, type InstallDraft } from './Builder';
 import { kubernetesVersions, platform, selectConfiguration, tools } from './selection';
+import { usageTemplateIds, type UsageTemplateId, type UsageTool } from './usage-values';
 import './style.css';
 
 function App() {
@@ -13,7 +14,13 @@ function App() {
 
   const [mode, setMode] = useState<'use' | 'install'>('use');
   const [presetsByTool, setPresetsByTool] = useState<Record<string, Preset>>({});
-  const activePreset = presetsByTool[configuration.tool.id] ?? 'minimal';
+  const [usageTemplates, setUsageTemplates] = useState<Partial<Record<UsageTool, UsageTemplateId>>>({});
+  const [usageDrafts, setUsageDrafts] = useState<Partial<Record<UsageTemplateId, UsageDraft>>>({});
+  const [installDrafts, setInstallDrafts] = useState<Partial<Record<string, InstallDraft>>>({});
+  const tool = configuration.tool.id;
+  const activePreset = presetsByTool[tool] ?? 'minimal';
+  const usageTemplate = usageTemplates[tool] ?? usageTemplateIds[tool][0];
+  const installKey = `${tool}/${activePreset}`;
 
   return (
     <main>
@@ -40,14 +47,14 @@ function App() {
           )}>
             {kubernetesVersions.map(version => <option key={version}>{version}</option>)}
           </select>
-          <small>Version running on your cluster.</small>
+          <small>{mode === 'use' ? 'Use the default for the lab, or choose the version running on your cluster.' : 'Version running on your cluster.'}</small>
         </label>
         <label>
           Tool
           <select value={configuration.tool.id} onChange={event => setConfiguration(
             selectConfiguration(platform.id, configuration.kubernetesVersion, event.target.value),
           )}>
-            {tools.map(tool => <option key={tool.id} value={tool.id}>{tool.name}</option>)}
+            {tools.map(entry => <option key={entry.id} value={entry.id}>{entry.name}</option>)}
           </select>
           <small>{mode === 'install' ? 'Chart to configure.' : 'Tool to generate usage YAML for.'}</small>
         </label>
@@ -66,8 +73,16 @@ function App() {
           <small className="preset-description">Includes Alertmanager, kube-state-metrics, and node exporter. Enable Pushgateway for short-lived service-level batch jobs.</small>
         )}
       </section>
-      {mode === 'install' ? <Builder key={`${configuration.tool.id}/${activePreset}`} preset={activePreset} tool={configuration.tool.id} chartVersion={configuration.tool.chartVersion} kubernetesVersion={configuration.kubernetesVersion} />
-        : <UsageBuilder key={configuration.tool.id} tool={configuration.tool.id} kubernetesVersion={configuration.kubernetesVersion} />}
+      {mode === 'install' ? (
+        <Builder key={installKey} preset={activePreset} tool={tool} chartVersion={configuration.tool.chartVersion}
+          kubernetesVersion={configuration.kubernetesVersion} draft={installDrafts[installKey]}
+          onDraftChange={draft => setInstallDrafts(drafts => ({ ...drafts, [installKey]: draft }))} />
+      ) : (
+        <UsageBuilder id={usageTemplate} tool={tool} kubernetesVersion={configuration.kubernetesVersion}
+          onTemplateChange={id => setUsageTemplates(templates => ({ ...templates, [tool]: id }))}
+          draft={usageDrafts[usageTemplate]}
+          onDraftChange={draft => setUsageDrafts(drafts => ({ ...drafts, [usageTemplate]: draft }))} />
+      )}
     </main>
   );
 }

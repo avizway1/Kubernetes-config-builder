@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './workflow-layout.browser.mjs';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -148,15 +149,26 @@ test('both tools update both preview formats, highlight edits, and explain YAML 
         await chooser.selectOption(tool);
         await formatControl.selectOption(format);
         await page.waitForFunction(() => Boolean(globalThis.testMonaco.getModels().at(-1)?.getValue()));
+        if (tool === 'prometheus') {
+          await optionControl(page, 'Persistent storage', 'check').check();
+        }
         for (const [name, type, value] of edits) {
           const control = optionControl(page, name, type);
           const before = await currentVersion();
           const start = performance.now();
-          if (type === 'check') await control.setChecked(!(await control.isChecked()));
-          else if (type === 'select') await control.selectOption(value);
-          else await control.fill(value);
+          let checked;
+          if (type === 'check') {
+            checked = !(await control.isChecked());
+            await control.setChecked(checked);
+          } else if (type === 'select') {
+            await control.selectOption(value === await control.inputValue() ? 'ClusterIP' : value);
+          } else {
+            const alternate = { '30s': '25s', '7d': '8d', '4Gi': '5Gi', '75m': '76m', '80m': '81m', '2': '3' };
+            await control.fill(value === await control.inputValue() ? alternate[value] : value);
+          }
           if (format === 'manifests' && tool === 'prometheus' && name.startsWith('Enable ')) {
-            await page.getByRole('button', { name: new RegExp(name.slice(7) + ' · about') }).waitFor({ state: 'detached' });
+            await page.getByRole('button', { name: new RegExp(name.slice(7) + ' · about') })
+              .waitFor({ state: checked ? 'visible' : 'detached' });
           } else await page.waitForFunction(old => {
             const model = globalThis.testMonaco.getModels().at(-1);
             return Boolean(model && model.getValueLength() > 0 && model.getVersionId() !== old);
@@ -169,6 +181,7 @@ test('both tools update both preview formats, highlight edits, and explain YAML 
     }
 
     await chooser.selectOption('prometheus');
+    await formatControl.selectOption('values');
     const interval = optionControl(page, 'Scrape interval', 'input');
     for (const value of ['31s', '32s', '33s', '35s']) await interval.fill(value);
     const field = page.locator('.view-line').filter({ hasText: /scrape_interval.*35s/ }).last();
