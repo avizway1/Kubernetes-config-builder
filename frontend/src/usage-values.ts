@@ -1,6 +1,7 @@
 import argoUsage from '../../templates/argo-cd/usage.json' with { type: 'json' };
 
 import prometheusUsage from '../../templates/prometheus/usage.json' with { type: 'json' };
+import { usageNextSteps } from './usage-next-steps.ts';
 
 export type UsageTemplateId = keyof typeof argoUsage | keyof typeof prometheusUsage;
 export type UsageValues = Record<string, string | boolean | number>;
@@ -42,6 +43,11 @@ export function renderUsage(id: UsageTemplateId, values: UsageValues, learning: 
   const lines: string[] = [];
   const notes = new Map<number, string>();
   const input = { ...defaultUsageValues(id), ...values };
+  for (const step of usageNextSteps(id, input, usageFilename(id))) {
+    lines.push(`# ${step.text}`);
+    if (step.command) lines.push(`# ${step.command}`);
+  }
+  lines.push('');
   const quote = (value: UsageValues[string]) => JSON.stringify(value).replace(/[\u0085\u2028\u2029]/g,
     character => '\\u' + character.charCodeAt(0).toString(16).padStart(4, '0'),
   );
@@ -80,17 +86,6 @@ export function renderUsage(id: UsageTemplateId, values: UsageValues, learning: 
   }
 
   if (id === 'scrape-job' || id === 'alert-rule') {
-    lines.push(
-      '# Helm values to add to an existing standalone Prometheus install. Do not use kubectl apply.',
-      '# Add the chart repository if needed.',
-      '# helm repo add prometheus-community https://prometheus-community.github.io/helm-charts',
-      '# The command uses the dashboard’s release name and namespace. Adjust them for your install.',
-    );
-    lines.push(id === 'alert-rule'
-      ? '# Merge existing rule groups into this file first. Helm replaces the groups list during upgrade.'
-      : '# Use a unique job name to preserve other jobs in the release.');
-    lines.push(`# helm upgrade prometheus prometheus-community/prometheus --namespace monitoring --version 29.45.1 --reuse-values --values ${usageFilename(id)}`, '');
-
     if (id === 'scrape-job') {
       write(0, 'scrapeConfigs:', 'Add a job to the chart’s Prometheus scrape configuration.');
       write(2, `${quoted('jobName')}:`, 'Use this key as the job name shown by Prometheus.');
@@ -126,10 +121,13 @@ export function renderUsage(id: UsageTemplateId, values: UsageValues, learning: 
     const guestbook = input.path === 'guestbook' &&
       (input.repoURL === 'https://github.com/argoproj/argocd-example-apps.git' ||
        input.repoURL === 'https://github.com/argoproj/argocd-example-apps');
+    const lab = input.path === 'templates/lab/metrics-demo' &&
+      input.repoURL === 'https://github.com/cavula/Kubernetes-config-builder.git';
     const pathNote = 'Read manifests from this directory inside the repository.';
     write(indent + 2, `path: ${quoted('path')}`, guestbook
       ? pathNote + ' Guestbook’s AMD64-only image runs under AMD64 emulation on ARM64 hosts such as Apple Silicon Macs.'
-      : pathNote);
+      : lab ? 'Deploy sample-app from this folder. It uses a pinned Prometheus binary to serve /metrics. A separate monitoring Prometheus collects them.'
+        : pathNote);
     write(indent, 'destination:', 'Set where Argo CD sends the manifests.');
     write(indent + 2, `server: ${quoted('destinationServer')}`, 'Select the target Kubernetes API server by its URL.');
     write(indent + 2, `namespace: ${quoted('destinationNamespace')}`, 'Use this namespace for resources that do not specify one.');

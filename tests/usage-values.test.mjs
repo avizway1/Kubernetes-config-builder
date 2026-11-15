@@ -1,6 +1,7 @@
 import { deepEqual, doesNotMatch, equal, match, ok } from 'node:assert/strict';
 import { test } from 'node:test';
 import { defaultUsageValues, renderUsage, usageFilename, usageTemplateIds, usageTemplates } from '../frontend/src/usage-values.ts';
+import { usageNextSteps } from '../frontend/src/usage-next-steps.ts';
 
 test('each usage YAML line has a plain-language comment in Learning mode', () => {
   for (const id of Object.keys(usageTemplates)) {
@@ -70,7 +71,7 @@ test('form text stays quoted on one YAML line', () => {
 
 test('standalone Prometheus templates generate Service annotations and Helm values', () => {
   const service = renderUsage('service-scrape', { servicePort: 80, targetPort: '9100', scheme: 'https' }, false).text;
-  match(service, /^apiVersion: v1\nkind: Service\n/);
+  match(service, /^apiVersion: v1\nkind: Service\n/m);
   match(service, /prometheus.io\/scrape: "true"/);
   match(service, /prometheus.io\/scheme: "https"/);
   match(service, /prometheus.io\/path: "\/metrics"/);
@@ -91,8 +92,32 @@ test('both Helm fragment exports keep the pinned upgrade command in every mode',
   for (const id of usageTemplateIds.prometheus.filter(id => id !== 'service-scrape')) {
     for (const learning of [true, false]) {
       const { text } = renderUsage(id, {}, learning);
-      match(text, /^# Helm values to add to an existing standalone Prometheus install\. Do not use kubectl apply\./);
+      match(text, /^# Helm values to add to an existing standalone Prometheus install\. Use Helm to apply this file\./);
       ok(text.includes(`# helm upgrade prometheus prometheus-community/prometheus --namespace monitoring --version 29.45.1 --reuse-values --values ${usageFilename(id)}\n`));
     }
   }
+});
+
+test('next steps match both export modes and reflect the current inputs', () => {
+  for (const id of Object.keys(usageTemplates)) {
+    const filename = usageFilename(id);
+    const values = { ...defaultUsageValues(id), name: 'tutorial-app', namespace: 'training', helmRelease: 'tutorial-prom', helmNamespace: 'observe' };
+    const steps = usageNextSteps(id, values, filename);
+    ok(steps.some(step => step.text.startsWith('Prerequisites:')), id);
+    ok(steps.some(step => step.text.startsWith('Confirm')), id);
+    const commands = steps.flatMap(step => step.command ? [step.command] : []);
+    ok(commands.some(command => command.endsWith(filename)), id);
+    if (id === 'alert-rule' || id === 'scrape-job') {
+      ok(commands.some(command => command.startsWith('helm upgrade tutorial-prom ') && command.includes('--namespace observe')));
+    } else if (id !== 'application-set') {
+      ok(commands.some(command => command.includes('--namespace training') && command.endsWith('tutorial-app')));
+    }
+    for (const learning of [true, false]) {
+      const yaml = renderUsage(id, values, learning).text;
+      const header = yaml.split('\n\n', 1)[0];
+      for (const command of commands) ok(header.split('\n').includes(`# ${command}`), id);
+    }
+  }
+  const unsafe = renderUsage('alert-rule', { helmRelease: 'invalid; command' }, false).text;
+  doesNotMatch(unsafe, /helm (upgrade|get values)|invalid; command/);
 });

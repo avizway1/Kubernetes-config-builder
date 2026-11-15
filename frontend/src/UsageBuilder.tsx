@@ -1,5 +1,6 @@
 import { ExportActions } from './ExportActions';
 import { Preview } from './Preview';
+import { UsageNextSteps } from './UsageNextSteps';
 import { useValidation, ValidationReport } from './ValidationStatus';
 import { defaultUsageValues, renderUsage, usageFilename, usageTemplateIds, usageTemplates, type UsageTemplateId, type UsageTool, type UsageValues } from './usage-values';
 
@@ -85,6 +86,7 @@ export function UsageBuilder({ id, tool, kubernetesVersion, draft, onDraftChange
         </div>
         <ValidationReport result={validation} usageTemplate={id} />
         <Preview key={id} current={current} previous={previous} />
+        <UsageNextSteps id={id} values={values.current} />
       </section>
     </div>
   );

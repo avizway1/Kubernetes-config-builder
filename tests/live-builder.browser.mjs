@@ -94,7 +94,19 @@ test('both tools update both preview formats, highlight edits, and explain YAML 
     await page.goto(process.env.KCB_APP_URL ?? 'http://127.0.0.1:5173');
     assert.equal(await page.getByRole('button', { name: 'Use the tool' }).getAttribute('aria-pressed'), 'true');
     const usageTemplate = page.getByRole('combobox', { name: 'Usage template' });
+    const nextSteps = page.locator('[aria-labelledby="usage-next-steps"]');
     const localChecks = page.getByText(/^Local checks passed:/);
+
+    async function checkUsageHandoff(text, filename) {
+      const header = text.split('\n\n', 1)[0].split('\n');
+      assert.match(await nextSteps.textContent(), /Prerequisites:.*Confirm/s);
+      const commands = await nextSteps.locator('pre code').allTextContents();
+      assert.ok(commands.some(command => command.endsWith(filename)));
+      for (const command of commands) assert.ok(header.includes(`# ${command}`), command);
+      await page.getByRole('button', { name: 'Copy', exact: true }).click();
+      await page.getByText('Copied to clipboard.').waitFor();
+      assert.equal(await page.evaluate(() => navigator.clipboard.readText()), text);
+    }
     for (const id of ['application', 'app-project', 'application-set']) {
       await usageTemplate.selectOption(id);
       await localChecks.filter({ hasText: 'Argo CD CRD schema' }).waitFor();
@@ -103,6 +115,7 @@ test('both tools update both preview formats, highlight edits, and explain YAML 
       await page.getByRole('button', { name: 'Download', exact: true }).click();
       const download = await pendingDownload;
       const learning = readFileSync(await download.path(), 'utf8');
+      await checkUsageHandoff(learning, download.suggestedFilename());
       assert.match(learning, /apiVersion: argoproj.io\/v1alpha1/);
       const lines = learning.trimEnd().split('\n');
       for (const [index, line] of lines.entries()) {
@@ -114,7 +127,9 @@ test('both tools update both preview formats, highlight edits, and explain YAML 
       const compactDownload = page.waitForEvent('download');
       await page.getByRole('button', { name: 'Download', exact: true }).click();
       const compact = await compactDownload;
-      assert.doesNotMatch(readFileSync(await compact.path(), 'utf8'), /^\s*#/m);
+      const compactText = readFileSync(await compact.path(), 'utf8');
+      await checkUsageHandoff(compactText, compact.suggestedFilename());
+      assert.doesNotMatch(compactText.split('\n\n', 2)[1], /^\s*#/m);
     }
     await page.getByRole('combobox', { name: /^Tool/ }).selectOption('prometheus');
     assert.deepEqual(await usageTemplate.locator('option').evaluateAll(options => options.map(option => option.value)),
@@ -123,11 +138,12 @@ test('both tools update both preview formats, highlight edits, and explain YAML 
       await usageTemplate.selectOption(id);
       await localChecks.filter({ hasText: id === 'service-scrape'
         ? 'Kubernetes Service schema'
-        : 'promtool' }).waitFor();
+        : /Helm render with the pinned chart, promtool/ }).waitFor();
       const pendingDownload = page.waitForEvent('download');
       await page.getByRole('button', { name: 'Download', exact: true }).click();
       const download = await pendingDownload;
       const learning = readFileSync(await download.path(), 'utf8');
+      await checkUsageHandoff(learning, download.suggestedFilename());
       const lines = learning.trimEnd().split('\n');
       for (const [index, line] of lines.entries()) {
         if (line.trim() && !line.trimStart().startsWith('#')) {
@@ -140,9 +156,16 @@ test('both tools update both preview formats, highlight edits, and explain YAML 
         assert.match(learning, /prometheus.io\/scrape: "true"/);
       } else {
         assert.equal(download.suggestedFilename(), `prometheus-${id}-values.yaml`);
-        assert.match(learning, /^# Helm values to add to an existing standalone Prometheus install\. Do not use kubectl apply\./);
+        assert.match(learning, /^# Helm values to add to an existing standalone Prometheus install\. Use Helm to apply this file\./);
         assert.ok(learning.includes(`--version 29.45.1 --reuse-values --values ${download.suggestedFilename()}\n`));
       }
+      await page.getByRole('combobox', { name: 'Comment density' }).selectOption('compact');
+      const compactDownload = page.waitForEvent('download');
+      await page.getByRole('button', { name: 'Download', exact: true }).click();
+      const compact = await compactDownload;
+      const compactText = readFileSync(await compact.path(), 'utf8');
+      await checkUsageHandoff(compactText, compact.suggestedFilename());
+      assert.doesNotMatch(compactText.split('\n\n', 2)[1], /^\s*#/m);
     }
     await page.getByRole('button', { name: 'Install the tool' }).click();
     await page.getByRole('combobox', { name: /^Tool/ }).selectOption('prometheus');
@@ -290,6 +313,7 @@ test('both tools update both preview formats, highlight edits, and explain YAML 
         assert.match(readme, /After install:/);
         assert.match(readme, /^kubectl .*port-forward/m);
         if (tool === 'argo-cd') {
+          assert.match(install, /--hide-notes/);
           assert.match(readme, /localhost:8081/);
           assert.match(readme, /port-forward .* 8081:443/);
           assert.match(readme, /argocd admin initial-password/);
