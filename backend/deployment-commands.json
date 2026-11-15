@@ -12,11 +12,11 @@
   "argo-cd": {
     "helm": [
       "helm repo add argo https://argoproj.github.io/argo-helm",
-      "helm install argo-cd argo/argo-cd --version 10.17.1 --namespace argocd --create-namespace --values argo-cd-values.yaml"
+      "helm install argo-cd argo/argo-cd --version 10.17.1 --namespace argocd --create-namespace --values argo-cd-values.yaml --hide-notes"
     ],
     "yaml": [
       "kubectl apply --server-side -f argo-cd-manifests.yaml"
     ],
-    "bundle": "helm install argo-cd ./argo-cd-10.17.1.tgz --namespace argocd --create-namespace --values argo-cd-values.yaml"
+    "bundle": "helm install argo-cd ./argo-cd-10.17.1.tgz --namespace argocd --create-namespace --values argo-cd-values.yaml --hide-notes"
   }
 }
