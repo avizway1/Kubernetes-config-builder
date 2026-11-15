@@ -43,6 +43,45 @@ function optionControl(page, name, type) {
     .locator(type === 'check' ? 'input[type=checkbox]' : type);
 }
 
+test('usage validation distinguishes field errors, local checks, and cluster checks', { timeout: 20000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  try {
+    const page = await browser.newPage();
+    const validation = page.locator('.validation-status');
+    const name = page.getByRole('textbox', { name: 'Application name', exact: true });
+    await page.goto(process.env.KCB_APP_URL ?? 'http://127.0.0.1:5173');
+    await validation.getByText(/Local checks passed:.*Argo CD CRD schema/).waitFor();
+    await name.fill('My First App');
+    await page.locator('#usage-name-error').getByText(/lowercase letters/).waitFor();
+    assert.equal(await name.getAttribute('aria-invalid'), 'true');
+    await validation.getByText('Validation found errors.').waitFor();
+    assert.equal(await validation.getByText(/Local checks passed:/).count(), 0);
+    assert.equal(await page.getByRole('button', { name: 'Copy', exact: true }).isEnabled(), true);
+    assert.equal(await page.getByRole('button', { name: 'Download', exact: true }).isEnabled(), true);
+    await name.fill('my-first-app');
+    await validation.getByText(/Local checks passed:.*Argo CD CRD schema/).waitFor();
+    assert.equal(await name.getAttribute('aria-invalid'), null);
+    await validation.getByText(/the AppProject and Git source, sync, and workload health/).waitFor();
+
+    await page.getByRole('combobox', { name: /^Tool/ }).selectOption('prometheus');
+    const port = page.getByRole('spinbutton', { name: 'Service port', exact: true });
+    await port.fill('99999');
+    await page.locator('#usage-servicePort-error').getByText('Enter a whole number from 1 to 65535.').waitFor();
+    assert.equal(await port.getAttribute('aria-invalid'), 'true');
+    await port.fill('65535');
+    await validation.getByText(/Local checks passed:.*Kubernetes Service schema/).waitFor();
+    assert.equal(await port.getAttribute('aria-invalid'), null);
+    await validation.getByText(/matching Pods and endpoints/).waitFor();
+
+    await page.route('**/api/usage/validate', route => route.fulfill({ status: 503 }));
+    await port.fill('1');
+    await validation.getByText('Validation is incomplete.').waitFor();
+    assert.equal(await validation.getByText(/Local checks passed:/).count(), 0);
+  } finally {
+    await browser.close();
+  }
+});
+
 test('both tools update both preview formats, highlight edits, and explain YAML fields', { timeout: 60000 }, async () => {
   const browser = await chromium.launch({
     executablePath: process.env.KCB_CHROME_PATH,
@@ -55,9 +94,11 @@ test('both tools update both preview formats, highlight edits, and explain YAML 
     await page.goto(process.env.KCB_APP_URL ?? 'http://127.0.0.1:5173');
     assert.equal(await page.getByRole('button', { name: 'Use the tool' }).getAttribute('aria-pressed'), 'true');
     const usageTemplate = page.getByRole('combobox', { name: 'Usage template' });
+    const localChecks = page.getByText(/^Local checks passed:/);
     for (const id of ['application', 'app-project', 'application-set']) {
       await usageTemplate.selectOption(id);
-      await page.getByText('CRD schema validation passed.').waitFor();
+      await localChecks.filter({ hasText: 'Argo CD CRD schema' }).waitFor();
+      await page.getByText('Check on your cluster:', { exact: true }).waitFor();
       const pendingDownload = page.waitForEvent('download');
       await page.getByRole('button', { name: 'Download', exact: true }).click();
       const download = await pendingDownload;
@@ -80,9 +121,9 @@ test('both tools update both preview formats, highlight edits, and explain YAML 
       ['service-scrape', 'scrape-job', 'alert-rule']);
     for (const id of ['service-scrape', 'scrape-job', 'alert-rule']) {
       await usageTemplate.selectOption(id);
-      await page.getByText(id === 'service-scrape'
-        ? 'Kubernetes schema validation passed.'
-        : 'Helm render and Prometheus configuration validation passed.').waitFor();
+      await localChecks.filter({ hasText: id === 'service-scrape'
+        ? 'Kubernetes Service schema'
+        : 'promtool' }).waitFor();
       const pendingDownload = page.waitForEvent('download');
       await page.getByRole('button', { name: 'Download', exact: true }).click();
       const download = await pendingDownload;

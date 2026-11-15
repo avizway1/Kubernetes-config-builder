@@ -15,17 +15,33 @@ type diagnostic struct {
 	Check    string `json:"check"`
 	Severity string `json:"severity"`
 	Message  string `json:"message"`
+	Field    string `json:"field,omitempty"`
 }
 
 type validationResult struct {
 	Status      string       `json:"status"`
 	Diagnostics []diagnostic `json:"diagnostics"`
+	Completed   []string     `json:"completed,omitempty"`
 }
 
 func (result *validationResult) add(check, severity, message string) {
-	result.Diagnostics = append(result.Diagnostics, diagnostic{check, severity, message})
-	if severity == "error" || result.Status == "passed" {
-		result.Status = severity
+	result.addDiagnostic(diagnostic{Check: check, Severity: severity, Message: message})
+}
+
+func (result *validationResult) addDiagnostic(issue diagnostic) {
+	result.Diagnostics = append(result.Diagnostics, issue)
+	if issue.Severity == "error" || result.Status == "passed" ||
+		(issue.Severity == "incomplete" && result.Status == "warning") {
+		result.Status = issue.Severity
+	}
+}
+
+func (result *validationResult) recordCheck(check string, issues []diagnostic) {
+	if len(issues) == 0 {
+		result.Completed = append(result.Completed, check)
+	}
+	for _, issue := range issues {
+		result.addDiagnostic(issue)
 	}
 }
 
@@ -50,47 +66,47 @@ func validate(ctx context.Context, chartDir, schemaDir string, req renderRequest
 func renderDiagnostic(req renderRequest, err error) diagnostic {
 	var mismatch *kubernetesVersionMismatch
 	if errors.As(err, &mismatch) {
-		return diagnostic{"Compatibility", "warning",
-			fmt.Sprintf("%s chart %s requires Kubernetes %s. You selected Kubernetes %s.",
+		return diagnostic{Check: "Compatibility", Severity: "warning",
+			Message: fmt.Sprintf("%s chart %s requires Kubernetes %s. You selected Kubernetes %s.",
 				req.Tool, charts[req.Tool].version, mismatch.required, req.KubernetesVersion)}
 	}
-	return diagnostic{"Render", "error", fmt.Sprintf("%s on Kubernetes %s: %v", req.Tool, req.KubernetesVersion, err)}
+	return diagnostic{Check: "Render", Severity: "error", Message: fmt.Sprintf("%s on Kubernetes %s: %v", req.Tool, req.KubernetesVersion, err)}
 }
 
 func lintChart(ctx context.Context, chartDir string, req renderRequest) *diagnostic {
 	const check = "Helm lint"
 	helm, err := exec.LookPath("helm")
 	if err != nil {
-		return &diagnostic{check, "incomplete", "Install Helm and make it available on the backend PATH."}
+		return &diagnostic{Check: check, Severity: "incomplete", Message: "Install Helm and make it available on the backend PATH."}
 	}
 
 	pin := charts[req.Tool]
 	archiveName := req.Tool + "-" + pin.version + ".tgz"
 	archive, err := verifiedArchive(chartDir, archiveName)
 	if err != nil {
-		return &diagnostic{check, "incomplete", err.Error()}
+		return &diagnostic{Check: check, Severity: "incomplete", Message: err.Error()}
 	}
 	dir, err := os.MkdirTemp("", "kcb-lint-")
 	if err != nil {
-		return &diagnostic{check, "incomplete", err.Error()}
+		return &diagnostic{Check: check, Severity: "incomplete", Message: err.Error()}
 	}
 	defer os.RemoveAll(dir)
 
 	chartPath := filepath.Join(dir, archiveName)
 	valuesPath := filepath.Join(dir, "values.yaml")
 	if err := os.WriteFile(chartPath, archive, 0600); err != nil {
-		return &diagnostic{check, "incomplete", err.Error()}
+		return &diagnostic{Check: check, Severity: "incomplete", Message: err.Error()}
 	}
 	values, err := effectiveValues(req)
 	if err != nil {
-		return &diagnostic{check, "error", err.Error()}
+		return &diagnostic{Check: check, Severity: "error", Message: err.Error()}
 	}
 	encoded, err := json.Marshal(values)
 	if err != nil {
-		return &diagnostic{check, "incomplete", err.Error()}
+		return &diagnostic{Check: check, Severity: "incomplete", Message: err.Error()}
 	}
 	if err := os.WriteFile(valuesPath, encoded, 0600); err != nil {
-		return &diagnostic{check, "incomplete", err.Error()}
+		return &diagnostic{Check: check, Severity: "incomplete", Message: err.Error()}
 	}
 	output, err := exec.CommandContext(ctx, helm, "lint", chartPath, "--values", valuesPath,
 		"--kube-version", req.KubernetesVersion+".0", "--namespace", pin.namespace).CombinedOutput()
@@ -99,14 +115,14 @@ func lintChart(ctx context.Context, chartDir string, req renderRequest) *diagnos
 	}
 	message := strings.TrimSpace(strings.ReplaceAll(string(output), dir+string(os.PathSeparator), ""))
 	if ctx.Err() != nil || message == "" {
-		return &diagnostic{check, "incomplete", fmt.Sprintf("Helm lint did not complete: %v", err)}
+		return &diagnostic{Check: check, Severity: "incomplete", Message: fmt.Sprintf("Helm lint did not complete: %v", err)}
 	}
-	return &diagnostic{check, "error", message}
+	return &diagnostic{Check: check, Severity: "error", Message: message}
 }
 
 func validateSchemas(ctx context.Context, schemaDir, version, manifest string) []diagnostic {
 	if info, err := os.Stat(schemaDir); err != nil || !info.IsDir() {
-		return []diagnostic{{"kubeconform", "incomplete", "Local schema directory is unavailable: " + schemaDir}}
+		return []diagnostic{{Check: "kubeconform", Severity: "incomplete", Message: "Local schema directory is unavailable: " + schemaDir}}
 	}
 	return validateSchemaLocations(ctx, version, manifest, schemaDir,
 		filepath.Join(schemaDir, "custom", "{{.Group}}", "{{.ResourceKind}}_{{.ResourceAPIVersion}}.json"))
@@ -116,7 +132,7 @@ func validateSchemaLocations(ctx context.Context, version, manifest string, loca
 	const check = "kubeconform"
 	binary, err := exec.LookPath("kubeconform")
 	if err != nil {
-		return []diagnostic{{check, "incomplete", "Install kubeconform and make it available on the backend PATH."}}
+		return []diagnostic{{Check: check, Severity: "incomplete", Message: "Install kubeconform and make it available on the backend PATH."}}
 	}
 	args := []string{"-strict", "-summary", "-output", "json", "-kubernetes-version", version + ".0"}
 	for _, location := range locations {
@@ -138,7 +154,7 @@ func validateSchemaLocations(ctx context.Context, version, manifest string, loca
 		if errors.As(err, &exit) && len(exit.Stderr) > 0 {
 			message += ": " + strings.TrimSpace(string(exit.Stderr))
 		}
-		return []diagnostic{{check, "incomplete", message}}
+		return []diagnostic{{Check: check, Severity: "incomplete", Message: message}}
 	}
 
 	var issues []diagnostic
@@ -150,11 +166,11 @@ func validateSchemaLocations(ctx context.Context, version, manifest string, loca
 		case "statusinvalid", "invalid":
 			severity = "error"
 		}
-		issues = append(issues, diagnostic{check, severity,
-			strings.TrimSpace(fmt.Sprintf("%s %s: %s", resource.Kind, resource.Name, resource.Msg))})
+		issues = append(issues, diagnostic{Check: check, Severity: severity,
+			Message: strings.TrimSpace(fmt.Sprintf("%s %s: %s", resource.Kind, resource.Name, resource.Msg))})
 	}
 	if len(issues) == 0 && (err != nil || report.Summary.Valid == 0 || report.Summary.Invalid+report.Summary.Errors+report.Summary.Skipped != 0) {
-		issues = append(issues, diagnostic{check, "incomplete", "Schema validation did not report a complete result."})
+		issues = append(issues, diagnostic{Check: check, Severity: "incomplete", Message: "Schema validation did not report a complete result."})
 	}
 	return issues
 }

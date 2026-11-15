@@ -1,22 +1,17 @@
 import { useEffect, useState } from 'react';
 
-type Diagnostic = { check: string; severity: string; message: string };
-type Result = { status: string; diagnostics: Diagnostic[] };
+type Diagnostic = { check: string; severity: string; message: string; field?: string };
+type Result = { status: string; diagnostics: Diagnostic[]; completed?: string[] };
 
-export function ValidationStatus({ tool, kubernetesVersion, values, usageTemplate }: {
+type Configuration = {
   tool: string;
   kubernetesVersion: string;
   values: string;
   usageTemplate?: string;
-}) {
-  const body = JSON.stringify({
-    tool, kubernetesVersion, values,
-    usageTemplate: tool === 'prometheus' ? usageTemplate : undefined,
-  });
-  const successMessage = !usageTemplate ? 'Helm lint and schema validation passed.'
-    : tool === 'argo-cd' ? 'CRD schema validation passed.'
-    : usageTemplate === 'service-scrape' ? 'Kubernetes schema validation passed.'
-    : 'Helm render and Prometheus configuration validation passed.';
+};
+
+export function useValidation({ tool, kubernetesVersion, values, usageTemplate }: Configuration) {
+  const body = JSON.stringify({ tool, kubernetesVersion, values, usageTemplate });
   const [response, setResponse] = useState<{ body: string; result: Result }>();
 
   useEffect(() => {
@@ -47,12 +42,33 @@ export function ValidationStatus({ tool, kubernetesVersion, values, usageTemplat
     };
   }, [body, usageTemplate]);
 
-  const result = response?.body === body ? response.result : undefined;
+  return response?.body === body ? response.result : undefined;
+}
+
+export function ValidationStatus(config: Configuration) {
+  const result = useValidation(config);
+  return <ValidationReport result={result} usageTemplate={config.usageTemplate} />;
+}
+
+const clusterChecks: Record<string, string> = {
+  application: 'cluster access and permissions, the AppProject and Git source, sync, and workload health',
+  'app-project': 'cluster access and permissions, and whether the project allows the actual Application source and destination',
+  'application-set': 'cluster access and permissions, the ApplicationSet controller, Git and project access, and the generated Applications',
+  'service-scrape': 'cluster access and permissions, matching Pods and endpoints, and whether Prometheus can scrape them',
+  'scrape-job': 'the existing Helm release and its values, target reachability, and successful scrapes',
+  'alert-rule': 'the existing Helm release and its values, whether the query finds live data, and whether the alert fires',
+};
+
+export function ValidationReport({ result, usageTemplate }: { result?: Result; usageTemplate?: string }) {
   return (
     <div className="validation-status" aria-live="polite">
       <h2>Validation</h2>
       {!result && <p>Checking configuration…</p>}
-      {result?.status === 'passed' && <p>{successMessage}</p>}
+      {result?.status === 'passed' && !usageTemplate && <p>Helm lint and schema validation passed.</p>}
+      {result?.status === 'error' && <p>Validation found errors.</p>}
+      {result?.status === 'incomplete' && <p>Validation is incomplete.</p>}
+      {result?.status === 'warning' && <p>Validation found a warning.</p>}
+      {!!result?.completed?.length && <p>Local checks passed: {result.completed.join(', ')}.</p>}
       {result?.diagnostics.length ? (
         <ul>
           {result.diagnostics.map(({ check, severity, message }, index) => (
@@ -60,6 +76,7 @@ export function ValidationStatus({ tool, kubernetesVersion, values, usageTemplat
           ))}
         </ul>
       ) : null}
+      {usageTemplate && <p><strong>Check on your cluster:</strong> {clusterChecks[usageTemplate]}.</p>}
     </div>
   );
 }

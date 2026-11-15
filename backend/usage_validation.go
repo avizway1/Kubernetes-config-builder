@@ -19,18 +19,22 @@ func validateUsage(ctx context.Context, chartDir string, req renderRequest) vali
 		result.add(check, "error", "Select Argo CD and a supported Kubernetes version.")
 		return result
 	}
-	resources, err := manifestResources(req.Values)
+	doc, err := usageDocument(req.Values)
 	if err != nil {
 		result.add(check, "error", err.Error())
 		return result
 	}
-	if len(resources) != 1 {
-		result.add(check, "error", "Provide exactly one Argo CD resource.")
-		return result
-	}
-	id := resources[0].id
+	id := resourceID{APIVersion: usageText(usageNode(doc, "apiVersion")), Kind: usageText(usageNode(doc, "kind"))}
 	if id.APIVersion != "argoproj.io/v1alpha1" || !slices.Contains([]string{"Application", "AppProject", "ApplicationSet"}, id.Kind) {
 		result.add(check, "error", "Use an argoproj.io/v1alpha1 Application, AppProject, or ApplicationSet.")
+		return result
+	}
+	if expected, ok := map[string]string{"application": "Application", "app-project": "AppProject", "application-set": "ApplicationSet"}[req.UsageTemplate]; req.UsageTemplate != "" && (!ok || id.Kind != expected) {
+		result.add(check, "error", "The resource kind does not match the selected template.")
+		return result
+	}
+	result.recordCheck(usageFieldCheck, validateArgoFields(doc, id.Kind, req.UsageTemplate != ""))
+	if result.Status == "error" {
 		return result
 	}
 
@@ -50,9 +54,11 @@ func validateUsage(ctx context.Context, chartDir string, req renderRequest) vali
 		result.add(check, "incomplete", err.Error())
 		return result
 	}
-	for _, issue := range validateSchemaLocations(ctx, req.KubernetesVersion, req.Values, location) {
-		result.add(check, issue.Severity, issue.Message)
+	issues := validateSchemaLocations(ctx, req.KubernetesVersion, req.Values, location)
+	for i := range issues {
+		issues[i].Check = check
 	}
+	result.recordCheck(check, issues)
 	return result
 }
 
