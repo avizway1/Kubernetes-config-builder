@@ -39,6 +39,7 @@ export function usageNextSteps(id: UsageTemplateId, input: UsageValues, filename
   }
 
   const namespace = nameArgument(input.namespace, 63);
+  const destination = nameArgument(input.destinationNamespace, 63);
   const name = id === 'service-scrape' ? nameArgument(input.name, 63) : nameArgument(input.name, 253, true);
   const apply = { text: 'From the download folder, apply the generated file.', command: `kubectl apply -f ${filename}` };
 
@@ -65,6 +66,10 @@ export function usageNextSteps(id: UsageTemplateId, input: UsageValues, filename
       : 'Prerequisites: kubectl and a running Argo CD installation. Use Install the tool if you need to install Argo CD.' },
     cluster,
     ...(id === 'application' ? [{ text: 'Confirm the AppProject already exists and permits this repository and destination.' }] : []),
+    ...(id === 'application' && input.createNamespace !== true ? [{
+      text: 'Make sure the destination namespace exists before sync. If it is missing, create it on the target cluster or ask its administrator.',
+      command: destination ? `kubectl get namespace ${destination}` : undefined,
+    }] : []),
     apply,
     ...(id === 'application' ? [{ text: input.automated === true
       ? 'Open the Application in Argo CD and wait for automated sync.'

@@ -4,7 +4,7 @@ import { presets, type Preset } from './builder-values';
 import { UsageBuilder, type UsageDraft } from './UsageBuilder';
 import { Builder, type InstallDraft } from './Builder';
 import { kubernetesVersions, platform, selectConfiguration, tools } from './selection';
-import { usageTemplateIds, type UsageTemplateId, type UsageTool } from './usage-values';
+import { defaultUsageValues, usageTemplateIds, type UsageTemplateId, type UsageTool } from './usage-values';
 import './style.css';
 
 function App() {
@@ -81,6 +81,7 @@ function App() {
         <UsageBuilder id={usageTemplate} tool={tool} kubernetesVersion={configuration.kubernetesVersion}
           onTemplateChange={id => setUsageTemplates(templates => ({ ...templates, [tool]: id }))}
           draft={usageDrafts[usageTemplate]}
+          projectValues={usageDrafts['app-project']?.current ?? defaultUsageValues('app-project')}
           onDraftChange={draft => setUsageDrafts(drafts => ({ ...drafts, [usageTemplate]: draft }))} />
       )}
     </main>

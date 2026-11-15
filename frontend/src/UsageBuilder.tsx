@@ -6,11 +6,12 @@ import { defaultUsageValues, renderUsage, usageFilename, usageTemplateIds, usage
 
 export type UsageDraft = { current: UsageValues; previous: UsageValues; learning: boolean };
 
-export function UsageBuilder({ id, tool, kubernetesVersion, draft, onDraftChange, onTemplateChange }: {
+export function UsageBuilder({ id, tool, kubernetesVersion, draft, projectValues, onDraftChange, onTemplateChange }: {
   id: UsageTemplateId;
   tool: UsageTool;
   kubernetesVersion: string;
   draft?: UsageDraft;
+  projectValues: UsageValues;
   onDraftChange: (draft: UsageDraft) => void;
   onTemplateChange: (id: UsageTemplateId) => void;
 }) {
@@ -22,6 +23,11 @@ export function UsageBuilder({ id, tool, kubernetesVersion, draft, onDraftChange
   const current = renderUsage(id, values.current, learning);
   const previous = renderUsage(id, values.previous, learning);
   const validation = useValidation({ tool, kubernetesVersion, values: current.text, usageTemplate: id });
+  // The AppProject template grants deployment to a namespace without granting cluster-wide resources.
+  const projectWarning = id === 'application' && values.current.createNamespace === true &&
+    values.current.project === projectValues.name && values.current.namespace === projectValues.namespace
+    ? 'This AppProject only lets Argo CD deploy inside an existing namespace. Create the destination namespace separately, then turn off Create destination namespace.'
+    : undefined;
 
   function update(field: string, value: UsageValues[string]) {
     onDraftChange({ ...values, current: { ...values.current, [field]: value }, previous: values.current });
@@ -84,7 +90,7 @@ export function UsageBuilder({ id, tool, kubernetesVersion, draft, onDraftChange
           </label>
           <ExportActions key={id} text={current.text} filename={usageFilename(id)} />
         </div>
-        <ValidationReport result={validation} usageTemplate={id} />
+        <ValidationReport result={validation} usageTemplate={id} projectWarning={projectWarning} />
         <Preview key={id} current={current} previous={previous} />
         <UsageNextSteps id={id} values={values.current} />
       </section>

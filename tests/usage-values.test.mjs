@@ -31,6 +31,7 @@ test('Application defaults to manual sync and exposes explicit deletion options'
 
   const enabled = renderUsage('application', { automated: true, prune: true, selfHeal: true, cascade: true }, true);
   match(enabled.text, /resources-finalizer\.argocd\.argoproj\.io/);
+  match(enabled.text, /If the AppProject forbids Namespace resources, create it separately[^\n]*\n +\- CreateNamespace=true/);
   match(enabled.text, /prune: true\n/);
   match(enabled.text, /selfHeal: true\n/);
   ok([...enabled.notes.values()].some(note => note.includes('Delete the managed resources')));

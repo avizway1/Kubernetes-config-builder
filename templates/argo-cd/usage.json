@@ -70,7 +70,7 @@
       {
         "id": "createNamespace",
         "label": "Create destination namespace",
-        "description": "Create the destination namespace during sync if it is missing.",
+        "description": "Create a missing namespace during sync when the AppProject allows Namespace resources.",
         "type": "boolean",
         "default": true
       },

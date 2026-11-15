@@ -59,7 +59,7 @@ const clusterChecks: Record<string, string> = {
   'alert-rule': 'the existing Helm release and its values, whether the query finds live data, and whether the alert fires',
 };
 
-export function ValidationReport({ result, usageTemplate }: { result?: Result; usageTemplate?: string }) {
+export function ValidationReport({ result, usageTemplate, projectWarning }: { result?: Result; usageTemplate?: string; projectWarning?: string }) {
   return (
     <div className="validation-status" aria-live="polite">
       <h2>Validation</h2>
@@ -76,6 +76,7 @@ export function ValidationReport({ result, usageTemplate }: { result?: Result; u
           ))}
         </ul>
       ) : null}
+      {projectWarning && <p><strong>AppProject namespace permission (warning)</strong> {projectWarning}</p>}
       {usageTemplate && <p><strong>Check on your cluster:</strong> {clusterChecks[usageTemplate]}.</p>}
     </div>
   );

@@ -158,7 +158,7 @@ export function renderUsage(id: UsageTemplateId, values: UsageValues, learning: 
     }
     if (input.createNamespace) {
       write(4, 'syncOptions:', 'Pass options to the sync operation.');
-      write(6, '- CreateNamespace=true', 'Create the destination namespace during sync if it is missing.');
+      write(6, '- CreateNamespace=true', 'Create a missing namespace during sync. If the AppProject forbids Namespace resources, create it separately and leave this option off.');
     }
   } else if (id === 'app-project') {
     write(0, 'spec:', 'Set the deployment boundaries for Applications that use this project.');
