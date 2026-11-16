@@ -16,6 +16,8 @@ The selected mode, tool, template, and Kubernetes version, the current form valu
 
 The lab guide links to official installation instructions for k3d, kubectl, and Helm on macOS, Windows, and Linux. It shows how to check each tool before creating a cluster and uses WSL 2 Bash on Windows so the lab commands can be copied as written.
 
+The Application’s Next steps and exported instructions use the same `kubectl patch` sync method as the lab. When automated sync is enabled, the instructions show how to check status with `kubectl`. The Argo CD UI is optional for watching progress. The README identifies the lab as a feature of the next release and points current reviewers to a preview of `main` or a source checkout.
+
 | Template | Prerequisite and action | What success looks like |
 | --- | --- | --- |
 | Argo CD AppProject | Argo CD is ready. Apply the generated AppProject before the lab Application. | The project exists and the Application can use its repo and destination. |

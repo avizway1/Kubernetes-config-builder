@@ -2,7 +2,7 @@
 
 Argo CD deploys **`sample-app`** from Git. The sample uses a pinned Prometheus binary because it already serves metrics at `/metrics`. You will install a separate **monitoring Prometheus** that collects those metrics, displays the target, and evaluates an alert. Open the monitoring Prometheus UI to see the results.
 
-You can generate files in the dashboard before you set up a cluster. Use a dashboard build with the `metrics-lab` examples. The v0.3.1 Docker image predates this lab. For a local review, open the running preview supplied with the review or use the [README’s source startup steps](../README.md#run-from-source-for-development) from a checkout of `main`.
+The lab is planned for the next release. The v0.3.1 Docker image predates the `metrics-lab` examples. To try the lab now, use a running preview of `main` or start the dashboard from a checkout of `main`. You can generate the files before setting up a cluster. [Run from source](../README.md#run-from-source-for-development)
 
 ## Before you start
 
@@ -105,7 +105,7 @@ Look for `k3d-kcb-first-lab` and a node that is `Ready`. The lab uses port forwa
 
 In the dashboard, choose **Install the tool → Argo CD → Minimal**. Download the Helm bundle and unzip it into a folder named `argo-cd`. Repeat for **Prometheus → Minimal** and unzip that bundle into `prometheus`. Put both folders inside `kcb-first-lab`, your terminal’s current folder.
 
-Run these commands to install the pinned charts. The Argo CD command hides the chart’s default access instructions so you can follow the port settings below. The monitoring Prometheus uses temporary storage for this lab and evaluates alert rules every five seconds.
+Run these commands to install the pinned charts. The monitoring Prometheus uses temporary storage for this lab and evaluates alert rules every five seconds.
 
 ```sh
 helm install argo-cd ./argo-cd/argo-cd-10.17.1.tgz \
@@ -117,26 +117,13 @@ helm install prometheus ./prometheus/prometheus-29.45.1.tgz \
   --wait --timeout 5m
 ```
 
-Wait for the Argo CD server to be ready before opening a port-forward. Continue when `kubectl` says the Deployment successfully rolled out.
+In a separate terminal with the same `KUBECONFIG`, start the monitoring Prometheus port-forward and leave it running for the scrape and alert checks.
 
 ```sh
-kubectl -n argocd rollout status deployment/argo-cd-argocd-server --timeout=2m
-```
-
-In two separate terminals with the same `KUBECONFIG`, run one port-forward in each and leave them running.
-
-```sh
-kubectl port-forward svc/argo-cd-argocd-server -n argocd 8081:443
 kubectl port-forward svc/prometheus-server -n monitoring 9090:80
 ```
 
-If the Argo CD port-forward exits with `lost connection to pod`, wait for the rollout again, then rerun the same Argo CD port-forward command and refresh the browser. A server restart can close the connection while the cluster and installed chart remain in place.
-
-The dashboard listens on [localhost:8080](http://localhost:8080) in the Docker setup. Open [monitoring Prometheus](http://localhost:9090) for the scrape and alert checks. You can also open [Argo CD](https://localhost:8081) to observe the deployment. The local Argo CD installation uses a self-signed certificate. For the optional UI, retrieve the generated password and sign in as `admin`. Keep the password out of Git.
-
-```sh
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 --decode
-```
+Open the monitoring Prometheus UI on port 9090. [Monitoring Prometheus](http://localhost:9090)
 
 ## 3. Deploy `sample-app` with Argo CD
 
@@ -157,6 +144,23 @@ kubectl -n argocd patch application metrics-lab --type=merge \
 kubectl -n argocd wait application/metrics-lab --for=jsonpath='{.status.sync.status}'=Synced --timeout=3m
 kubectl -n argocd wait application/metrics-lab --for=jsonpath='{.status.health.status}'=Healthy --timeout=3m
 kubectl -n metrics-lab rollout status deployment/sample-app --timeout=2m
+```
+
+### View the deployment in Argo CD (optional)
+
+You can watch the Application in the Argo CD UI. In another terminal with the lab’s `KUBECONFIG`, wait for the server rollout, then start the port-forward and leave it running.
+
+```sh
+kubectl -n argocd rollout status deployment/argo-cd-argocd-server --timeout=2m
+kubectl port-forward svc/argo-cd-argocd-server -n argocd 8081:443
+```
+
+If the port-forward exits with `lost connection to pod`, check the rollout again, rerun the port-forward, and refresh the browser.
+
+In the lab terminal, retrieve the generated password and keep it out of Git. Sign in as `admin` on port 8081 and view the `metrics-lab` Application. This local server uses a self-signed certificate. [Argo CD](https://localhost:8081)
+
+```sh
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 --decode
 ```
 
 ## 4. Watch the monitoring Prometheus collect metrics
@@ -211,7 +215,7 @@ Look for `metrics-lab-envs-dev` and `metrics-lab-envs-staging`. The generated Ap
 
 ## Clean up
 
-Stop both port-forwards with `Ctrl+C`. From the lab terminal, delete only the cluster you created for this lab, then clear its kubeconfig setting.
+Stop the monitoring Prometheus port-forward with `Ctrl+C`. If you opened the optional Argo CD port-forward, stop it too. From the lab terminal, delete only the cluster you created for this lab, then clear its kubeconfig setting.
 
 ```sh
 k3d cluster delete kcb-first-lab

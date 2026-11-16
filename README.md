@@ -15,17 +15,19 @@ Build and learn Kubernetes configurations with short templates for tools you alr
 
 Learning mode explains every YAML line. Validation uses the Argo CD CRD schemas from chart 10.17.1, the Kubernetes Service schema, or `promtool` for configuration rendered by Prometheus chart 29.45.1.
 
-New to these tools? Follow the [first K3s lab](docs/first-k3s-lab.md). Argo CD deploys a sample app, Prometheus collects its metrics, and you can trigger and resolve an alert. Start with a fresh local cluster or explore the templates without a cluster.
-
 ### Apply the generated files
 
 For Argo CD, apply the generated manifest to a cluster where Argo CD is installed. For example, run `kubectl apply -f application.yaml`. To use ApplicationSet with the installation builder, choose **Full chart defaults** so the controller is running.
 
 For standalone Prometheus, apply the annotated Service with kubectl. For a custom scrape job or alert rule, follow the pinned Helm upgrade command at the top of the values download. Merge existing alert groups into the alert values file before upgrading.
 
+### Preview the first K3s lab
+
+The lab is planned for the next release. The v0.3.1 Docker image predates the lab. To try it now, run the dashboard from a checkout of `main` and follow the lab guide. You’ll deploy a sample app with Argo CD and use Prometheus to collect its metrics, trigger an alert, and verify recovery. [Run from source](#run-from-source-for-development) · [First K3s lab](docs/first-k3s-lab.md)
+
 ## Start with Docker
 
-With Docker Desktop or Docker Engine with Compose running, download **compose.yaml** from the [v0.3.1 release](https://github.com/cavula/Kubernetes-config-builder/releases/tag/v0.3.1) and run this in the download folder.
+With Docker Desktop or Docker Engine with Compose running, download **compose.yaml** from the [v0.3.1 release](https://github.com/cavula/Kubernetes-config-builder/releases/tag/v0.3.1) and run this in the download folder. To run the lab, follow the [preview instructions](#preview-the-first-k3s-lab).
 
 ```sh
 docker compose up -d

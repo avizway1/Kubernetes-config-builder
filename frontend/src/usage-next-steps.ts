@@ -54,11 +54,19 @@ export function usageNextSteps(id: UsageTemplateId, input: UsageValues, filename
   }
 
   const verify = id === 'application'
-    ? 'Confirm the Application shows Synced and Healthy in Argo CD, and check that the workload pods are ready in the destination namespace.'
+    ? 'Confirm that kubectl reports Synced and Healthy. Check that the workload pods are ready in the destination namespace.'
     : id === 'app-project'
       ? 'Confirm the project exists, then use it in an Application and check that the project permits its repository and destination.'
       : 'Confirm the controller creates one Application for each environment in the list. The generated names use the ApplicationSet name plus the environment.';
   const resource = { 'application': 'applications', 'app-project': 'appprojects', 'application-set': 'applicationsets' }[id];
+  const applicationSteps: Step[] = input.automated === true
+    ? [{ text: 'Argo CD starts the sync automatically. Check its status with kubectl.' }]
+    : [
+      { text: 'For a new Application, wait until Argo CD compares Git with the cluster and reports OutOfSync. If the Application already shows Synced, skip the manual sync.',
+        command: namespace && name ? `kubectl --namespace ${namespace} wait application/${name} --for=jsonpath='{.status.sync.status}'=OutOfSync --timeout=2m` : undefined },
+      { text: 'When the Application shows OutOfSync, request a sync with kubectl.',
+        command: namespace && name ? `kubectl --namespace ${namespace} patch application ${name} --type=merge -p '{"operation":{"sync":{"syncStrategy":{"hook":{}}}}}'` : undefined },
+    ];
 
   return [
     { text: id === 'application-set'
@@ -71,12 +79,11 @@ export function usageNextSteps(id: UsageTemplateId, input: UsageValues, filename
       command: destination ? `kubectl get namespace ${destination}` : undefined,
     }] : []),
     apply,
-    ...(id === 'application' ? [{ text: input.automated === true
-      ? 'Open the Application in Argo CD and wait for automated sync.'
-      : 'Open the Application in Argo CD and select Sync to deploy the workload.' }] : []),
+    ...(id === 'application' ? applicationSteps : []),
     { text: verify,
       command: namespace && name ? id === 'application-set'
         ? `kubectl --namespace ${namespace} get applications.argoproj.io`
         : `kubectl --namespace ${namespace} get ${resource}.argoproj.io ${name}` : undefined },
+    ...(id === 'application' ? [{ text: 'You can also open the Argo CD UI to watch sync and health.' }] : []),
   ];
 }

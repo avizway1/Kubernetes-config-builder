@@ -38,6 +38,24 @@ test('Application defaults to manual sync and exposes explicit deletion options'
   ok([...enabled.notes.values()].some(note => note.includes('Delete the managed resources')));
 });
 
+test('Application exports show kubectl sync and make watching in the UI optional', () => {
+  const input = { name: 'tutorial-app', namespace: 'training' };
+  const sync = `kubectl --namespace training patch application tutorial-app --type=merge -p '{"operation":{"sync":{"syncStrategy":{"hook":{}}}}}'`;
+  for (const learning of [true, false]) {
+    const manual = renderUsage('application', input, learning).text.split('\n\n', 1)[0];
+    ok(manual.split('\n').includes(`# ${sync}`));
+    match(manual, /get applications\.argoproj\.io tutorial-app/);
+    match(manual, /You can also open the Argo CD UI to watch sync and health/);
+    doesNotMatch(manual, /select Sync/);
+
+    const automated = renderUsage('application', { ...input, automated: true }, learning).text.split('\n\n', 1)[0];
+    match(automated, /Argo CD starts the sync automatically/);
+    doesNotMatch(automated, /patch application|wait application/);
+  }
+  const invalid = renderUsage('application', { ...input, name: 'unsafe; command' }, false).text;
+  doesNotMatch(invalid, /patch application|wait application/);
+});
+
 test('the lab and optional Guestbook explain the workload they deploy', () => {
   match(renderUsage('application', {}, true).text, /sample-app.*pinned Prometheus binary.*\/metrics.*separate monitoring Prometheus/);
   const guestbook = renderUsage('application', guestbookExample, true).text;
