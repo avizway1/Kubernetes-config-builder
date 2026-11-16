@@ -15,6 +15,8 @@ Build and learn Kubernetes configurations with short templates for tools you alr
 
 Learning mode explains every YAML line. Validation uses the Argo CD CRD schemas from chart 10.17.1, the Kubernetes Service schema, or `promtool` for configuration rendered by Prometheus chart 29.45.1.
 
+New to these tools? Follow the [first K3s lab](docs/first-k3s-lab.md). Argo CD deploys a sample app, Prometheus collects its metrics, and you can trigger and resolve an alert. Start with a fresh local cluster or explore the templates without a cluster.
+
 ### Apply the generated files
 
 For Argo CD, apply the generated manifest to a cluster where Argo CD is installed. For example, run `kubectl apply -f application.yaml`. To use ApplicationSet with the installation builder, choose **Full chart defaults** so the controller is running.
@@ -81,6 +83,7 @@ For Prometheus, run `kubectl apply --server-side -f prometheus-manifests.yaml`. 
 - Run `go test ./...` from `backend` after downloading the charts.
 - Run `./tests/check-argo-usage.sh <dedicated-test-kubeconfig>` with the pinned Argo CD chart and its ApplicationSet controller running on a fresh local K3s 1.37 test cluster.
 - Run `./tests/check-prometheus-usage.sh <dedicated-test-kubeconfig>` with a dedicated local K3s 1.37 Prometheus test cluster.
+- Run `bash tests/check-first-k3s-lab.sh` to download the actual files in Chromium and time the complete lab on a disposable K3s cluster. Add `--applicationset` for the separate Full preset check. See the [lab guide](docs/first-k3s-lab.md) for prerequisites.
 - Follow the [local K3s deployment instructions](docs/local-rendering.md#local-k3s-deploy-checks) for server-side dry runs and rollout checks.
 
 GitHub Actions verifies chart checksums, runs the frontend and Go checks, and runs Helm lint and strict kubeconform across the supported Kubernetes versions on every push. You can also start CI manually from the Actions tab.

@@ -17,7 +17,7 @@ The selected mode, tool, template, and Kubernetes version, the current form valu
 | Template | Prerequisite and action | What success looks like |
 | --- | --- | --- |
 | Argo CD AppProject | Argo CD is ready. Apply the generated AppProject before the lab Application. | The project exists and the Application can use its repo and destination. |
-| Argo CD Application | Argo CD is ready and the project allows the source and destination. Apply the file and select **Sync** in Argo CD with the default manual policy. | Argo CD shows **Synced** and **Healthy**, and the demo Deployment is ready. |
+| Argo CD Application | Argo CD is ready and the project allows the source and destination. Create the lab namespace separately, apply the file, and request a manual sync with `kubectl`. | The Application reports **Synced** and **Healthy**, and the demo Deployment is ready. |
 | Argo CD ApplicationSet | Install Argo CD with the Full preset so the controller is running. Apply the generated file. | The controller creates the two expected Applications. |
 | Prometheus annotated Service | The workload serves metrics and the pinned standalone Prometheus chart is running. Apply the Service file. | The Service has a ready endpoint and the discovered target is **UP**. |
 | Prometheus custom scrape job | The same Service resolves and the pinned Helm release exists. Upgrade with the downloaded values file. | The named job is **UP** on Targets and its `up` query returns `1`. Explain that automatic discovery and the custom job briefly collect the same endpoint for comparison. |
@@ -25,19 +25,28 @@ The selected mode, tool, template, and Kubernetes version, the current form valu
 
 ## Acceptance criteria
 
-- [ ] Unit and browser tests reject the reported invalid names and port, accept valid boundary values for the relevant fields, and distinguish failed, incomplete, successful, and cluster-only checks.
-- [ ] Browser tests verify the right Next steps for all six templates, that commands match the actual clipboard and downloads in both comment modes, and that drafts survive template, tool, and mode round trips.
-- [ ] Browser tests verify that the form and live YAML are visible together in a desktop viewport and that narrow screens offer a direct jump. Verify that copy, download, and comparison still work.
-- [ ] With the Docker dashboard on port 8080, use the generated Argo CD access command and reach its UI on port 8081. Check the UI, YAML header, Helm bundle README, and lab guide for matching commands and links.
-- [ ] Follow the documented path on a fresh, dedicated K3s cluster using the actual exports. Verify Argo CD sync and health, generated Service endpoints, both Prometheus targets, alert firing, and recovery. Test the optional ApplicationSet separately with the Full preset.
+- [x] Unit and browser tests reject the reported invalid names and port, accept valid boundary values for the relevant fields, and distinguish failed, incomplete, successful, and cluster-only checks.
+- [x] Browser tests verify the right Next steps for all six templates, that commands match the actual clipboard and downloads in both comment modes, and that drafts survive template, tool, and mode round trips.
+- [x] Browser tests verify that the form and live YAML are visible together in a desktop viewport and that narrow screens offer a direct jump. Verify that copy, download, and comparison still work.
+- [x] With the Docker dashboard on port 8080, use the generated Argo CD access command and reach its UI on port 8081. Check the UI, YAML header, Helm bundle README, and lab guide for matching commands and links.
+- [x] Follow the documented core path on a fresh, dedicated K3s cluster using the actual exports. Verify Argo CD sync and health, generated Service endpoints, both Prometheus targets, alert firing, and recovery.
+- [ ] Test the optional lab ApplicationSet separately with the Full preset.
 - [ ] Do a first-run walkthrough from the release README in a fresh browser. Record how long it takes to reach the first actionable step and the first verified result, and where the walkthrough requires outside instructions.
-- [ ] On a fresh dedicated K3s cluster, time the beginner walkthrough from the setup instructions through alert recovery. Target about 20 minutes or less. Record the host architecture, cache conditions, what was included, and the measured time.
+- [x] On a fresh dedicated K3s cluster, time the lab from cluster creation through alert recovery. Target about 20 minutes or less. Record the host architecture, cache conditions, what was included, and the measured time.
 
 ## Sample image
 
 Use `quay.io/prometheus/prometheus:v3.16.0@sha256:9332054523223e2ddc18d8101799d54a4a8d823b030c53216f063a6c117773cd` for the demo workload. Quay’s image index was inspected and shared with Charan before use. It lists native Linux AMD64 manifest `sha256:89c1a644817e9ad70fa2af76c84898e327c1de7063735f962e8313b1e28672c3` and Linux ARM64 manifest `sha256:c523006440e714e0e53405b77e9f6ee668871d9855fc1c853fd43f5b990c34d2`.
 
 [Prometheus v3.16.0 release](https://github.com/prometheus/prometheus/releases/tag/v3.16.0) · [Quay OCI image index](https://quay.io/v2/prometheus/prometheus/manifests/sha256:9332054523223e2ddc18d8101799d54a4a8d823b030c53216f063a6c117773cd)
+
+## Lab verification
+
+On November 15, 2026, a fresh K3s run on an ARM64 Mac reached cluster readiness at 15 seconds, browser downloads at 16 seconds, Argo CD readiness at 44 seconds, monitoring Prometheus readiness at 82 seconds, and simultaneous access to the dashboard and Argo CD at 84 seconds. The Docker host already had the K3s node image. The fresh node pulled its workloads. Argo CD read the pinned source and reported `OutOfSync/Missing` before manual sync. Its server container then restarted, dropping the port-forward before the browser could sync. The test stopped and cleaned up its cluster. Docker’s VM kernel logs show global out-of-memory kills while the test ran, including Prometheus processes in existing test clusters and an allocation failure in `argocd-server`. The VM logs do not show Argo CD as an OOM victim. The deleted lab pod’s last state and events were unavailable, so the exact restart reason and full lab time are unverified. The lab guide now waits for the Argo CD server rollout and explains how to restart a dropped port-forward.
+
+With the three older clusters paused, the login selector was corrected and verified on a running Argo CD v3.6.1 server. The fresh follow-up reached K3s readiness at 14 seconds, downloads at 16 seconds, both Helm installs at 75 seconds, and both port checks at 78 seconds. Login and manual sync reached the Argo CD controller. The project denied creation of the destination Namespace. Over 83 samples, the lab containers peaked at 1.62 GiB of working-set memory and the Docker VM peaked at 2.76 GiB in use. Sampling ended at about 4 minutes 22 seconds. These measurements cover the attempted run through the sync failure. The lab now creates the destination namespace explicitly and preserves the restricted project. The corrected full run and alert recovery remain to be verified. The fresh cluster was removed and all three older clusters were restarted.
+
+On November 16, 2026, the corrected run succeeded on fresh K3s 1.37.2 on an ARM64 Mac. The dashboard preview and K3s node image were already available. The fresh node pulled its workload images. Chromium downloaded the exact Helm bundles and usage files. Argo CD reported Synced and Healthy at 81 seconds. The annotated target was UP at 93 seconds and the static target at 148 seconds. The alert fired at 320 seconds while the annotated target stayed UP. Restoring the working path returned the static target to UP and the alert to inactive at 379 seconds. The lab command exited successfully at 379.8 seconds. Across 125 samples, the lab containers peaked at 1.77 GiB and Docker’s VM peaked at 3.06 GiB in use. The older clusters were restarted after the measurement. This is an automated timing, with Docker and the dashboard already running.
 
 ## Sources
 

@@ -27,9 +27,10 @@ import { join } from 'node:path';
 import { defaultUsageValues, renderUsage } from './frontend/src/usage-values.ts';
 
 const fixtures = {
-  'app-project': { name: 'usage-guestbook', destinationNamespace: 'usage-guestbook' },
+  'app-project': { name: 'usage-guestbook', destinationNamespace: 'usage-guestbook', repoURL: 'https://github.com/argoproj/argocd-example-apps.git' },
   application: {
     name: 'usage-guestbook', project: 'usage-guestbook', destinationNamespace: 'usage-guestbook',
+    repoURL: 'https://github.com/argoproj/argocd-example-apps.git', targetRevision: 'HEAD', path: 'guestbook',
     automated: true, createNamespace: true,
   },
   'application-set': { name: 'usage-envs', destinationNamespace: 'usage-{{ .environment }}' },
