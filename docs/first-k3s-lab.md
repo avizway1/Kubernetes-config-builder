@@ -6,9 +6,79 @@ You can generate files in the dashboard before you set up a cluster. Use a dashb
 
 ## Before you start
 
-Start Docker and make sure `k3d`, `kubectl`, and `helm` are available in your terminal. You’ll need internet access for Git, charts, and container images. The lab uses a separate cluster, which you can delete when you finish.
+Start Docker. You’ll need internet access for the tools, Git, charts, and container images. You’ll use `k3d` to create a disposable Kubernetes cluster in Docker, `kubectl` to work with that cluster, and `helm` to install the packaged charts.
 
-In Docker Desktop, open **Settings → Resources → Advanced** and set **Memory limit** to at least **8 GB**. Run `k3d cluster list` and stop your other local clusters with `k3d cluster stop NAME` before starting the lab. You can bring them back afterward with `k3d cluster start NAME`. Docker shares its memory limit across all running clusters. [Docker Desktop memory settings](https://docs.docker.com/desktop/settings-and-maintenance/settings/#advanced)
+### macOS
+
+Open Terminal. If you don’t have `brew`, follow the [Homebrew setup instructions](https://brew.sh/) first. Then use the Homebrew commands listed in the [k3d docs](https://k3d.io/stable/#installation), [kubectl macOS docs](https://kubernetes.io/docs/tasks/tools/install-kubectl-macos/#install-with-homebrew-on-macos), and [Helm docs](https://helm.sh/docs/intro/install/#from-homebrew-macos):
+
+```sh
+brew install k3d
+brew install kubectl
+brew install helm
+```
+
+### Windows
+
+Use **WSL 2** for the lab so you can copy the Bash commands as written.
+
+1. If WSL isn’t installed, run `wsl --install` in PowerShell as administrator, restart Windows, and open Ubuntu. If you already use WSL, run `wsl -l -v` in PowerShell and check that your distro shows version `2`. See [Microsoft’s WSL setup instructions](https://learn.microsoft.com/en-us/windows/wsl/install).
+2. In Docker Desktop, enable **Settings → General → Use the WSL 2 based engine**, then enable your distro under **Settings → Resources → WSL Integration**. If that page is missing, [switch Docker Desktop to Linux containers](https://docs.docker.com/desktop/features/wsl/#enable-docker-in-a-wsl-2-distribution).
+3. In your WSL terminal, follow the Linux instructions below to install and check all three tools. Use the same distro for the rest of the lab, including the terminals you open for port forwarding. When you need to move browser downloads into the lab folder, run [`explorer.exe .`](https://learn.microsoft.com/en-us/windows/wsl/filesystems#view-your-current-directory-in-windows-file-explorer) from that folder to open it in Windows File Explorer.
+
+If you already use Scoop and also want the tools in PowerShell, install them there with the commands listed in the [k3d docs](https://k3d.io/stable/#other-installers), [kubectl Windows docs](https://kubernetes.io/docs/tasks/tools/install-kubectl-windows/#install-on-windows-using-chocolatey-scoop-or-winget), and [Helm docs](https://helm.sh/docs/intro/install/#from-scoop-windows). These install Windows executables separately from the Linux tools used in WSL.
+
+```powershell
+scoop install k3d
+scoop install kubectl
+scoop install helm
+```
+
+### Linux (including Windows WSL 2)
+
+**k3d:** Download the [official k3d installer](https://k3d.io/stable/#install-script):
+
+```sh
+curl -fsSL -o install-k3d.sh https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh
+```
+
+After reviewing the downloaded file, run `bash install-k3d.sh`.
+
+**kubectl:** Use the [official Linux binary instructions](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#install-kubectl-binary-with-curl-on-linux) to install a client compatible with this lab. The example installs [kubectl 1.37.1](https://kubernetes.io/releases/download/) and checks its SHA-256 before installing. Run `uname -m` to check your CPU: use `amd64` for `x86_64`, or change the first line to `arch=arm64` for `aarch64`.
+
+```sh
+arch=amd64
+kubectl_url="https://dl.k8s.io/release/v1.37.1/bin/linux/$arch/kubectl"
+curl -fsSLO "$kubectl_url" &&
+  curl -fsSLO "$kubectl_url.sha256" &&
+  echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check &&
+  sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+```
+
+**Helm:** Download the [official Helm 4 installer](https://helm.sh/docs/intro/install/#from-script):
+
+```sh
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4
+```
+
+After reviewing the downloaded file, run `chmod 700 get_helm.sh && ./get_helm.sh`.
+
+### Check the tools before creating a cluster
+
+Run these checks in the terminal you’ll use for the lab:
+
+```sh
+k3d version
+k3d cluster list
+kubectl version --client
+helm version
+```
+
+The three version commands should print a version. `k3d cluster list` should show your clusters or an empty list; either means k3d can reach Docker. If it reports a connection error, check that Docker is running and, on Windows, that WSL integration is enabled for your distro. For the lab’s Kubernetes 1.37 cluster, use kubectl 1.36, 1.37, or 1.38 ([kubectl version compatibility](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#before-you-begin)).
+
+Make at least **8 GB** available to Docker. On macOS, Linux Docker Desktop, or Windows with Hyper-V, check **Settings → Resources → Advanced → Memory limit**. With the Windows WSL 2 backend, check the [WSL 2 VM memory limit](https://learn.microsoft.com/en-us/windows/wsl/wsl-config#example-wslconfig-file) instead. With Docker Engine on Linux, check the host’s available memory. [Docker Desktop memory settings](https://docs.docker.com/desktop/settings-and-maintenance/settings/#advanced)
+
+If `k3d cluster list` showed any other local clusters running, stop them with `k3d cluster stop NAME` before starting the lab. Bring them back afterward with `k3d cluster start NAME`. Docker shares its available memory across the clusters.
 
 On an Apple Silicon Mac with the other clusters paused, the automated lab took **6 minutes 20 seconds** from cluster creation through alert recovery. The lab containers peaked at **1.77 GiB** of sampled memory, and the Docker VM peaked at **3.06 GiB** in use. The dashboard and prerequisites were already available. The fresh cluster still pulled its workload images.
 

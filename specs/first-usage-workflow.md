@@ -14,6 +14,8 @@ The selected mode, tool, template, and Kubernetes version, the current form valu
 4. **Fix the port clash and retain drafts.** Keep the dashboard at `http://localhost:8080`, forward Argo CD on `https://localhost:8081`, and use `http://localhost:9090` for Prometheus. Derive commands and URLs from the same settings in the app, YAML downloads, Helm bundle README, and lab guide. Keep independent drafts for each usage template and each tool’s installation settings throughout the current dashboard session, including template, tool, and mode switches. Switching comment density retains field edits.
 5. **Put the form and live output alongside each other.** On desktop, put the form on the left and live YAML, validation status, and export controls on the right. Put Next steps beside the generated file. Keep the three install stages in order and show their live preview in the right pane. On narrow screens, stack the panes and provide a direct jump between form and YAML. Keep Learning and Compact available.
 
+The lab guide links to official installation instructions for k3d, kubectl, and Helm on macOS, Windows, and Linux. It shows how to check each tool before creating a cluster and uses WSL 2 Bash on Windows so the lab commands can be copied as written.
+
 | Template | Prerequisite and action | What success looks like |
 | --- | --- | --- |
 | Argo CD AppProject | Argo CD is ready. Apply the generated AppProject before the lab Application. | The project exists and the Application can use its repo and destination. |
