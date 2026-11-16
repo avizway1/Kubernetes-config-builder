@@ -21,19 +21,19 @@ For Argo CD, apply the generated manifest to a cluster where Argo CD is installe
 
 For standalone Prometheus, apply the annotated Service with kubectl. For a custom scrape job or alert rule, follow the pinned Helm upgrade command at the top of the values download. Merge existing alert groups into the alert values file before upgrading.
 
-### Preview the first K3s lab
+### Run the first K3s lab
 
-The lab is planned for the next release. The v0.3.1 Docker image predates the lab. To try it now, run the dashboard from a checkout of `main` and follow the lab guide. You’ll deploy a sample app with Argo CD and use Prometheus to collect its metrics, trigger an alert, and verify recovery. [Run from source](#run-from-source-for-development) · [First K3s lab](docs/first-k3s-lab.md)
+Start the dashboard with the v0.4.0 image below, then follow the lab guide. You’ll deploy a sample app with Argo CD and use Prometheus to collect its metrics, trigger an alert, and verify recovery. [First K3s lab](docs/first-k3s-lab.md)
 
 ## Start with Docker
 
-With Docker Desktop or Docker Engine with Compose running, download **compose.yaml** from the [v0.3.1 release](https://github.com/cavula/Kubernetes-config-builder/releases/tag/v0.3.1) and run this in the download folder. To run the lab, follow the [preview instructions](#preview-the-first-k3s-lab).
+With Docker Desktop or Docker Engine with Compose running, download the [v0.4.0 compose.yaml](https://github.com/cavula/Kubernetes-config-builder/releases/download/v0.4.0/compose.yaml) and run this in the download folder.
 
 ```sh
 docker compose up -d
 ```
 
-Open [localhost:8080](http://localhost:8080). Compose pulls the prebuilt image for your machine from GitHub Container Registry. The first run needs internet access to download the image. Run `docker compose down` from the same folder to stop the dashboard.
+Open [localhost:8080](http://localhost:8080). Compose pulls `ghcr.io/cavula/kubernetes-config-builder:v0.4.0` for your machine. The first run needs internet access to download the image. Run `docker compose down` from the same folder to stop the dashboard.
 
 ### Build locally with Docker
 

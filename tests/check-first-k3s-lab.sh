@@ -145,9 +145,10 @@ fi
 
 unzip -q "$scratch/prometheus-helm-bundle.zip" -d "$scratch/prometheus"
 prometheus_bundle="$scratch/prometheus"
-helm install prometheus "$prometheus_bundle/prometheus-29.45.1.tgz" --namespace monitoring --create-namespace \
+prometheus_chart="$prometheus_bundle/prometheus-29.45.1.tgz"
+helm install prometheus "$prometheus_chart" --namespace monitoring --create-namespace \
   --values "$prometheus_bundle/prometheus-values.yaml" \
-  --set server.persistentVolume.enabled=false,server.global.evaluation_interval=5s --wait --timeout 5m
+  --set server.persistentVolume.enabled=false,server.global.evaluation_interval=5s --hide-notes --wait --timeout 5m
 checkpoint 'Monitoring Prometheus ready'
 
 for id in app-project application; do
@@ -248,8 +249,7 @@ PY
 
 check_prometheus annotated
 checkpoint 'Annotated Service target UP'
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-upgrade=(helm upgrade prometheus prometheus-community/prometheus --namespace monitoring --version 29.45.1 --reuse-values)
+upgrade=(helm upgrade prometheus "$prometheus_chart" --namespace monitoring --reuse-values --hide-notes)
 scrape_values=prometheus-scrape-job-values.yaml
 alert_values=prometheus-alert-rule-values.yaml
 "${upgrade[@]}" --values "$scratch/$scrape_values"

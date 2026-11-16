@@ -2,11 +2,11 @@
 
 Argo CD deploys **`sample-app`** from Git. The sample uses a pinned Prometheus binary because it already serves metrics at `/metrics`. You will install a separate **monitoring Prometheus** that collects those metrics, displays the target, and evaluates an alert. Open the monitoring Prometheus UI to see the results.
 
-The lab is planned for the next release. The v0.3.1 Docker image predates the `metrics-lab` examples. To try the lab now, use a running preview of `main` or start the dashboard from a checkout of `main`. You can generate the files before setting up a cluster. [Run from source](../README.md#run-from-source-for-development)
+Start the dashboard with release `v0.4.0` or later. You can generate the files before setting up a cluster. [Start with Docker](../README.md#start-with-docker)
 
 ## Before you start
 
-Start Docker. You’ll need internet access for the tools, Git, charts, and container images. You’ll use `k3d` to create a disposable Kubernetes cluster in Docker, `kubectl` to work with that cluster, and `helm` to install the packaged charts.
+Start Docker. Plan on internet access to download tools and container images and to let Argo CD read the lab’s Git repository. The dashboard bundles the chart files and their dependencies, so Helm installs and upgrades in this lab work without a chart repository connection. You’ll use `k3d` to create a disposable Kubernetes cluster in Docker, `kubectl` to work with that cluster, and `helm` to install the packaged charts.
 
 ### macOS
 
@@ -103,9 +103,14 @@ Look for `k3d-kcb-first-lab` and a node that is `Ready`. The lab uses port forwa
 
 ## 2. Install Argo CD and the monitoring Prometheus
 
-In the dashboard, choose **Install the tool → Argo CD → Minimal**. Download the Helm bundle and unzip it into a folder named `argo-cd`. Repeat for **Prometheus → Minimal** and unzip that bundle into `prometheus`. Put both folders inside `kcb-first-lab`, your terminal’s current folder.
+In the dashboard, open **Install the tool**. For each tool below, select the **Minimal** preset. Under **3. Deploy**, set **Template** to **Helm chart + values** and click **Download Helm bundle**. Unzip each bundle into its own folder inside `kcb-first-lab`, your terminal’s current folder.
 
-Run these commands to install the pinned charts. The monitoring Prometheus uses temporary storage for this lab and evaluates alert rules every five seconds.
+| Tool | Downloaded file | Extract into |
+| --- | --- | --- |
+| **Argo CD** | `argo-cd-helm-bundle.zip` | `kcb-first-lab/argo-cd/` |
+| **Prometheus** | `prometheus-helm-bundle.zip` | `kcb-first-lab/prometheus/` |
+
+Run these commands to install the pinned charts. The monitoring Prometheus uses temporary storage for this lab and evaluates alert rules every five seconds. `--hide-notes` suppresses the charts’ default access instructions. Use the port-forward below, which matches the lab’s monitoring URL. [Helm install](https://helm.sh/docs/helm/helm_install/)
 
 ```sh
 helm install argo-cd ./argo-cd/argo-cd-10.17.1.tgz \
@@ -114,7 +119,7 @@ helm install argo-cd ./argo-cd/argo-cd-10.17.1.tgz \
 helm install prometheus ./prometheus/prometheus-29.45.1.tgz \
   --namespace monitoring --create-namespace --values ./prometheus/prometheus-values.yaml \
   --set server.persistentVolume.enabled=false,server.global.evaluation_interval=5s \
-  --wait --timeout 5m
+  --hide-notes --wait --timeout 5m
 ```
 
 In a separate terminal with the same `KUBECONFIG`, start the monitoring Prometheus port-forward and leave it running for the scrape and alert checks.
@@ -127,7 +132,12 @@ Open the monitoring Prometheus UI on port 9090. [Monitoring Prometheus](http://l
 
 ## 3. Deploy `sample-app` with Argo CD
 
-In **Use the tool → Argo CD**, download the **AppProject** and **Application** examples. Keep their defaults. Put `app-project.yaml` and `application.yaml` in `kcb-first-lab`, then run:
+Open **Use the tool** and choose **Argo CD** under **Tool**. Select each **Usage template** below and click **Download**. Keep the default settings and click **Load lab example** on **Application** if you previously edited it or opened the Guestbook example. Put both files in `kcb-first-lab`.
+
+| Usage template | Downloaded file |
+| --- | --- |
+| **AppProject** | `app-project.yaml` |
+| **Application** | `application.yaml` |
 
 ```sh
 kubectl apply -f app-project.yaml
@@ -165,46 +175,55 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.pas
 
 ## 4. Watch the monitoring Prometheus collect metrics
 
-In **Use the tool → Prometheus**, download the default **Annotated metrics Service**, **Custom scrape job**, and **Alert rule** files. Put them in `kcb-first-lab`. Apply the Service and check that it has an endpoint. The Service selects the `sample-app` Pods that Argo CD deployed.
+Open **Use the tool** and choose **Prometheus** under **Tool**. Select each **Usage template** below, keep its defaults, and click **Download**. Put all three files in `kcb-first-lab`.
+
+| Usage template | Downloaded file |
+| --- | --- |
+| **Annotated metrics Service** | `service-scrape.yaml` |
+| **Custom scrape job** | `prometheus-scrape-job-values.yaml` |
+| **Alert rule** | `prometheus-alert-rule-values.yaml` |
+
+Apply the Service and check that it has an endpoint. The Service selects the `sample-app` Pods that Argo CD deployed.
 
 ```sh
 kubectl apply -f service-scrape.yaml
 kubectl -n metrics-lab get endpointslices --selector kubernetes.io/service-name=sample-app-metrics
 ```
 
-In the monitoring Prometheus **Targets** view, find the `sample-app-metrics` Service target in `kubernetes-service-endpoints` and wait for **UP**. Add the custom job and the alert to the fresh Helm release with the downloaded values. Existing releases can have other rule groups that need to be merged first. This lab has a fresh release with the default empty rules file.
+In the monitoring Prometheus **Targets** view, find the `sample-app-metrics` Service target in `kubernetes-service-endpoints` and wait for **UP**. Add the custom job and the alert to the fresh Helm release with the downloaded values. The commands below reuse the local chart archive from step 2. Use these lab commands when the dashboard’s general **Next steps** show a chart repository. Existing releases can have other rule groups to merge first. This lab has a fresh release with the default empty rules file.
 
 ```sh
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm upgrade prometheus prometheus-community/prometheus --namespace monitoring --version 29.45.1 \
-  --reuse-values --values prometheus-scrape-job-values.yaml
-helm upgrade prometheus prometheus-community/prometheus --namespace monitoring --version 29.45.1 \
-  --reuse-values --values prometheus-alert-rule-values.yaml
+helm upgrade prometheus ./prometheus/prometheus-29.45.1.tgz --namespace monitoring \
+  --hide-notes --reuse-values --values prometheus-scrape-job-values.yaml
+helm upgrade prometheus ./prometheus/prometheus-29.45.1.tgz --namespace monitoring \
+  --hide-notes --reuse-values --values prometheus-alert-rule-values.yaml
 ```
 
 Both discovery methods intentionally collect from the same endpoint so you can compare them. In Prometheus, find `sample-app-static` on **Targets** and confirm that `up{job="sample-app-static"}` returns `1` in the query view. Open **Alerts** and look for `SampleAppDown` in the inactive state.
 
 ## 5. Trigger the alert and recover
 
-In **Custom scrape job**, change **Metrics path** from `/metrics` to `/lab-missing`. Create a `broken` folder inside `kcb-first-lab` and save the new download there as `prometheus-scrape-job-values.yaml`. Keep the original file in `kcb-first-lab` for recovery.
+Open **Use the tool**, choose **Prometheus** under **Tool**, and select **Custom scrape job** under **Usage template**. Change **Metrics path** from `/metrics` to `/lab-missing`. Click **Download** to save a new `prometheus-scrape-job-values.yaml`. Create the `kcb-first-lab/broken/` folder and move the new file there. If your browser added a suffix, rename the new file to `prometheus-scrape-job-values.yaml` in that folder. Keep the original file in `kcb-first-lab` for recovery.
 
 ```sh
-helm upgrade prometheus prometheus-community/prometheus --namespace monitoring --version 29.45.1 \
-  --reuse-values --values broken/prometheus-scrape-job-values.yaml
+helm upgrade prometheus ./prometheus/prometheus-29.45.1.tgz --namespace monitoring \
+  --hide-notes --reuse-values --values broken/prometheus-scrape-job-values.yaml
 ```
 
 In the monitoring Prometheus, watch `sample-app-static` go **DOWN**. Its query returns `0` because the configured target answers on the wrong path. After the 15-second hold and the next evaluation, `SampleAppDown` becomes **Firing**. The separate auto-discovered target still uses `/metrics` and stays **UP**. This exercise checks alert evaluation. Sending notifications needs an Alertmanager configured with a receiver.
 
-Restore the original values file. The target returns to **UP**, and the alert returns to inactive.
+Restore the original `prometheus-scrape-job-values.yaml` from step 4. The target returns to **UP**, and the alert returns to inactive.
 
 ```sh
-helm upgrade prometheus prometheus-community/prometheus --namespace monitoring --version 29.45.1 \
-  --reuse-values --values prometheus-scrape-job-values.yaml
+helm upgrade prometheus ./prometheus/prometheus-29.45.1.tgz --namespace monitoring \
+  --hide-notes --reuse-values --values prometheus-scrape-job-values.yaml
 ```
 
 ## Optional: create two Applications with an ApplicationSet
 
-Use a fresh lab cluster for this follow-on. Repeat the Argo CD portion of step 2, choosing **Full chart defaults** because it runs the ApplicationSet controller. Leave the monitoring install for the main lab. Download the **ApplicationSet** example into the lab folder and apply it.
+Use a fresh lab cluster for this follow-on. Open **Install the tool**, choose **Argo CD** under **Tool**, and select **Full chart defaults** to run the ApplicationSet controller. Under **3. Deploy**, choose **Helm chart + values** under **Template** and click **Download Helm bundle** to save `argo-cd-helm-bundle.zip`. Extract it into `kcb-first-lab/argo-cd/` and run the Argo CD install command from step 2.
+
+Then open **Use the tool**, select **Argo CD** under **Tool** and **ApplicationSet** under **Usage template**, and click **Download**. Put `application-set.yaml` in `kcb-first-lab` and apply it.
 
 ```sh
 kubectl apply -f application-set.yaml

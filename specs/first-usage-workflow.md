@@ -16,7 +16,9 @@ The selected mode, tool, template, and Kubernetes version, the current form valu
 
 The lab guide links to official installation instructions for k3d, kubectl, and Helm on macOS, Windows, and Linux. It shows how to check each tool before creating a cluster and uses WSL 2 Bash on Windows so the lab commands can be copied as written.
 
-The Application’s Next steps and exported instructions use the same `kubectl patch` sync method as the lab. When automated sync is enabled, the instructions show how to check status with `kubectl`. The Argo CD UI is optional for watching progress. The README identifies the lab as a feature of the next release and points current reviewers to a preview of `main` or a source checkout.
+The Application’s Next steps and exported instructions use the same `kubectl patch` sync method as the lab. When automated sync is enabled, the instructions show how to check status with `kubectl`. The Argo CD UI is optional for watching progress. The README points learners to the prebuilt v0.4.0 image with the lab examples.
+
+The guide names the dashboard tab, tool, template or preset, and saved filename for each download. It hides the chart’s access notes so learners follow the lab’s port-forward. Every lab upgrade reuses the local chart archive from the install bundle. The cluster still needs access to the sample’s Git source and any uncached images.
 
 | Template | Prerequisite and action | What success looks like |
 | --- | --- | --- |
@@ -51,6 +53,8 @@ On November 15, 2026, a fresh K3s run on an ARM64 Mac reached cluster readiness 
 With the three older clusters paused, the login selector was corrected and verified on a running Argo CD v3.6.1 server. The fresh follow-up reached K3s readiness at 14 seconds, downloads at 16 seconds, both Helm installs at 75 seconds, and both port checks at 78 seconds. Login and manual sync reached the Argo CD controller. The project denied creation of the destination Namespace. Over 83 samples, the lab containers peaked at 1.62 GiB of working-set memory and the Docker VM peaked at 2.76 GiB in use. Sampling ended at about 4 minutes 22 seconds. These measurements cover the attempted run through the sync failure. The lab now creates the destination namespace explicitly and preserves the restricted project. The corrected full run and alert recovery remain to be verified. The fresh cluster was removed and all three older clusters were restarted.
 
 On November 16, 2026, the corrected run succeeded on fresh K3s 1.37.2 on an ARM64 Mac. The dashboard preview and K3s node image were already available. The fresh node pulled its workload images. Chromium downloaded the exact Helm bundles and usage files. Argo CD reported Synced and Healthy at 81 seconds. The annotated target was UP at 93 seconds and the static target at 148 seconds. The alert fired at 320 seconds while the annotated target stayed UP. Restoring the working path returned the static target to UP and the alert to inactive at 379 seconds. The lab command exited successfully at 379.8 seconds. Across 125 samples, the lab containers peaked at 1.77 GiB and Docker’s VM peaked at 3.06 GiB in use. The older clusters were restarted after the measurement. This is an automated timing, with Docker and the dashboard already running.
+
+Charan confirmed a separate manual run on a fresh cluster, including alert firing and recovery, and approved v0.4.0 after the guide fixes above.
 
 ## Sources
 
