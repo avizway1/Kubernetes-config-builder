@@ -8,16 +8,16 @@
         "label": "Service name",
         "description": "Name of the Service that exposes metrics.",
         "type": "text",
-        "default": "guestbook-metrics",
-        "example": "guestbook-metrics"
+        "default": "sample-app-metrics",
+        "example": "sample-app-metrics"
       },
       {
         "id": "namespace",
         "label": "Service namespace",
         "description": "Namespace of the Pods this Service selects.",
         "type": "text",
-        "default": "guestbook",
-        "example": "guestbook"
+        "default": "metrics-lab",
+        "example": "metrics-lab"
       },
       {
         "id": "selectorKey",
@@ -32,24 +32,24 @@
         "label": "Pod label value",
         "description": "Label value on the metrics Pods.",
         "type": "text",
-        "default": "guestbook",
-        "example": "guestbook"
+        "default": "sample-app",
+        "example": "sample-app"
       },
       {
         "id": "servicePort",
         "label": "Service port",
         "description": "Port clients use to reach the Service.",
         "type": "number",
-        "default": 8080,
-        "example": "8080"
+        "default": 9090,
+        "example": "9090"
       },
       {
         "id": "targetPort",
         "label": "Target port",
         "description": "Port the selected Pods actually listen on.",
         "type": "number",
-        "default": 8080,
-        "example": "8080"
+        "default": 9090,
+        "example": "9090"
       },
       {
         "id": "scheme",
@@ -81,16 +81,16 @@
         "label": "Job name",
         "description": "Choose a name that is unique in the release’s scrape configuration.",
         "type": "text",
-        "default": "guestbook-static",
-        "example": "guestbook-static"
+        "default": "sample-app-static",
+        "example": "sample-app-static"
       },
       {
         "id": "interval",
         "label": "Scrape interval",
         "description": "Time between requests to the target.",
         "type": "text",
-        "default": "30s",
-        "example": "30s"
+        "default": "10s",
+        "example": "10s"
       },
       {
         "id": "metricsPath",
@@ -116,8 +116,24 @@
         "label": "Target address",
         "description": "Host and port reachable from Prometheus.",
         "type": "text",
-        "default": "guestbook-metrics.guestbook.svc:8080",
-        "example": "guestbook-metrics.guestbook.svc:8080"
+        "default": "sample-app-metrics.metrics-lab.svc:9090",
+        "example": "sample-app-metrics.metrics-lab.svc:9090"
+      },
+      {
+        "id": "helmRelease",
+        "label": "Helm release name",
+        "description": "Release to upgrade. This is used in the command.",
+        "type": "text",
+        "default": "prometheus",
+        "example": "prometheus"
+      },
+      {
+        "id": "helmNamespace",
+        "label": "Helm release namespace",
+        "description": "Namespace of the Helm release. This is used in the command.",
+        "type": "text",
+        "default": "monitoring",
+        "example": "monitoring"
       }
     ]
   },
@@ -130,32 +146,32 @@
         "label": "Rule group",
         "description": "Name of the group Prometheus evaluates together.",
         "type": "text",
-        "default": "guestbook",
-        "example": "guestbook"
+        "default": "metrics-lab",
+        "example": "metrics-lab"
       },
       {
         "id": "alertName",
         "label": "Alert name",
         "description": "Name shown when this alert is pending or firing.",
         "type": "text",
-        "default": "GuestbookDown",
-        "example": "GuestbookDown"
+        "default": "SampleAppDown",
+        "example": "SampleAppDown"
       },
       {
         "id": "expression",
         "label": "PromQL expression",
         "description": "Condition Prometheus evaluates for the alert.",
         "type": "text",
-        "default": "up{job=\"guestbook-static\"} == 0",
-        "example": "up{job=\"guestbook-static\"} == 0"
+        "default": "up{job=\"sample-app-static\"} == 0",
+        "example": "up{job=\"sample-app-static\"} == 0"
       },
       {
         "id": "duration",
         "label": "Duration",
         "description": "How long the condition must hold before the alert fires.",
         "type": "text",
-        "default": "5m",
-        "example": "5m"
+        "default": "15s",
+        "example": "15s"
       },
       {
         "id": "severity",
@@ -170,8 +186,24 @@
         "label": "Summary",
         "description": "Short description to show when the alert fires.",
         "type": "text",
-        "default": "Guestbook metrics endpoint is down",
-        "example": "Guestbook metrics endpoint is down"
+        "default": "The lab workload’s metrics endpoint is down",
+        "example": "The lab workload’s metrics endpoint is down"
+      },
+      {
+        "id": "helmRelease",
+        "label": "Helm release name",
+        "description": "Release to upgrade. This is used in the command.",
+        "type": "text",
+        "default": "prometheus",
+        "example": "prometheus"
+      },
+      {
+        "id": "helmNamespace",
+        "label": "Helm release namespace",
+        "description": "Namespace of the Helm release. This is used in the command.",
+        "type": "text",
+        "default": "monitoring",
+        "example": "monitoring"
       }
     ]
   }

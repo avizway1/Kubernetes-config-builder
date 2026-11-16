@@ -1,6 +1,6 @@
 import { deepEqual, doesNotMatch, equal, match, ok } from 'node:assert/strict';
 import { test } from 'node:test';
-import { defaultUsageValues, renderUsage, usageFilename, usageTemplateIds, usageTemplates } from '../frontend/src/usage-values.ts';
+import { defaultUsageValues, guestbookExample, renderUsage, usageFilename, usageTemplateIds, usageTemplates } from '../frontend/src/usage-values.ts';
 import { usageNextSteps } from '../frontend/src/usage-next-steps.ts';
 
 test('each usage YAML line has a plain-language comment in Learning mode', () => {
@@ -26,15 +26,24 @@ test('each usage YAML line has a plain-language comment in Learning mode', () =>
 test('Application defaults to manual sync and exposes explicit deletion options', () => {
   const defaults = renderUsage('application', {}, false).text;
   match(defaults, /kind: Application\n/);
-  match(defaults, /- CreateNamespace=true\n/);
-  doesNotMatch(defaults, /automated:|prune:|selfHeal:|finalizers:/);
+  match(defaults, /# kubectl get namespace metrics-lab/);
+  doesNotMatch(defaults, /CreateNamespace=true|automated:|prune:|selfHeal:|finalizers:/);
 
-  const enabled = renderUsage('application', { automated: true, prune: true, selfHeal: true, cascade: true }, true);
+  const enabled = renderUsage('application', { automated: true, prune: true, selfHeal: true, cascade: true, createNamespace: true }, true);
   match(enabled.text, /resources-finalizer\.argocd\.argoproj\.io/);
+  match(enabled.text, /- CreateNamespace=true\n/);
   match(enabled.text, /If the AppProject forbids Namespace resources, create it separately[^\n]*\n +\- CreateNamespace=true/);
   match(enabled.text, /prune: true\n/);
   match(enabled.text, /selfHeal: true\n/);
   ok([...enabled.notes.values()].some(note => note.includes('Delete the managed resources')));
+});
+
+test('the lab and optional Guestbook explain the workload they deploy', () => {
+  match(renderUsage('application', {}, true).text, /sample-app.*pinned Prometheus binary.*\/metrics.*separate monitoring Prometheus/);
+  const guestbook = renderUsage('application', guestbookExample, true).text;
+  match(guestbook, /Guestbook’s AMD64-only image runs under AMD64 emulation/);
+  match(guestbook, /path: "guestbook"/);
+  match(guestbook, /- CreateNamespace=true\n/);
 });
 
 test('AppProject scopes its repository and destination to form values', () => {

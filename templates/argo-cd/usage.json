@@ -8,8 +8,8 @@
         "label": "Application name",
         "description": "Name of this resource in the Argo CD namespace.",
         "type": "text",
-        "default": "my-app",
-        "example": "my-app"
+        "default": "metrics-lab",
+        "example": "metrics-lab"
       },
       {
         "id": "namespace",
@@ -24,32 +24,32 @@
         "label": "Project",
         "description": "AppProject that governs the allowed repositories and destinations.",
         "type": "text",
-        "default": "default",
-        "example": "guestbook-project"
+        "default": "metrics-lab",
+        "example": "metrics-lab"
       },
       {
         "id": "repoURL",
         "label": "Git repository URL",
         "description": "Git repository that contains the Kubernetes manifests.",
         "type": "text",
-        "default": "https://github.com/argoproj/argocd-example-apps.git",
-        "example": "https://github.com/argoproj/argocd-example-apps.git"
+        "default": "https://github.com/cavula/Kubernetes-config-builder.git",
+        "example": "https://github.com/cavula/Kubernetes-config-builder.git"
       },
       {
         "id": "targetRevision",
         "label": "Git revision",
         "description": "Branch, tag, or commit that Argo CD reads.",
         "type": "text",
-        "default": "HEAD",
-        "example": "main"
+        "default": "95b61cc00c5b3fed68dedff79ea769955fb693c8",
+        "example": "95b61cc00c5b3fed68dedff79ea769955fb693c8"
       },
       {
         "id": "path",
         "label": "Path in repository",
         "description": "Directory containing the manifests to deploy.",
         "type": "text",
-        "default": "guestbook",
-        "example": "guestbook"
+        "default": "templates/lab/metrics-demo",
+        "example": "templates/lab/metrics-demo"
       },
       {
         "id": "destinationServer",
@@ -64,15 +64,15 @@
         "label": "Destination namespace",
         "description": "Namespace for namespaced resources that specify no namespace.",
         "type": "text",
-        "default": "guestbook",
-        "example": "guestbook"
+        "default": "metrics-lab",
+        "example": "metrics-lab"
       },
       {
         "id": "createNamespace",
         "label": "Create destination namespace",
         "description": "Create a missing namespace during sync when the AppProject allows Namespace resources.",
         "type": "boolean",
-        "default": true
+        "default": false
       },
       {
         "id": "automated",
@@ -113,8 +113,8 @@
         "label": "Project name",
         "description": "Name of this resource in the Argo CD namespace.",
         "type": "text",
-        "default": "guestbook-project",
-        "example": "guestbook-project"
+        "default": "metrics-lab",
+        "example": "metrics-lab"
       },
       {
         "id": "namespace",
@@ -129,8 +129,8 @@
         "label": "Allowed repository URL",
         "description": "Repository that Applications in this project may use.",
         "type": "text",
-        "default": "https://github.com/argoproj/argocd-example-apps.git",
-        "example": "https://github.com/argoproj/argocd-example-apps.git"
+        "default": "https://github.com/cavula/Kubernetes-config-builder.git",
+        "example": "https://github.com/cavula/Kubernetes-config-builder.git"
       },
       {
         "id": "destinationServer",
@@ -145,8 +145,8 @@
         "label": "Allowed destination namespace",
         "description": "Namespace that Applications in this project may deploy to.",
         "type": "text",
-        "default": "guestbook",
-        "example": "guestbook"
+        "default": "metrics-lab",
+        "example": "metrics-lab"
       }
     ]
   },
@@ -159,8 +159,8 @@
         "label": "ApplicationSet name",
         "description": "Name of this resource in the Argo CD namespace.",
         "type": "text",
-        "default": "guestbook-environments",
-        "example": "guestbook-environments"
+        "default": "metrics-lab-envs",
+        "example": "metrics-lab-envs"
       },
       {
         "id": "namespace",
@@ -199,24 +199,24 @@
         "label": "Git repository URL",
         "description": "Git repository that contains the Kubernetes manifests.",
         "type": "text",
-        "default": "https://github.com/argoproj/argocd-example-apps.git",
-        "example": "https://github.com/argoproj/argocd-example-apps.git"
+        "default": "https://github.com/cavula/Kubernetes-config-builder.git",
+        "example": "https://github.com/cavula/Kubernetes-config-builder.git"
       },
       {
         "id": "targetRevision",
         "label": "Git revision",
         "description": "Branch, tag, or commit that Argo CD reads.",
         "type": "text",
-        "default": "HEAD",
-        "example": "main"
+        "default": "95b61cc00c5b3fed68dedff79ea769955fb693c8",
+        "example": "95b61cc00c5b3fed68dedff79ea769955fb693c8"
       },
       {
         "id": "path",
         "label": "Path in repository",
         "description": "Directory containing the manifests to deploy.",
         "type": "text",
-        "default": "guestbook",
-        "example": "guestbook"
+        "default": "templates/lab/metrics-demo",
+        "example": "templates/lab/metrics-demo"
       },
       {
         "id": "destinationServer",
@@ -231,8 +231,8 @@
         "label": "Destination namespace pattern",
         "description": "Use {{ .environment }} to substitute each environment name.",
         "type": "text",
-        "default": "guestbook-{{ .environment }}",
-        "example": "guestbook-{{ .environment }}"
+        "default": "metrics-lab-{{ .environment }}",
+        "example": "metrics-lab-{{ .environment }}"
       }
     ]
   }

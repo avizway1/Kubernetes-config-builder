@@ -6,6 +6,16 @@ import { usageNextSteps } from './usage-next-steps.ts';
 export type UsageTemplateId = keyof typeof argoUsage | keyof typeof prometheusUsage;
 export type UsageValues = Record<string, string | boolean | number>;
 
+export const guestbookExample = {
+  name: 'my-app',
+  project: 'default',
+  repoURL: 'https://github.com/argoproj/argocd-example-apps.git',
+  targetRevision: 'HEAD',
+  path: 'guestbook',
+  destinationNamespace: 'guestbook',
+  createNamespace: true,
+};
+
 export const usageTemplateIds = {
   'argo-cd': ['application', 'app-project', 'application-set'],
   prometheus: ['service-scrape', 'scrape-job', 'alert-rule'],

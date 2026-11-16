@@ -2,7 +2,7 @@ import { ExportActions } from './ExportActions';
 import { Preview } from './Preview';
 import { UsageNextSteps } from './UsageNextSteps';
 import { useValidation, ValidationReport } from './ValidationStatus';
-import { defaultUsageValues, renderUsage, usageFilename, usageTemplateIds, usageTemplates, type UsageTemplateId, type UsageTool, type UsageValues } from './usage-values';
+import { defaultUsageValues, guestbookExample, renderUsage, usageFilename, usageTemplateIds, usageTemplates, type UsageTemplateId, type UsageTool, type UsageValues } from './usage-values';
 
 export type UsageDraft = { current: UsageValues; previous: UsageValues; learning: boolean };
 
@@ -45,6 +45,17 @@ export function UsageBuilder({ id, tool, kubernetesVersion, draft, projectValues
           </select>
         </label>
         <p className="usage-description">{template.description}</p>
+        <a href="https://github.com/cavula/Kubernetes-config-builder/blob/main/docs/first-k3s-lab.md">Start the first lab or set up a cluster</a>
+        {id === 'application' && (
+          <div className="example-actions" aria-label="Application examples">
+            <button className="example-button" type="button" onClick={() => onDraftChange({
+              ...values, current: defaults, previous: values.current,
+            })}>Load lab example</button>
+            <button className="example-button" type="button" onClick={() => onDraftChange({
+              ...values, current: { ...defaults, ...guestbookExample }, previous: values.current,
+            })}>Load Guestbook example</button>
+          </div>
+        )}
         {template.fields.map(field => {
           const errors = validation?.diagnostics.filter(issue => issue.severity === 'error' && issue.field === field.id) ?? [];
           const description = `usage-${field.id}-help`;
