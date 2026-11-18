@@ -49,6 +49,8 @@ export function usageFilename(id: UsageTemplateId) {
   return id === 'scrape-job' || id === 'alert-rule' ? `prometheus-${id}-values.yaml` : `${id}.yaml`;
 }
 
+const inCluster = 'https://kubernetes.default.svc';
+
 export function renderUsage(id: UsageTemplateId, values: UsageValues, learning: boolean) {
   const lines: string[] = [];
   const notes = new Map<number, string>();
@@ -76,121 +78,123 @@ export function renderUsage(id: UsageTemplateId, values: UsageValues, learning: 
       return typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : value;
     }
 
-    write(0, 'apiVersion: v1', 'Use the core Kubernetes API version that provides Services.');
-    write(0, 'kind: Service', 'Expose the selected Pods through a stable network address.');
-    write(0, 'metadata:', 'Name the Service and declare its scrape settings.');
-    write(2, `name: ${quoted('name')}`, 'Give clients a stable Service name.');
-    write(2, `namespace: ${quoted('namespace')}`, 'Create the Service in the namespace of the selected Pods.');
-    write(2, 'annotations:', 'Tell the chart’s Prometheus discovery job how to scrape these targets.');
-    write(4, 'prometheus.io/scrape: "true"', 'Include the Service’s EndpointSlice targets in the default scrape job.');
-    write(4, `prometheus.io/scheme: ${quoted('scheme')}`, 'Use this protocol to connect to each target.');
-    write(4, `prometheus.io/path: ${quoted('metricsPath')}`, 'Request metrics from this URL path.');
-    write(4, `prometheus.io/port: ${quote(String(port('targetPort')))}`, 'Scrape the port the selected Pods listen on.');
-    write(0, 'spec:', 'Define which Pods the Service reaches and which port it exposes.');
-    write(2, 'selector:', 'Find the Pods by matching their labels.');
-    write(4, `${quoted('selectorKey')}: ${quoted('selectorValue')}`, 'Select only Pods with this label key and value.');
-    write(2, 'ports:', 'Expose a port for clients that use the Service.');
-    write(4, `- port: ${quote(port('servicePort'))}`, 'Listen for clients on this Service port.');
-    write(6, `targetPort: ${quote(port('targetPort'))}`, 'Send traffic to this port on the selected Pods.');
+    write(0, 'apiVersion: v1', 'Services are part of the core Kubernetes API, version v1.');
+    write(0, 'kind: Service', 'A Service gives a group of Pods one stable name and address.');
+    write(0, 'metadata:', 'Basic details: the name, the namespace, and notes for Prometheus.');
+    write(2, `name: ${quoted('name')}`, 'Other apps use this name to reach the Pods.');
+    write(2, `namespace: ${quoted('namespace')}`, 'A namespace groups related objects. A Service only finds Pods in its own namespace.');
+    write(2, 'annotations:', 'Extra notes for other tools. Prometheus reads the ones below.');
+    write(4, 'prometheus.io/scrape: "true"', 'Ask Prometheus to collect metrics from the Pods behind this Service.');
+    write(4, `prometheus.io/scheme: ${quoted('scheme')}`, 'Use http or https to read the metrics.');
+    write(4, `prometheus.io/path: ${quoted('metricsPath')}`, 'The web path where the app shows its metrics.');
+    write(4, `prometheus.io/port: ${quote(String(port('targetPort')))}`, 'Prometheus reads metrics from this port on each Pod.');
+    write(0, 'spec:', 'What the Service does: which Pods it finds and which port it opens.');
+    write(2, 'selector:', 'Find Pods by their labels. Labels are name tags on Pods.');
+    write(4, `${quoted('selectorKey')}: ${quoted('selectorValue')}`, 'Only Pods with this exact label join the Service.');
+    write(2, 'ports:', 'The ports this Service opens.');
+    write(4, `- port: ${quote(port('servicePort'))}`, 'Other apps connect to the Service on this port.');
+    write(6, `targetPort: ${quote(port('targetPort'))}`, 'The Service forwards traffic to this port on the Pods.');
     return { text: lines.join('\n') + '\n', notes };
   }
 
   if (id === 'scrape-job' || id === 'alert-rule') {
     if (id === 'scrape-job') {
-      write(0, 'scrapeConfigs:', 'Add a job to the chart’s Prometheus scrape configuration.');
-      write(2, `${quoted('jobName')}:`, 'Use this key as the job name shown by Prometheus.');
-      write(4, 'enabled: true', 'Include this job when Helm builds the Prometheus configuration.');
-      write(4, `scrape_interval: ${quoted('interval')}`, 'Wait this long between requests to the target.');
-      write(4, `metrics_path: ${quoted('metricsPath')}`, 'Request metrics from this URL path.');
-      write(4, `scheme: ${quoted('scheme')}`, 'Use this protocol to connect to the target.');
-      write(4, 'static_configs:', 'Use an explicit target address for this job.');
-      write(6, '- targets:', 'List the addresses to scrape in this group.');
-      write(10, `- ${quoted('target')}`, 'Connect to this host and port from Prometheus.');
+      write(0, 'scrapeConfigs:', 'A scrape job tells Prometheus where to collect metrics. Add yours to the chart.');
+      write(2, `${quoted('jobName')}:`, 'The job name. Prometheus shows it on the Targets page.');
+      write(4, 'enabled: true', 'Turn this job on so the chart adds it.');
+      write(4, `scrape_interval: ${quoted('interval')}`, 'How often Prometheus collects metrics from the target.');
+      write(4, `metrics_path: ${quoted('metricsPath')}`, 'The web path where the target shows its metrics.');
+      write(4, `scheme: ${quoted('scheme')}`, 'Use http or https to read the metrics.');
+      write(4, 'static_configs:', 'List the targets by hand instead of finding them automatically.');
+      write(6, '- targets:', 'The addresses in this list.');
+      write(10, `- ${quoted('target')}`, 'Prometheus connects to this host and port.');
     } else {
-      write(0, 'serverFiles:', 'Add a file to the chart’s Prometheus configuration directory.');
-      write(2, 'alerting_rules.yml:', 'Use the rule file already loaded by the chart’s default configuration.');
-      write(4, 'groups:', 'Organize rules into groups that Prometheus evaluates together.');
-      write(6, `- name: ${quoted('groupName')}`, 'Name this evaluation group.');
-      write(8, 'rules:', 'List the alerts to evaluate in this group.');
-      write(10, `- alert: ${quoted('alertName')}`, 'Name the alert shown when its condition is met.');
-      write(12, `expr: ${quoted('expression')}`, 'Evaluate this PromQL condition to find affected targets.');
-      write(12, `for: ${quoted('duration')}`, 'Require the condition to stay true for this long before firing.');
-      write(12, 'labels:', 'Attach values that can be used for filtering and routing.');
-      write(14, `severity: ${quoted('severity')}`, 'Classify how urgent the alert is.');
-      write(12, 'annotations:', 'Attach readable context to the alert.');
-      write(14, `summary: ${quoted('summary')}`, 'Show a brief description of the problem.');
+      write(0, 'serverFiles:', 'Add files to the Prometheus server settings through the chart.');
+      write(2, 'alerting_rules.yml:', 'The chart already loads this alert rules file. Your rules go here.');
+      write(4, 'groups:', 'Rules live in groups. Prometheus checks each group together.');
+      write(6, `- name: ${quoted('groupName')}`, 'A name for this group of rules.');
+      write(8, 'rules:', 'The alerts in this group.');
+      write(10, `- alert: ${quoted('alertName')}`, 'The alert name you see when it fires.');
+      write(12, `expr: ${quoted('expression')}`, 'The PromQL query Prometheus checks. Each result it returns becomes an active alert.');
+      write(12, `for: ${quoted('duration')}`, 'The problem must last this long before the alert fires. Short blips are ignored.');
+      write(12, 'labels:', 'Tags on the alert, used to sort and route it.');
+      write(14, `severity: ${quoted('severity')}`, 'How urgent the alert is, such as warning or critical.');
+      write(12, 'annotations:', 'Readable details shown with the alert.');
+      write(14, `summary: ${quoted('summary')}`, 'A one-line description of the problem.');
     }
     return { text: lines.join('\n') + '\n', notes };
   }
 
   function applicationSpec(indent: number) {
-    write(indent, `project: ${quoted('project')}`, 'Use this AppProject to decide which sources and destinations are allowed.');
-    write(indent, 'source:', 'Choose the Git content Argo CD will render.');
-    write(indent + 2, `repoURL: ${quoted('repoURL')}`, 'Read manifests from this Git repository.');
-    write(indent + 2, `targetRevision: ${quoted('targetRevision')}`, 'Select the Git branch, tag, or commit to read.');
+    write(indent, `project: ${quoted('project')}`, 'The AppProject sets which Git repositories and namespaces this app may use.');
+    write(indent, 'source:', 'Where Argo CD finds your app’s files in Git.');
+    write(indent + 2, `repoURL: ${quoted('repoURL')}`, 'The Git repository that holds your Kubernetes files.');
+    write(indent + 2, `targetRevision: ${quoted('targetRevision')}`, 'The branch, tag, or commit to deploy. A commit ID pins one exact version.');
     const guestbook = input.path === 'guestbook' &&
       (input.repoURL === 'https://github.com/argoproj/argocd-example-apps.git' ||
        input.repoURL === 'https://github.com/argoproj/argocd-example-apps');
     const lab = input.path === 'templates/lab/metrics-demo' &&
       input.repoURL === 'https://github.com/cavula/Kubernetes-config-builder.git';
-    const pathNote = 'Read manifests from this directory inside the repository.';
+    const pathNote = 'The folder in the repository that holds the files.';
     write(indent + 2, `path: ${quoted('path')}`, guestbook
-      ? pathNote + ' Guestbook’s AMD64-only image runs under AMD64 emulation on ARM64 hosts such as Apple Silicon Macs.'
-      : lab ? 'Deploy sample-app from this folder. It uses a pinned Prometheus binary to serve /metrics. A separate monitoring Prometheus collects them.'
+      ? 'The Guestbook folder. Its AMD64-only image runs under AMD64 emulation on ARM64 hosts such as Apple Silicon Macs.'
+      : lab ? 'Deploy sample-app from here. A pinned Prometheus binary serves its /metrics. A separate monitoring Prometheus collects them.'
         : pathNote);
-    write(indent, 'destination:', 'Set where Argo CD sends the manifests.');
-    write(indent + 2, `server: ${quoted('destinationServer')}`, 'Select the target Kubernetes API server by its URL.');
-    write(indent + 2, `namespace: ${quoted('destinationNamespace')}`, 'Use this namespace for resources that do not specify one.');
+    write(indent, 'destination:', 'Where Argo CD deploys the app.');
+    write(indent + 2, `server: ${quoted('destinationServer')}`, input.destinationServer === inCluster
+      ? 'The cluster to deploy to. This address means the cluster Argo CD runs in.'
+      : 'The address of the cluster to deploy to.');
+    write(indent + 2, `namespace: ${quoted('destinationNamespace')}`, 'The namespace for app objects that do not set their own.');
   }
 
   const kind = usageTemplates[id].label;
-  write(0, 'apiVersion: argoproj.io/v1alpha1', 'Use the Argo CD API group and version that serve this resource.');
+  write(0, 'apiVersion: argoproj.io/v1alpha1', 'Argo CD adds this API to Kubernetes. It is not built in.');
   write(0, `kind: ${kind}`, usageTemplates[id].description);
-  write(0, 'metadata:', 'Identify this resource in Kubernetes.');
-  write(2, `name: ${quoted('name')}`, `Give this ${kind} a name in its namespace.`);
-  write(2, `namespace: ${quoted('namespace')}`, 'Place the resource in a namespace that Argo CD watches.');
+  write(0, 'metadata:', 'Basic details: the name and namespace of this object.');
+  write(2, `name: ${quoted('name')}`, `A name for this ${kind}, unique in its namespace.`);
+  write(2, `namespace: ${quoted('namespace')}`, 'Put it in the namespace Argo CD watches, usually argocd.');
 
   if (id === 'application' && input.cascade) {
-    write(2, 'finalizers:', 'Let Argo CD finish cleanup before Kubernetes removes the Application.');
-    write(4, '- resources-finalizer.argocd.argoproj.io', 'Delete the managed resources when this Application is deleted.');
+    write(2, 'finalizers:', 'Kubernetes waits for Argo CD to clean up before deleting this Application.');
+    write(4, '- resources-finalizer.argocd.argoproj.io', 'Deleting this Application also deletes the objects it deployed.');
   }
 
   if (id === 'application') {
-    write(0, 'spec:', 'Describe the app to deploy and how it should sync.');
+    write(0, 'spec:', 'What to deploy and how to keep it in sync with Git.');
     applicationSpec(2);
     if (input.automated || input.createNamespace) {
-      write(2, 'syncPolicy:', 'Choose how Argo CD applies changes to the target cluster.');
+      write(2, 'syncPolicy:', 'Rules for how Argo CD applies changes from Git.');
     }
     if (input.automated) {
-      write(4, 'automated:', 'Automatically sync changes from Git when this app is out of sync.');
-      write(6, `prune: ${input.prune === true}`, input.prune ? 'Delete resources that have been removed from Git.' : 'Keep live resources when their manifests are removed from Git.');
-      write(6, `selfHeal: ${input.selfHeal === true}`, input.selfHeal ? 'Restore the Git state if someone changes a live resource.' : 'Leave live changes alone until a sync is triggered for another reason.');
+      write(4, 'automated:', 'Apply Git changes automatically, without a manual sync.');
+      write(6, `prune: ${input.prune === true}`, input.prune ? 'Delete objects that were removed from Git.' : 'Keep objects even after they are removed from Git.');
+      write(6, `selfHeal: ${input.selfHeal === true}`, input.selfHeal ? 'Undo manual changes so the cluster matches Git again.' : 'Leave manual changes in place until the next sync.');
     }
     if (input.createNamespace) {
-      write(4, 'syncOptions:', 'Pass options to the sync operation.');
-      write(6, '- CreateNamespace=true', 'Create a missing namespace during sync. If the AppProject forbids Namespace resources, create it separately and leave this option off.');
+      write(4, 'syncOptions:', 'Extra options for each sync.');
+      write(6, '- CreateNamespace=true', 'Create the namespace if missing. If the AppProject blocks Namespace objects, create it yourself instead.');
     }
   } else if (id === 'app-project') {
-    write(0, 'spec:', 'Set the deployment boundaries for Applications that use this project.');
-    write(2, 'sourceRepos:', 'List Git repositories this project allows.');
-    write(4, `- ${quoted('repoURL')}`, 'Permit Applications to read manifests from this repository.');
-    write(2, 'destinations:', 'List cluster and namespace pairs where the project can deploy.');
-    write(4, `- server: ${quoted('destinationServer')}`, 'Permit deployment to this Kubernetes API server.');
-    write(6, `namespace: ${quoted('destinationNamespace')}`, 'Limit deployments on that server to this namespace.');
+    write(0, 'spec:', 'The limits for every Application in this project.');
+    write(2, 'sourceRepos:', 'Git repositories that Applications in this project may use.');
+    write(4, `- ${quoted('repoURL')}`, 'Allow this repository.');
+    write(2, 'destinations:', 'Clusters and namespaces where these Applications may deploy.');
+    write(4, `- server: ${quoted('destinationServer')}`, 'Allow this cluster.');
+    write(6, `namespace: ${quoted('destinationNamespace')}`, 'Allow only this namespace on that cluster.');
   } else {
-    write(0, 'spec:', 'Describe how to generate Applications and what each one should deploy.');
-    write(2, 'goTemplate: true', 'Let the controller substitute Go template expressions in string fields.');
-    write(2, 'goTemplateOptions:', 'Set how Go templates handle input errors.');
-    write(4, '- missingkey=error', 'Fail generation if a template refers to a missing field.');
-    write(2, 'generators:', 'List where the controller gets its template inputs.');
-    write(4, '- list:', 'Generate one Application for each item in this list.');
-    write(8, 'elements:', 'Provide the environment value for each generated Application.');
-    write(10, `- environment: ${quoted('firstEnvironment')}`, 'Generate an Application for the first environment.');
-    write(10, `- environment: ${quoted('secondEnvironment')}`, 'Generate an Application for the second environment.');
-    write(2, 'template:', 'Provide the Application definition that each environment fills in.');
-    write(4, 'metadata:', 'Set the identity of each generated Application.');
-    write(6, `name: ${quote(`${input.name}-{{ .environment }}`)}`, 'Append the environment to give each generated Application a distinct name.');
-    write(4, 'spec:', 'Describe the app each generated Application will manage.');
+    write(0, 'spec:', 'How to create several Applications from one template.');
+    write(2, 'goTemplate: true', 'Fill in placeholders such as {{ .environment }} in the template below.');
+    write(2, 'goTemplateOptions:', 'Settings for how placeholders are filled in.');
+    write(4, '- missingkey=error', 'Stop with an error if a placeholder has no value.');
+    write(2, 'generators:', 'Where the placeholder values come from.');
+    write(4, '- list:', 'Create one Application for each item in this list.');
+    write(8, 'elements:', 'The items. Each one sets an environment value.');
+    write(10, `- environment: ${quoted('firstEnvironment')}`, 'First item: one Application for this environment.');
+    write(10, `- environment: ${quoted('secondEnvironment')}`, 'Second item: one Application for this environment.');
+    write(2, 'template:', 'The Application that each item fills in.');
+    write(4, 'metadata:', 'Details for each created Application.');
+    write(6, `name: ${quote(`${input.name}-{{ .environment }}`)}`, 'Add the environment to the name so each Application is unique.');
+    write(4, 'spec:', 'What each created Application deploys.');
     applicationSpec(6);
   }
 

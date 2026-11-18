@@ -49,7 +49,7 @@ test('usage validation distinguishes field errors, local checks, and cluster che
     const page = await browser.newPage();
     const validation = page.locator('.validation-status');
     const name = page.getByRole('textbox', { name: 'Application name', exact: true });
-    await page.goto(process.env.KCB_APP_URL ?? 'http://127.0.0.1:5173');
+    await page.goto(`${process.env.KCB_APP_URL ?? 'http://127.0.0.1:5173'}#build`);
     await validation.getByText(/Local checks passed:.*Argo CD CRD schema/).waitFor();
     const usageTemplate = page.getByRole('combobox', { name: 'Usage template' });
     await usageTemplate.selectOption('app-project');
@@ -112,7 +112,7 @@ test('both tools update both preview formats, highlight edits, and explain YAML 
   try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, permissions: ['clipboard-read', 'clipboard-write'] });
     page.setDefaultTimeout(8000);
-    await page.goto(process.env.KCB_APP_URL ?? 'http://127.0.0.1:5173');
+    await page.goto(`${process.env.KCB_APP_URL ?? 'http://127.0.0.1:5173'}#build`);
     assert.equal(await page.getByRole('button', { name: 'Use the tool' }).getAttribute('aria-pressed'), 'true');
     const usageTemplate = page.getByRole('combobox', { name: 'Usage template' });
     const nextSteps = page.locator('[aria-labelledby="usage-next-steps"]');

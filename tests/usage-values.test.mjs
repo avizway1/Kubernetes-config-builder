@@ -23,6 +23,32 @@ test('each usage YAML line has a plain-language comment in Learning mode', () =>
   }
 });
 
+// Beginner learning path: every note and field help stays short enough for a first-time learner.
+const wordLimit = 20;
+const words = text => text.trim().split(/\s+/).length;
+
+test('usage notes and field help stay within the beginner word limit', () => {
+  const variants = [{}, { automated: true, prune: true, selfHeal: true, cascade: true, createNamespace: true },
+    { prune: false, selfHeal: false, automated: true }, guestbookExample, { destinationServer: 'https://cluster.example' }];
+  for (const id of Object.keys(usageTemplates)) {
+    ok(words(usageTemplates[id].description) <= wordLimit, `${id} description`);
+    for (const field of usageTemplates[id].fields) {
+      ok(words(field.description) <= wordLimit, `${id}.${field.id}: ${field.description}`);
+    }
+    for (const variant of variants) {
+      for (const note of renderUsage(id, variant, true).notes.values()) {
+        ok(words(note) <= wordLimit, `${id}: ${note}`);
+      }
+    }
+  }
+});
+
+test('in-cluster destination is explained only for the in-cluster address', () => {
+  const notes = values => [...renderUsage('application', values, true).notes.values()];
+  ok(notes({}).some(note => note.includes('the cluster Argo CD runs in')));
+  ok(!notes({ destinationServer: 'https://cluster.example' }).some(note => note.includes('the cluster Argo CD runs in')));
+});
+
 test('Application defaults to manual sync and exposes explicit deletion options', () => {
   const defaults = renderUsage('application', {}, false).text;
   match(defaults, /kind: Application\n/);
@@ -32,10 +58,10 @@ test('Application defaults to manual sync and exposes explicit deletion options'
   const enabled = renderUsage('application', { automated: true, prune: true, selfHeal: true, cascade: true, createNamespace: true }, true);
   match(enabled.text, /resources-finalizer\.argocd\.argoproj\.io/);
   match(enabled.text, /- CreateNamespace=true\n/);
-  match(enabled.text, /If the AppProject forbids Namespace resources, create it separately[^\n]*\n +\- CreateNamespace=true/);
+  match(enabled.text, /If the AppProject blocks Namespace objects, create it yourself instead[^\n]*\n +\- CreateNamespace=true/);
   match(enabled.text, /prune: true\n/);
   match(enabled.text, /selfHeal: true\n/);
-  ok([...enabled.notes.values()].some(note => note.includes('Delete the managed resources')));
+  ok([...enabled.notes.values()].some(note => note.includes('also deletes the objects it deployed')));
 });
 
 test('Application exports show kubectl sync and make watching in the UI optional', () => {
@@ -59,7 +85,7 @@ test('Application exports show kubectl sync and make watching in the UI optional
 test('the lab and optional Guestbook explain the workload they deploy', () => {
   match(renderUsage('application', {}, true).text, /sample-app.*pinned Prometheus binary.*\/metrics.*separate monitoring Prometheus/);
   const guestbook = renderUsage('application', guestbookExample, true).text;
-  match(guestbook, /Guestbook’s AMD64-only image runs under AMD64 emulation/);
+  match(guestbook, /Guestbook folder\. Its AMD64-only image runs under AMD64 emulation/);
   match(guestbook, /path: "guestbook"/);
   match(guestbook, /- CreateNamespace=true\n/);
 });

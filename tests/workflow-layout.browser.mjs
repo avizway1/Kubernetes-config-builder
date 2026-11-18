@@ -10,7 +10,7 @@ test('usage and install previews share the viewport and retain independent draft
   try {
     const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
     page.setDefaultTimeout(8000);
-    await page.goto(process.env.KCB_APP_URL ?? 'http://127.0.0.1:5173');
+    await page.goto(`${process.env.KCB_APP_URL ?? 'http://127.0.0.1:5173'}#build`);
 
     async function assertDesktopPanes() {
       const settings = await page.locator('.builder-options').boundingBox();

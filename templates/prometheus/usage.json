@@ -1,12 +1,12 @@
 {
   "service-scrape": {
     "label": "Annotated metrics Service",
-    "description": "Expose an existing workload’s metrics to the chart’s default Service discovery job.",
+    "description": "Let Prometheus find and collect metrics from Pods you already run.",
     "fields": [
       {
         "id": "name",
         "label": "Service name",
-        "description": "Name of the Service that exposes metrics.",
+        "description": "A name for the Service. Other apps use it to reach the Pods.",
         "type": "text",
         "default": "sample-app-metrics",
         "example": "sample-app-metrics"
@@ -14,7 +14,7 @@
       {
         "id": "namespace",
         "label": "Service namespace",
-        "description": "Namespace of the Pods this Service selects.",
+        "description": "Must match the namespace of the Pods this Service finds.",
         "type": "text",
         "default": "metrics-lab",
         "example": "metrics-lab"
@@ -22,7 +22,7 @@
       {
         "id": "selectorKey",
         "label": "Pod label key",
-        "description": "Label key used to select the metrics Pods.",
+        "description": "The label name on your metrics Pods, such as app.",
         "type": "text",
         "default": "app",
         "example": "app"
@@ -30,7 +30,7 @@
       {
         "id": "selectorValue",
         "label": "Pod label value",
-        "description": "Label value on the metrics Pods.",
+        "description": "The label value on your metrics Pods.",
         "type": "text",
         "default": "sample-app",
         "example": "sample-app"
@@ -38,7 +38,7 @@
       {
         "id": "servicePort",
         "label": "Service port",
-        "description": "Port clients use to reach the Service.",
+        "description": "The port other apps use to reach the Service.",
         "type": "number",
         "default": 9090,
         "example": "9090"
@@ -46,7 +46,7 @@
       {
         "id": "targetPort",
         "label": "Target port",
-        "description": "Port the selected Pods actually listen on.",
+        "description": "The port your Pods listen on.",
         "type": "number",
         "default": 9090,
         "example": "9090"
@@ -54,7 +54,7 @@
       {
         "id": "scheme",
         "label": "Scheme",
-        "description": "Protocol served by the metrics endpoint.",
+        "description": "Use http or https to read the metrics.",
         "type": "select",
         "default": "http",
         "choices": [
@@ -65,7 +65,7 @@
       {
         "id": "metricsPath",
         "label": "Metrics path",
-        "description": "URL path where the target serves metrics.",
+        "description": "The web path where your app shows its metrics.",
         "type": "text",
         "default": "/metrics",
         "example": "/metrics"
@@ -74,12 +74,12 @@
   },
   "scrape-job": {
     "label": "Custom scrape job",
-    "description": "Add a named static target to an existing standalone Prometheus Helm release.",
+    "description": "Tell an existing Prometheus install to collect metrics from one fixed address.",
     "fields": [
       {
         "id": "jobName",
         "label": "Job name",
-        "description": "Choose a name that is unique in the release’s scrape configuration.",
+        "description": "A name for this scrape job. It must be unique in this Prometheus install.",
         "type": "text",
         "default": "sample-app-static",
         "example": "sample-app-static"
@@ -87,7 +87,7 @@
       {
         "id": "interval",
         "label": "Scrape interval",
-        "description": "Time between requests to the target.",
+        "description": "How often Prometheus collects metrics from the target.",
         "type": "text",
         "default": "10s",
         "example": "10s"
@@ -95,7 +95,7 @@
       {
         "id": "metricsPath",
         "label": "Metrics path",
-        "description": "URL path where the target serves metrics.",
+        "description": "The web path where the target shows its metrics.",
         "type": "text",
         "default": "/metrics",
         "example": "/metrics"
@@ -103,7 +103,7 @@
       {
         "id": "scheme",
         "label": "Scheme",
-        "description": "Protocol served by the metrics endpoint.",
+        "description": "Use http or https to read the metrics.",
         "type": "select",
         "default": "http",
         "choices": [
@@ -114,7 +114,7 @@
       {
         "id": "target",
         "label": "Target address",
-        "description": "Host and port reachable from Prometheus.",
+        "description": "Host and port that Prometheus can reach.",
         "type": "text",
         "default": "sample-app-metrics.metrics-lab.svc:9090",
         "example": "sample-app-metrics.metrics-lab.svc:9090"
@@ -122,7 +122,7 @@
       {
         "id": "helmRelease",
         "label": "Helm release name",
-        "description": "Release to upgrade. This is used in the command.",
+        "description": "The Helm release to upgrade. Used in the command.",
         "type": "text",
         "default": "prometheus",
         "example": "prometheus"
@@ -130,7 +130,7 @@
       {
         "id": "helmNamespace",
         "label": "Helm release namespace",
-        "description": "Namespace of the Helm release. This is used in the command.",
+        "description": "The namespace of the Helm release. Used in the command.",
         "type": "text",
         "default": "monitoring",
         "example": "monitoring"
@@ -139,12 +139,12 @@
   },
   "alert-rule": {
     "label": "Alert rule",
-    "description": "Evaluate a PromQL condition in an existing standalone Prometheus Helm release.",
+    "description": "Get an alert when a PromQL condition stays true. Adds to an existing Prometheus install.",
     "fields": [
       {
         "id": "groupName",
         "label": "Rule group",
-        "description": "Name of the group Prometheus evaluates together.",
+        "description": "A name for the group of rules Prometheus checks together.",
         "type": "text",
         "default": "metrics-lab",
         "example": "metrics-lab"
@@ -152,7 +152,7 @@
       {
         "id": "alertName",
         "label": "Alert name",
-        "description": "Name shown when this alert is pending or firing.",
+        "description": "The alert name you see when it is pending or firing.",
         "type": "text",
         "default": "SampleAppDown",
         "example": "SampleAppDown"
@@ -160,7 +160,7 @@
       {
         "id": "expression",
         "label": "PromQL expression",
-        "description": "Condition Prometheus evaluates for the alert.",
+        "description": "The PromQL query that finds the problem.",
         "type": "text",
         "default": "up{job=\"sample-app-static\"} == 0",
         "example": "up{job=\"sample-app-static\"} == 0"
@@ -168,7 +168,7 @@
       {
         "id": "duration",
         "label": "Duration",
-        "description": "How long the condition must hold before the alert fires.",
+        "description": "How long the problem must last before the alert fires.",
         "type": "text",
         "default": "15s",
         "example": "15s"
@@ -176,7 +176,7 @@
       {
         "id": "severity",
         "label": "Severity",
-        "description": "Label to use for routing or display.",
+        "description": "How urgent the alert is. Used to sort and route alerts.",
         "type": "text",
         "default": "warning",
         "example": "warning"
@@ -184,7 +184,7 @@
       {
         "id": "summary",
         "label": "Summary",
-        "description": "Short description to show when the alert fires.",
+        "description": "A one-line description shown when the alert fires.",
         "type": "text",
         "default": "The lab workload’s metrics endpoint is down",
         "example": "The lab workload’s metrics endpoint is down"
@@ -192,7 +192,7 @@
       {
         "id": "helmRelease",
         "label": "Helm release name",
-        "description": "Release to upgrade. This is used in the command.",
+        "description": "The Helm release to upgrade. Used in the command.",
         "type": "text",
         "default": "prometheus",
         "example": "prometheus"
@@ -200,7 +200,7 @@
       {
         "id": "helmNamespace",
         "label": "Helm release namespace",
-        "description": "Namespace of the Helm release. This is used in the command.",
+        "description": "The namespace of the Helm release. Used in the command.",
         "type": "text",
         "default": "monitoring",
         "example": "monitoring"

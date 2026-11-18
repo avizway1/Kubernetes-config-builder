@@ -12,7 +12,7 @@ const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_P
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   page.setDefaultTimeout(10000);
-  await page.goto(process.env.KCB_APP_URL ?? 'http://127.0.0.1:8080');
+  await page.goto(`${process.env.KCB_APP_URL ?? 'http://127.0.0.1:8080'}#build`);
   const tool = page.getByRole('combobox', { name: /^Tool/ });
   const template = page.getByRole('combobox', { name: 'Usage template' });
   const button = name => page.getByRole('button', { name, exact: true });

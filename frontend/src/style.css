@@ -1,13 +1,44 @@
+/* Aviz Academy brand colours, sampled from the logo. See specs/beginner-learning-path.md. */
 :root {
+  --brand-navy: #233483;
+  --brand-navy-dark: #1f2865;
+  --brand-orange: #f69327;
+  --brand-blue: #408ccb;
+  --text: #17253b;
+  --text-muted: #44526b;
+  --page-bg: #f3f6fb;
+  --surface: #ffffff;
+  --border: #d5dfed;
+  --control-border: #8295af;
+  --accent-soft: #eef4ff;
+  --highlight: #dbeafe;
+  --sticky-bg: #f1f5fb;
+  --error: #9b2020;
+  --focus: #233483;
+
   font-family: system-ui, sans-serif;
-  color: #17253b;
-  background: #f3f6fb;
+  color: var(--text);
+  background: var(--page-bg);
+}
+
+body {
+  margin: 0;
+  background: var(--page-bg);
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
 }
 
 main {
+  box-sizing: border-box;
+  width: 100%;
   max-width: 84rem;
-  margin: 2rem auto;
+  margin: 1.25rem auto;
   padding: 0 1.25rem;
+  flex: 1;
 }
 
 h1 {
@@ -15,14 +46,309 @@ h1 {
   letter-spacing: -0.045em;
 }
 
+a {
+  color: var(--brand-navy);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Header: the navy wordmark needs a white background. */
+.site-header {
+  background: var(--surface);
+  border-bottom: 4px solid var(--brand-orange);
+}
+
+.site-header-inner {
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  max-width: 84rem;
+  margin: 0 auto;
+  padding: 0.6rem 1.25rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  color: var(--brand-navy-dark);
+  text-decoration: none;
+}
+
+.brand img {
+  display: block;
+  height: 44px;
+  width: auto;
+}
+
+.product-name {
+  padding-left: 0.9rem;
+  border-left: 2px solid var(--border);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+}
+
+.site-nav a {
+  padding: 0.4rem 0;
+  border-bottom: 3px solid transparent;
+  color: var(--brand-navy);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.site-nav a:hover,
+.site-nav a[aria-current='page'] {
+  border-bottom-color: var(--brand-orange);
+}
+
+.site-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  padding: 1.25rem max(1.25rem, calc((100% - 84rem) / 2 + 1.25rem));
+  color: #ffffff;
+  background: var(--brand-navy-dark);
+}
+
+.site-footer p {
+  margin: 0;
+}
+
+.site-footer a {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Home: two starting options. These pages are not form sections, so undo the section grid. */
+section.home,
+section.learn {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.home h1,
+.learn > h1 {
+  margin: 0.5rem 0 0.5rem;
+  color: var(--brand-navy-dark);
+}
+
+.lead {
+  max-width: 46rem;
+  margin: 0 0 1.5rem;
+  color: var(--text-muted);
+  font-size: 1.125rem;
+}
+
+.doors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+  gap: 1.25rem;
+}
+
+.door {
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-top: 6px solid var(--brand-blue);
+  border-radius: 0.75rem;
+  color: var(--text);
+  background: var(--surface);
+  text-decoration: none;
+}
+
+.door-primary {
+  border-top-color: var(--brand-orange);
+}
+
+.door h2 {
+  margin: 0;
+  color: var(--brand-navy-dark);
+  font-size: 1.5rem;
+}
+
+.door p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.door:hover {
+  border-color: var(--brand-navy);
+}
+
+.door-action {
+  justify-self: start;
+  margin-top: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: 0.4rem;
+  color: #ffffff;
+  background: var(--brand-navy);
+  font-weight: 700;
+}
+
+/* Orange with navy text keeps 5.9:1 contrast. */
+.door-primary .door-action {
+  color: var(--brand-navy-dark);
+  background: var(--brand-orange);
+}
+
+/* Learn: lesson overview. */
+.level {
+  display: block;
+  margin-block: 1.25rem;
+}
+
+.level > h2 {
+  margin: 0 0 0.25rem;
+  color: var(--brand-navy-dark);
+  font-size: 1.3rem;
+}
+
+.level > p {
+  margin: 0 0 1rem;
+  color: var(--text-muted);
+}
+
+.lesson-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lesson {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--page-bg);
+}
+
+.lesson-text {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+
+.lesson h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.lesson p {
+  margin: 0.2rem 0 0;
+}
+
+.lesson-objects {
+  color: var(--brand-navy);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9rem;
+}
+
+.lesson-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.lesson-meta button,
+.lab-link {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--brand-navy);
+  border-radius: 0.4rem;
+  color: #ffffff;
+  background: var(--brand-navy);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.coming-soon {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-anywhere {
+  color: #1d6b3a;
+  background: #eaf6ee;
+}
+
+.badge-eks {
+  color: var(--brand-navy-dark);
+  background: #fde9d2;
+}
+
+.badge-k3s {
+  color: var(--text-muted);
+  background: var(--surface);
+}
+
+/* Build: keep the heading compact so the form and live YAML stay in the first viewport. */
+.build-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.build-heading h1 {
+  margin: 0;
+  color: var(--brand-navy-dark);
+  font-size: 1.6rem;
+  letter-spacing: -0.02em;
+}
+
 section {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
   gap: 1rem;
   padding: 1.25rem;
-  border: 1px solid #d5dfed;
+  border: 1px solid var(--border);
   border-radius: 0.75rem;
-  background: white;
+  background: var(--surface);
 }
 
 label {
@@ -33,9 +359,9 @@ label {
 
 select {
   padding: 0.6rem;
-  border: 1px solid #8295af;
+  border: 1px solid var(--control-border);
   border-radius: 0.4rem;
-  background: white;
+  background: var(--surface);
   color: inherit;
   font: inherit;
 }
@@ -47,14 +373,14 @@ select {
 
 .preview {
   height: 34rem;
-  border: 1px solid #d5dfed;
-  background: white;
+  border: 1px solid var(--border);
+  background: var(--surface);
 }
 
 .builder input:not([type='checkbox']) {
   min-width: 0;
   padding: 0.5rem;
-  border: 1px solid #8295af;
+  border: 1px solid var(--control-border);
   border-radius: 0.4rem;
   font: inherit;
 }
@@ -84,7 +410,7 @@ select {
 }
 
 .comparison-value-line {
-  background: #dbeafe;
+  background: var(--highlight);
 }
 
 @media (max-width: 800px) {
@@ -104,7 +430,7 @@ main:has(.builder-comparing) {
 
 .usage-field-error {
   display: block;
-  color: #9b2020;
+  color: var(--error);
   overflow-wrap: anywhere;
 }
 
@@ -183,10 +509,10 @@ main:has(.builder-comparing) {
 .example-button {
   justify-self: start;
   padding: 0.45rem 0.75rem;
-  border: 1px solid #8295af;
+  border: 1px solid var(--control-border);
   border-radius: 0.4rem;
-  color: #153763;
-  background: #eef4ff;
+  color: var(--brand-navy);
+  background: var(--accent-soft);
   font: inherit;
   cursor: pointer;
 }
@@ -234,7 +560,7 @@ main:has(.builder-comparing) {
   .pane-jump {
     display: inline-block;
     justify-self: start;
-    color: #153763;
+    color: var(--brand-navy);
   }
 
   .builder-output .pane-jump {
@@ -246,7 +572,7 @@ main:has(.builder-comparing) {
   padding: 0.75rem;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  background: #f3f6fb;
+  background: var(--page-bg);
 }
 
 .builder-output .compare-toggle {
@@ -276,9 +602,9 @@ main:has(.builder-comparing) {
   min-height: 2.5rem;
   font: inherit;
   font-weight: 600;
-  color: #153763;
-  background: #eef4ff;
-  border: 1px solid #8295af;
+  color: var(--brand-navy);
+  background: var(--accent-soft);
+  border: 1px solid var(--control-border);
   border-radius: 0.4rem;
   cursor: pointer;
 }
@@ -291,16 +617,16 @@ main:has(.builder-comparing) {
 .preview .monaco-editor .sticky-widget,
 .preview .monaco-editor .sticky-widget-line-numbers,
 .preview .monaco-editor .sticky-widget-lines {
-  background-color: #f1f5fb;
+  background-color: var(--sticky-bg);
 }
 
 .preview .monaco-editor .sticky-widget {
-  border-bottom: 1px solid #8295af;
+  border-bottom: 1px solid var(--control-border);
 }
 
 .builder-output details {
   margin-block: 0.5rem;
-  border: 1px solid #d5dfed;
+  border: 1px solid var(--border);
   border-radius: 0.4rem;
 }
 
@@ -313,7 +639,7 @@ main:has(.builder-comparing) {
 .builder-output [aria-label="Included components"] button {
   margin: 0.15rem 0;
   padding: 0.25rem;
-  color: #153763;
+  color: var(--brand-navy);
   background: transparent;
   border: 0;
   text-decoration: underline;
@@ -329,17 +655,17 @@ main:has(.builder-comparing) {
 
 .workflow-options button {
   padding: 0.55rem 0.9rem;
-  border: 1px solid #8295af;
+  border: 1px solid var(--control-border);
   border-radius: 0.4rem;
-  background: white;
-  color: #153763;
+  background: var(--surface);
+  color: var(--brand-navy);
   font: inherit;
   cursor: pointer;
 }
 
 .workflow-options button[aria-pressed="true"] {
-  background: #153763;
-  color: white;
+  background: var(--brand-navy);
+  color: #ffffff;
 }
 
 .usage-description {

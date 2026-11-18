@@ -1,0 +1,203 @@
+{
+  "levels": [
+    {
+      "id": "level-0",
+      "title": "Level 0 · Reading YAML",
+      "summary": "Every Kubernetes file is written in YAML. Start here if YAML is new to you.",
+      "lessons": [
+        {
+          "id": "reading-yaml",
+          "title": "Read a YAML file",
+          "objects": "key: value, nesting, lists",
+          "runsOn": "anywhere",
+          "summary": "Learn the three rules of YAML and spot the most common indentation mistake."
+        }
+      ]
+    },
+    {
+      "id": "level-1",
+      "title": "Level 1 · Kubernetes basics",
+      "summary": "Build each file one block at a time. Practise Anywhere lessons free on your laptop.",
+      "lessons": [
+        {
+          "id": "pod",
+          "title": "Run one container",
+          "objects": "Pod",
+          "runsOn": "anywhere",
+          "summary": "A Pod runs one or more containers together. It is the smallest thing Kubernetes runs."
+        },
+        {
+          "id": "deployment",
+          "title": "Keep your app running",
+          "objects": "Deployment",
+          "runsOn": "anywhere",
+          "summary": "A Deployment keeps the number of Pods you ask for running and replaces any that fail."
+        },
+        {
+          "id": "namespace",
+          "title": "Group your work",
+          "objects": "Namespace",
+          "runsOn": "anywhere",
+          "summary": "A Namespace keeps related objects together and apart from everything else in the cluster."
+        },
+        {
+          "id": "service",
+          "title": "Give your app an address",
+          "objects": "Service",
+          "runsOn": "anywhere",
+          "summary": "A Service gives a group of Pods one stable name and address inside the cluster."
+        },
+        {
+          "id": "configmap",
+          "title": "Settings outside the image",
+          "objects": "ConfigMap",
+          "runsOn": "anywhere",
+          "summary": "A ConfigMap holds settings, so you can change them without rebuilding the container image."
+        },
+        {
+          "id": "secret",
+          "title": "Passwords and keys",
+          "objects": "Secret",
+          "runsOn": "anywhere",
+          "summary": "A Secret holds passwords and keys apart from normal settings, so you can limit who reads them."
+        },
+        {
+          "id": "jobs",
+          "title": "Run a task to the end",
+          "objects": "Job, CronJob",
+          "runsOn": "anywhere",
+          "summary": "A Job runs a task until it finishes. A CronJob runs a Job on a schedule."
+        },
+        {
+          "id": "autoscaling",
+          "title": "Scale with load",
+          "objects": "HorizontalPodAutoscaler",
+          "runsOn": "anywhere",
+          "summary": "Add or remove Pods as CPU use goes up or down. Needs metrics-server installed."
+        },
+        {
+          "id": "load-balancer",
+          "title": "Open your app to the internet",
+          "objects": "Service type LoadBalancer",
+          "runsOn": "eks",
+          "summary": "EKS Auto Mode creates an AWS Network Load Balancer in front of your Pods."
+        },
+        {
+          "id": "ingress",
+          "title": "Route web traffic",
+          "objects": "IngressClass, Ingress",
+          "runsOn": "eks",
+          "summary": "EKS Auto Mode creates an AWS Application Load Balancer that routes web requests to your app."
+        },
+        {
+          "id": "storage",
+          "title": "Keep data after restarts",
+          "objects": "StorageClass, PersistentVolumeClaim",
+          "runsOn": "eks",
+          "summary": "EKS Auto Mode creates an Amazon EBS volume, so your data survives when a Pod restarts."
+        },
+        {
+          "id": "pod-identity",
+          "title": "Let a Pod call AWS safely",
+          "objects": "ServiceAccount, Pod Identity",
+          "runsOn": "eks",
+          "summary": "Give a Pod its own AWS permissions through an IAM role, without storing access keys."
+        }
+      ]
+    },
+    {
+      "id": "level-2",
+      "title": "Level 2 · Tools",
+      "summary": "Short, explained files for Argo CD and Prometheus. Open them in the builder.",
+      "lessons": [
+        {
+          "id": "argo-application",
+          "title": "Deploy an app from Git",
+          "objects": "Argo CD Application",
+          "runsOn": "k3s",
+          "summary": "Argo CD reads your files from Git and keeps the cluster matching them.",
+          "open": { "tool": "argo-cd", "template": "application" }
+        },
+        {
+          "id": "argo-project",
+          "title": "Set limits for your apps",
+          "objects": "Argo CD AppProject",
+          "runsOn": "k3s",
+          "summary": "Choose which Git repositories and namespaces your Argo CD apps may use.",
+          "open": { "tool": "argo-cd", "template": "app-project" }
+        },
+        {
+          "id": "prometheus-service",
+          "title": "Collect metrics from your app",
+          "objects": "Service with Prometheus notes",
+          "runsOn": "k3s",
+          "summary": "Let Prometheus find your app and collect its metrics.",
+          "open": { "tool": "prometheus", "template": "service-scrape" }
+        }
+      ]
+    },
+    {
+      "id": "level-3",
+      "title": "Level 3 · Going further",
+      "summary": "More advanced templates and tool installation.",
+      "lessons": [
+        {
+          "id": "argo-application-set",
+          "title": "One app per environment",
+          "objects": "Argo CD ApplicationSet",
+          "runsOn": "k3s",
+          "summary": "Create one Application for each environment, such as dev and staging, from one template.",
+          "open": { "tool": "argo-cd", "template": "application-set" }
+        },
+        {
+          "id": "prometheus-scrape-job",
+          "title": "Add a scrape job",
+          "objects": "Prometheus Helm values",
+          "runsOn": "k3s",
+          "summary": "Tell Prometheus to collect metrics from one fixed address.",
+          "open": { "tool": "prometheus", "template": "scrape-job" }
+        },
+        {
+          "id": "prometheus-alert-rule",
+          "title": "Get an alert",
+          "objects": "Prometheus Helm values",
+          "runsOn": "k3s",
+          "summary": "Get an alert when a problem lasts longer than the time you choose.",
+          "open": { "tool": "prometheus", "template": "alert-rule" }
+        },
+        {
+          "id": "install-tool",
+          "title": "Install Argo CD or Prometheus",
+          "objects": "Helm chart or YAML",
+          "runsOn": "k3s",
+          "summary": "Install a tool on your cluster with tested, explained settings.",
+          "open": { "tool": "argo-cd", "mode": "install" }
+        }
+      ]
+    }
+  ],
+  "labs": [
+    {
+      "id": "lab-1",
+      "title": "Lab 1 · Hello Kubernetes",
+      "runsOn": "anywhere",
+      "cost": "Free, on your laptop",
+      "summary": "Deploy an app, scale it, and watch Kubernetes bring back a deleted Pod."
+    },
+    {
+      "id": "lab-2",
+      "title": "Lab 2 · Your app on EKS",
+      "runsOn": "eks",
+      "cost": "Uses your AWS account, which charges while the cluster runs",
+      "summary": "Run the same app on EKS Auto Mode with a load balancer and storage, then clean up."
+    },
+    {
+      "id": "lab-3",
+      "title": "Lab 3 · GitOps and monitoring",
+      "runsOn": "k3s",
+      "cost": "Free, on your laptop",
+      "summary": "Deploy with Argo CD, collect metrics with Prometheus, and trigger an alert.",
+      "link": "https://github.com/cavula/Kubernetes-config-builder/blob/main/docs/first-k3s-lab.md"
+    }
+  ]
+}

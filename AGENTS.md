@@ -4,6 +4,8 @@
 
 A dashboard that helps engineers generate correct Kubernetes configs instantly and helps students learn how those configs work. Users choose a tool and generate short, explained templates for using it. Every current and future tool leads with usage templates. The existing installation workflow belongs under the secondary **Install the tool** option.
 
+The dashboard is called **Kubernetes Made Simple** and carries the **Aviz Academy** brand. Its main target platform is **Amazon EKS with Auto Mode**. First-time visitors choose between two starting options. **Learn Kubernetes** builds core manifests one block at a time with plain-English explanations for freshers and entry-level engineers. **Build a config** contains **Use the tool** and **Install the tool** for engineers. See the [beginner learning path](specs/beginner-learning-path.md).
+
 ## Problem
 
 Writing configs for Kubernetes tools is hard. People jump between official docs, miss indentation, hit linting errors, and often do not understand why a config is written the way it is. Tools and Kubernetes versions also change often, and some projects retire, such as Ingress NGINX.
@@ -32,14 +34,16 @@ Engineers who want fast, reliable templates. Students who want to learn by chang
 
 ## Product Scope
 
-Local app first. K3s only, with Kubernetes 1.37, 1.36, and 1.35 at the initial planning baseline. Build the approved Argo CD Application, AppProject, and ApplicationSet templates. Build the approved standalone Prometheus Service annotations, custom scrape job, and alert rule usage templates. Defer Prometheus Operator as a separate tool. Use the approved default **Use the tool** view and secondary **Install the tool** option. Explain every usage YAML line in Learning mode. Use official schemas and test the generated manifests on dedicated K3s. Preserve one tool and one pinned chart per installation configuration. Include the live builder, YAML and Helm switch with resource-level and field-level comparison, automatic validation, and copy and download of the active format. Build, validate, and export without a live cluster. Run server-side dry run and deployment checks against a dedicated local K3s test cluster.
+Local app first. Amazon EKS with Auto Mode is the main target for learning content, with Kubernetes 1.37, 1.36, and 1.35. Learners practise portable lessons free on a local K3s cluster created with k3d. The existing Argo CD, Prometheus, and Install the tool content and the first lab stay tested on K3s and labelled that way until a later phase moves them to EKS. Build the approved Argo CD Application, AppProject, and ApplicationSet templates. Build the approved standalone Prometheus Service annotations, custom scrape job, and alert rule usage templates. Defer Prometheus Operator as a separate tool. Use the approved default **Use the tool** view and secondary **Install the tool** option. Explain every usage YAML line in Learning mode. Use official schemas and test the generated manifests on dedicated K3s. Preserve one tool and one pinned chart per installation configuration. Include the live builder, YAML and Helm switch with resource-level and field-level comparison, automatic validation, and copy and download of the active format. Build, validate, and export without a live cluster. Run server-side dry run and deployment checks against a dedicated local K3s test cluster.
+
+Build the approved [beginner learning path](specs/beginner-learning-path.md): the two starting options, the block-at-a-time builder, plain-English explanation rules, Level 0 YAML and the twelve Level 1 lessons (Pod, Deployment, Namespace, Service, ConfigMap, Secret, Job and CronJob, HorizontalPodAutoscaler, LoadBalancer Service, Ingress, PersistentVolumeClaim on EBS, and ServiceAccount with Pod Identity), a free local lab and an EKS Auto Mode lab, a simpler README, and Aviz Academy branding. Keep per-line Learning comments in **Build a config**. Beginner downloads use one comment per block.
 
 ## Roadmap
 
 1. MVP on K3s.
 2. Explain my code mode.
 3. More tools and bundles.
-4. Other platforms: EKS, AKS, GKE, OpenShift, Tanzu.
+4. Other platforms: AKS, GKE, OpenShift, Tanzu. EKS moved into the Product Scope on 2026-11-18. Move the K3s-tested Argo CD and Prometheus content to EKS.
 5. Auto updates from GitHub and Artifact Hub.
 6. Later: drift detection and upgrade guidance.
 
@@ -55,13 +59,14 @@ Spec driven development. Every feature starts as a written spec with clear input
 | Code editor | Monaco (the VS Code editor) | Built in line highlighting and hover notes |
 | Backend | Go 1.27.4 | Same language as Kubernetes and Helm, so the Helm SDK can render charts directly |
 | Validation | kubeconform, Helm lint, server side dry run | Catches schema, lint, and cluster errors before deploy |
-| Test cluster | K3s, run locally | Lightweight and close to real Kubernetes |
+| Test cluster | K3s, run locally, plus a dedicated EKS Auto Mode cluster for EKS-only lessons | K3s is free and close to real Kubernetes. EKS checks the AWS-specific features learners depend on. Create the EKS cluster only with Charan’s approval and delete it after each run. |
 | CI | GitHub Actions | Runs build, tests, and security scans on every change |
 
 ## Folder Structure
 
 ```
 /frontend          React app: options panel, Monaco editor, diff highlights, hover notes
+  /public/brand    Aviz Academy logo and brand assets
 /backend           Go API: render templates, validate, explain uploaded YAML
 /templates         One folder per tool, per version
   /prometheus
@@ -74,6 +79,7 @@ Spec driven development. Every feature starts as a written spec with clear input
     /helm
     options.json
     notes.json
+  /kubernetes      Core Kubernetes lessons built one block at a time
 /specs             One spec file per feature, written before code
 /tests             Unit tests, plus deploy tests against K3s
 /docs              User and contributor guides
@@ -139,7 +145,7 @@ Hosting remains an open question. Where should a hosted dashboard run, and who s
 4. Follow the Folder Structure and Tech Stack exactly. Ask before changing either.
 5. Take every template field and explanation from the official project docs or Helm charts. Never invent fields.
 6. Explain why each generated setting is present using official sources. Follow the export spec for credentials, embedded payloads, and CRDs.
-7. After each feature, run lint, kubeconform, and a deploy test on K3s, and tick the matching Acceptance Criteria.
+7. After each feature, run lint, kubeconform, and a deploy test on K3s, or on the dedicated EKS Auto Mode test cluster for EKS-only lessons, and tick the matching Acceptance Criteria.
 8. Keep commits small, with clear messages, so progress can be reviewed.
 9. Get Charan’s approval before changing the main layout.
 10. If anything is unclear, stop and ask Charan, the product owner, rather than guess. Record each answer in the relevant spec so this document stays up to date.
@@ -273,3 +279,5 @@ Dates refer to when the correction was made. The Decision Log records the result
 | 2026-11-16 | Document official k3d, kubectl, and Helm installation paths for macOS, Windows, and Linux, with version and Docker connection checks before creating a cluster. Use WSL 2 Bash for the Windows walkthrough. | Assuming the lab commands were already installed and usable in the reader’s shell | First K3s lab, setup guide |
 | 2026-11-16 | Use `kubectl` to request manual Application sync in Next steps, both usage exports, and the lab guide. Keep the Argo CD UI optional for watching. Identify the lab as a next-release feature in the README and direct current reviewers to `main`. | UI sync in the Application instructions and an ambiguous v0.3.1 lab entry point | Usage templates, first K3s lab, README |
 | 2026-11-16 | Charan completed the lab on a fresh cluster through alert firing and recovery and approved v0.4.0 after three guide fixes. Hide the Prometheus chart notes, reuse the downloaded chart archive in every lab upgrade, and spell out each dashboard download and filename. Ship the lab in the prebuilt v0.4.0 image. | Online chart upgrades, ambiguous download steps, and a source-only lab preview | Lab, README, release |
+| 2026-11-18 | Charan approved the [beginner learning path](specs/beginner-learning-path.md) in full: Learn Kubernetes and Build a config starting options, the block-at-a-time lesson layout, plain-English explanation rules, Level 0 and Level 1 core Kubernetes lessons in `/templates/kubernetes`, the Hello Kubernetes first lab, one comment per block in beginner downloads, and Aviz Academy branding from the shared logo. Deliver in the spec’s phases, starting with the explanation rewrite of the existing templates. | Argo CD and Prometheus as the only learning content, per-line comments as the only Learning style, and an unbranded dashboard | Product scope, layout, explanations, templates, labs, README, branding |
+| 2026-11-18 | Name the dashboard Kubernetes Made Simple and link the footer to [avizacademy.com](https://avizacademy.com). Make Amazon EKS with Auto Mode the main platform for learning content. Write lessons for EKS, mark each lesson Anywhere or EKS only, keep free local practice on K3s, and add an EKS lab with cost and cleanup steps. Cover twelve Level 1 lessons, including LoadBalancer, Ingress, EBS storage, HorizontalPodAutoscaler, Jobs, and Pod Identity. Keep the Argo CD, Prometheus, and installation content tested on K3s and labelled that way for now. EKS 1.35–1.37 are in [standard support](https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html). | K3s-only scope, EKS as roadmap step 4, five core lessons, and one free lab | Product scope, roadmap, curriculum, labs, testing, branding |

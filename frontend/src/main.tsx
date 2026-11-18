@@ -1,13 +1,52 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { presets, type Preset } from './builder-values';
 import { UsageBuilder, type UsageDraft } from './UsageBuilder';
 import { Builder, type InstallDraft } from './Builder';
 import { kubernetesVersions, platform, selectConfiguration, tools } from './selection';
+import { Home, Learn, SiteFooter, SiteHeader, type View } from './Site';
+import type { OpenTarget } from './lessons';
 import { defaultUsageValues, usageTemplateIds, type UsageTemplateId, type UsageTool } from './usage-values';
 import './style.css';
 
+const startKey = 'kubernetes-made-simple:start';
+
+function viewFromHash(): View | undefined {
+  const hash = window.location.hash.slice(1);
+  return hash === 'home' || hash === 'learn' || hash === 'build' ? hash : undefined;
+}
+
+// Returning visitors skip the starting options. Storage can be unavailable, so the page works without it.
+function storedStart(): View | undefined {
+  try {
+    const value = window.localStorage.getItem(startKey);
+    return value === 'learn' || value === 'build' ? value : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function App() {
+  const [view, setView] = useState<View>(() => viewFromHash() ?? storedStart() ?? 'home');
+
+  useEffect(() => {
+    const onHashChange = () => {
+      setView(viewFromHash() ?? 'home');
+      window.scrollTo(0, 0);
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  useEffect(() => {
+    if (view === 'home') return;
+    try {
+      window.localStorage.setItem(startKey, view);
+    } catch {
+      // The choice is only a convenience.
+    }
+  }, [view]);
+
   const [configuration, setConfiguration] = useState(() =>
     selectConfiguration(platform.id, kubernetesVersions[0], 'argo-cd'),
   );
@@ -22,69 +61,87 @@ function App() {
   const usageTemplate = usageTemplates[tool] ?? usageTemplateIds[tool][0];
   const installKey = `${tool}/${activePreset}`;
 
+  function open(target: OpenTarget) {
+    setConfiguration(current => selectConfiguration(platform.id, current.kubernetesVersion, target.tool));
+    setMode(target.mode ?? 'use');
+    if (target.template) setUsageTemplates(templates => ({ ...templates, [target.tool]: target.template }));
+    window.location.hash = 'build';
+  }
+
   return (
-    <main>
-      <h1>Kubernetes Config Builder</h1>
-      <nav className="workflow-options" aria-label="Tool workflow">
-        <button type="button" aria-pressed={mode === 'use'} onClick={() => setMode('use')}>Use the tool</button>
-        <button type="button" aria-pressed={mode === 'install'} onClick={() => setMode('install')}>Install the tool</button>
-      </nav>
-      <section aria-labelledby="choose-preset" className="step configuration-selection">
-        <h2 id="choose-preset">{mode === 'install' ? '1. Choose a preset' : 'Choose a tool'}</h2>
-        <label>
-          Platform
-          <select value={platform.id} onChange={event => setConfiguration(
-            selectConfiguration(event.target.value, configuration.kubernetesVersion, configuration.tool.id),
-          )}>
-            <option value={platform.id}>{platform.name}</option>
-          </select>
-          <small>Target cluster platform.</small>
-        </label>
-        <label>
-          Kubernetes version
-          <select value={configuration.kubernetesVersion} onChange={event => setConfiguration(
-            selectConfiguration(platform.id, event.target.value, configuration.tool.id),
-          )}>
-            {kubernetesVersions.map(version => <option key={version}>{version}</option>)}
-          </select>
-          <small>{mode === 'use' ? 'Use the default for the lab, or choose the version running on your cluster.' : 'Version running on your cluster.'}</small>
-        </label>
-        <label>
-          Tool
-          <select value={configuration.tool.id} onChange={event => setConfiguration(
-            selectConfiguration(platform.id, configuration.kubernetesVersion, event.target.value),
-          )}>
-            {tools.map(entry => <option key={entry.id} value={entry.id}>{entry.name}</option>)}
-          </select>
-          <small>{mode === 'install' ? 'Chart to configure.' : 'Tool to generate usage YAML for.'}</small>
-        </label>
-        {mode === 'install' && <label>
-          Preset
-          <select value={activePreset} onChange={event => setPresetsByTool({ ...presetsByTool, [configuration.tool.id]: event.target.value as Preset })}>
-            {Object.entries(presets).filter(([id]) => configuration.tool.id !== 'argo-cd' || id !== 'recommended')
-              .map(([id, label]) => <option key={id} value={id}>{label}</option>)}
-          </select>
-          <small>{configuration.tool.id === 'prometheus'
-            ? 'Start with the server alone or add monitoring components.'
-            : activePreset === 'minimal' ? 'Core components only. Dex, notifications, and ApplicationSet are off.'
-            : 'Includes Dex, notifications, and ApplicationSet.'}</small>
-        </label>}
-        {mode === 'install' && configuration.tool.id === 'prometheus' && activePreset === 'recommended' && (
-          <small className="preset-description">Includes Alertmanager, kube-state-metrics, and node exporter. Enable Pushgateway for short-lived service-level batch jobs.</small>
-        )}
-      </section>
-      {mode === 'install' ? (
-        <Builder key={installKey} preset={activePreset} tool={tool} chartVersion={configuration.tool.chartVersion}
-          kubernetesVersion={configuration.kubernetesVersion} draft={installDrafts[installKey]}
-          onDraftChange={draft => setInstallDrafts(drafts => ({ ...drafts, [installKey]: draft }))} />
-      ) : (
-        <UsageBuilder id={usageTemplate} tool={tool} kubernetesVersion={configuration.kubernetesVersion}
-          onTemplateChange={id => setUsageTemplates(templates => ({ ...templates, [tool]: id }))}
-          draft={usageDrafts[usageTemplate]}
-          projectValues={usageDrafts['app-project']?.current ?? defaultUsageValues('app-project')}
-          onDraftChange={draft => setUsageDrafts(drafts => ({ ...drafts, [usageTemplate]: draft }))} />
+    <>
+      <SiteHeader view={view} />
+      {view === 'home' && <main><Home /></main>}
+      {view === 'learn' && <main><Learn onOpen={open} /></main>}
+      {view === 'build' && (
+        <main>
+          <div className="build-heading">
+            <h1>Build a config</h1>
+            <nav className="workflow-options" aria-label="Tool workflow">
+              <button type="button" aria-pressed={mode === 'use'} onClick={() => setMode('use')}>Use the tool</button>
+              <button type="button" aria-pressed={mode === 'install'} onClick={() => setMode('install')}>Install the tool</button>
+            </nav>
+            <span className="badge badge-k3s">Tested on K3s</span>
+          </div>
+          <section aria-labelledby="choose-preset" className="step configuration-selection">
+            <h2 id="choose-preset">{mode === 'install' ? '1. Choose a preset' : 'Choose a tool'}</h2>
+            <label>
+              Platform
+              <select value={platform.id} onChange={event => setConfiguration(
+                selectConfiguration(event.target.value, configuration.kubernetesVersion, configuration.tool.id),
+              )}>
+                <option value={platform.id}>{platform.name}</option>
+              </select>
+              <small>Target cluster platform.</small>
+            </label>
+            <label>
+              Kubernetes version
+              <select value={configuration.kubernetesVersion} onChange={event => setConfiguration(
+                selectConfiguration(platform.id, event.target.value, configuration.tool.id),
+              )}>
+                {kubernetesVersions.map(version => <option key={version}>{version}</option>)}
+              </select>
+              <small>{mode === 'use' ? 'Use the default for the lab, or choose the version running on your cluster.' : 'Version running on your cluster.'}</small>
+            </label>
+            <label>
+              Tool
+              <select value={configuration.tool.id} onChange={event => setConfiguration(
+                selectConfiguration(platform.id, configuration.kubernetesVersion, event.target.value),
+              )}>
+                {tools.map(entry => <option key={entry.id} value={entry.id}>{entry.name}</option>)}
+              </select>
+              <small>{mode === 'install' ? 'Chart to configure.' : 'Tool to generate usage YAML for.'}</small>
+            </label>
+            {mode === 'install' && <label>
+              Preset
+              <select value={activePreset} onChange={event => setPresetsByTool({ ...presetsByTool, [configuration.tool.id]: event.target.value as Preset })}>
+                {Object.entries(presets).filter(([id]) => configuration.tool.id !== 'argo-cd' || id !== 'recommended')
+                  .map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+              </select>
+              <small>{configuration.tool.id === 'prometheus'
+                ? 'Start with the server alone or add monitoring components.'
+                : activePreset === 'minimal' ? 'Core components only. Dex, notifications, and ApplicationSet are off.'
+                : 'Includes Dex, notifications, and ApplicationSet.'}</small>
+            </label>}
+            {mode === 'install' && configuration.tool.id === 'prometheus' && activePreset === 'recommended' && (
+              <small className="preset-description">Includes Alertmanager, kube-state-metrics, and node exporter. Enable Pushgateway for short-lived service-level batch jobs.</small>
+            )}
+          </section>
+          {mode === 'install' ? (
+            <Builder key={installKey} preset={activePreset} tool={tool} chartVersion={configuration.tool.chartVersion}
+              kubernetesVersion={configuration.kubernetesVersion} draft={installDrafts[installKey]}
+              onDraftChange={draft => setInstallDrafts(drafts => ({ ...drafts, [installKey]: draft }))} />
+          ) : (
+            <UsageBuilder id={usageTemplate} tool={tool} kubernetesVersion={configuration.kubernetesVersion}
+              onTemplateChange={id => setUsageTemplates(templates => ({ ...templates, [tool]: id }))}
+              draft={usageDrafts[usageTemplate]}
+              projectValues={usageDrafts['app-project']?.current ?? defaultUsageValues('app-project')}
+              onDraftChange={draft => setUsageDrafts(drafts => ({ ...drafts, [usageTemplate]: draft }))} />
+          )}
+        </main>
       )}
-    </main>
+      <SiteFooter />
+    </>
   );
 }
 

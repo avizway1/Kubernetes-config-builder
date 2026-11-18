@@ -10,7 +10,7 @@
     "lint": "tsc --noEmit",
     "build": "tsc --noEmit && vite build",
     "test": "node --test ../tests/*.test.mjs",
-    "test:browser": "node ../tests/live-builder.browser.mjs"
+    "test:browser": "node ../tests/live-builder.browser.mjs && node ../tests/site-shell.browser.mjs"
   },
   "dependencies": {
     "monaco-editor": "0.57.0",
