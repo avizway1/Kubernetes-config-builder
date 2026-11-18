@@ -1,0 +1,20 @@
+{
+  "reviewDate": "2026-12-02",
+  "reason": "No fixed picomatch release exists. Every version through 4.0.7, the latest, is affected, and the upstream fixes are unmerged pull requests. picomatch is used only by the Vite build tool to match glob patterns written in this project, and it is not part of the shipped Docker image. Upgrade as soon as a fixed release is published.",
+  "npm": [
+    {
+      "advisory": "GHSA-fc5q-39xc-vjpf",
+      "package": "picomatch",
+      "severity": "high",
+      "vulnerableThrough": "4.0.7",
+      "dependencyPath": "vite 8.3.5 → picomatch 4.0.7, and through tinyglobby and fdir",
+      "references": [
+        "https://github.com/advisories/GHSA-fc5q-39xc-vjpf",
+        "https://github.com/micromatch/picomatch/pull/261",
+        "https://github.com/micromatch/picomatch/pull/262",
+        "https://github.com/micromatch/picomatch/pull/269",
+        "https://github.com/micromatch/picomatch/pull/272"
+      ]
+    }
+  ]
+}

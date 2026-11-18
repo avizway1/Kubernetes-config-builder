@@ -93,7 +93,9 @@ jobs:
       - name: Audit npm dependencies
         if: ${{ !cancelled() }}
         working-directory: frontend
-        run: npm audit --package-lock-only --audit-level=high
+        run: |
+          npm audit --package-lock-only --json > "$RUNNER_TEMP/npm-audit.json" || true
+          python3 ../tests/check-npm-audit.py "$RUNNER_TEMP/npm-audit.json" ../security/accepted-dependency-risks.json package-lock.json
       - name: Install verified Trivy scanner
         if: ${{ !cancelled() }}
         shell: bash
@@ -111,6 +113,9 @@ jobs:
       - name: Test the image risk policy
         if: ${{ !cancelled() }}
         run: python3 tests/test_image_risk_policy.py
+      - name: Test the npm dependency risk policy
+        if: ${{ !cancelled() }}
+        run: python3 tests/test_npm_audit_policy.py
       - name: Scan chart images on AMD64 and ARM64
         if: ${{ !cancelled() }}
         shell: bash

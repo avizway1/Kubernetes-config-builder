@@ -96,7 +96,7 @@ Run the browser checks with the backend and Vite dev server running. From `front
 
 ### Security checks
 
-CI fails on high or critical npm and Go findings. Image findings recorded in the [accepted risks file](security/accepted-risks.json) are reported through their review date. Unaccepted or expired findings fail CI. npm audit reads the frontend lockfile. Trivy scans the Go module and the images from both verified charts across supported Kubernetes minors and builder toggles. The image scan covers Linux AMD64 and ARM64 and includes the Argo CD initialization Job.
+CI fails on high or critical npm and Go findings. The only exception is an unfixed development-only npm finding recorded in the [accepted dependency risks file](security/accepted-dependency-risks.json). It fails again after its review date, if it reaches the runtime dependencies, or once a fixed release is published. Image findings recorded in the [accepted risks file](security/accepted-risks.json) are reported through their review date. Unaccepted or expired findings fail CI. npm audit reads the frontend lockfile. Trivy scans the Go module and the images from both verified charts across supported Kubernetes minors and builder toggles. The image scan covers Linux AMD64 and ARM64 and includes the Argo CD initialization Job.
 
 To reproduce the image scan locally with Trivy installed, run from the project root after downloading the charts.
 
