@@ -4,8 +4,8 @@ import { presets, type Preset } from './builder-values';
 import { UsageBuilder, type UsageDraft } from './UsageBuilder';
 import { Builder, type InstallDraft } from './Builder';
 import { kubernetesVersions, platform, selectConfiguration, tools } from './selection';
-import { Home, Learn, SiteFooter, SiteHeader, type View } from './Site';
-import { levels, type OpenTarget } from './lessons';
+import { Home, Learn, showBuildAConfig, SiteFooter, SiteHeader, type View } from './Site';
+import { levels } from './lessons';
 import { defaultLessonValues, lessonContent } from './lesson-builder';
 import { LessonView, type LessonProgress } from './LessonView';
 import { defaultUsageValues, usageTemplateIds, type UsageTemplateId, type UsageTool } from './usage-values';
@@ -15,15 +15,20 @@ const startKey = 'kubernetes-made-simple:start';
 
 const allLessons = levels.flatMap(level => level.lessons);
 
+// While Build a config is hidden there is no choice to make, so the home page is Learn Kubernetes.
+const homeView: View = showBuildAConfig ? 'home' : 'learn';
+
 // #learn/pod opens a lesson inside Learn Kubernetes.
 function routeFromHash(): { view?: View; lesson?: string } {
   const [view, lesson] = window.location.hash.slice(1).split('/');
   if (view === 'learn' && lesson && lessonContent[lesson]) return { view, lesson };
-  return view === 'home' || view === 'learn' || view === 'build' ? { view } : {};
+  if (view === 'home') return { view: homeView };
+  return view === 'learn' || view === 'build' ? { view } : {};
 }
 
 // Returning visitors skip the starting options. Storage can be unavailable, so the page works without it.
 function storedStart(): View | undefined {
+  if (!showBuildAConfig) return undefined;
   try {
     const value = window.localStorage.getItem(startKey);
     return value === 'learn' || value === 'build' ? value : undefined;
@@ -35,7 +40,7 @@ function storedStart(): View | undefined {
 function App() {
   const [route, setRoute] = useState(() => {
     const initial = routeFromHash();
-    return { view: initial.view ?? storedStart() ?? 'home', lesson: initial.lesson };
+    return { view: initial.view ?? storedStart() ?? homeView, lesson: initial.lesson };
   });
   const view = route.view;
   const [lessonProgress, setLessonProgress] = useState<Record<string, LessonProgress>>({});
@@ -45,7 +50,7 @@ function App() {
       const next = routeFromHash();
       // Jump links such as #usage-preview are anchors on the current page, not routes. Let the browser scroll to them.
       if (!next.view && window.location.hash.length > 1) return;
-      setRoute({ view: next.view ?? 'home', lesson: next.lesson });
+      setRoute({ view: next.view ?? homeView, lesson: next.lesson });
       window.scrollTo(0, 0);
     };
     window.addEventListener('hashchange', onHashChange);
@@ -75,18 +80,11 @@ function App() {
   const usageTemplate = usageTemplates[tool] ?? usageTemplateIds[tool][0];
   const installKey = `${tool}/${activePreset}`;
 
-  function open(target: OpenTarget) {
-    setConfiguration(current => selectConfiguration(platform.id, current.kubernetesVersion, target.tool));
-    setMode(target.mode ?? 'use');
-    if (target.template) setUsageTemplates(templates => ({ ...templates, [target.tool]: target.template }));
-    window.location.hash = 'build';
-  }
-
   return (
     <>
       <SiteHeader view={view} />
       {view === 'home' && <main><Home /></main>}
-      {view === 'learn' && !route.lesson && <main><Learn onOpen={open} /></main>}
+      {view === 'learn' && !route.lesson && <main><Learn /></main>}
       {view === 'learn' && route.lesson && (() => {
         const id = route.lesson;
         const content = lessonContent[id];

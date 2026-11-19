@@ -318,7 +318,7 @@
     {
       "id": "level-9",
       "title": "Level 9 · Read any manifest",
-      "summary": "Read files for tools you have never seen. Argo CD and Prometheus are tested on K3s for now.",
+      "summary": "Read files for tools you have never seen, then explain a mixed file on your own.",
       "lessons": [
         {
           "id": "unknown-kinds",
@@ -326,83 +326,6 @@
           "objects": "API groups, CustomResourceDefinitions, kubectl explain",
           "runsOn": "anywhere",
           "summary": "Find out what any kind does from its API group, its definition, and the official docs."
-        },
-        {
-          "id": "argo-application",
-          "title": "Deploy an app from Git",
-          "objects": "Argo CD Application",
-          "runsOn": "k3s",
-          "summary": "Argo CD reads your files from Git and keeps the cluster matching them.",
-          "open": {
-            "tool": "argo-cd",
-            "template": "application"
-          }
-        },
-        {
-          "id": "argo-project",
-          "title": "Set limits for your apps",
-          "objects": "Argo CD AppProject",
-          "runsOn": "k3s",
-          "summary": "Choose which Git repositories and namespaces your Argo CD apps may use.",
-          "open": {
-            "tool": "argo-cd",
-            "template": "app-project"
-          }
-        },
-        {
-          "id": "prometheus-service",
-          "title": "Collect metrics from your app",
-          "objects": "Service with Prometheus notes",
-          "runsOn": "k3s",
-          "summary": "Let Prometheus find your app and collect its metrics.",
-          "open": {
-            "tool": "prometheus",
-            "template": "service-scrape"
-          }
-        },
-        {
-          "id": "argo-application-set",
-          "title": "One app per environment",
-          "objects": "Argo CD ApplicationSet",
-          "runsOn": "k3s",
-          "summary": "Create one Application for each environment, such as dev and staging, from one template.",
-          "open": {
-            "tool": "argo-cd",
-            "template": "application-set"
-          }
-        },
-        {
-          "id": "prometheus-scrape-job",
-          "title": "Add a scrape job",
-          "objects": "Prometheus Helm values",
-          "runsOn": "k3s",
-          "summary": "Tell Prometheus to collect metrics from one fixed address.",
-          "open": {
-            "tool": "prometheus",
-            "template": "scrape-job"
-          }
-        },
-        {
-          "id": "prometheus-alert-rule",
-          "title": "Get an alert",
-          "objects": "Prometheus Helm values",
-          "runsOn": "k3s",
-          "summary": "Get an alert when a problem lasts longer than the time you choose.",
-          "open": {
-            "tool": "prometheus",
-            "template": "alert-rule"
-          }
-        },
-        {
-          "id": "install-tool",
-          "title": "Install Argo CD or Prometheus",
-          "objects": "Helm chart or YAML",
-          "runsOn": "k3s",
-          "summary": "Install a tool on your cluster with tested, explained settings.",
-          "open": {
-            "tool": "argo-cd",
-            "mode": "install"
-          }
         },
         {
           "id": "final-challenge",
@@ -428,14 +351,6 @@
       "runsOn": "eks",
       "cost": "Uses your AWS account, which charges while the cluster runs",
       "summary": "Run the same app on EKS Auto Mode with a load balancer and storage, then clean up."
-    },
-    {
-      "id": "lab-3",
-      "title": "Lab 3 · GitOps and monitoring",
-      "runsOn": "k3s",
-      "cost": "Free, on your laptop",
-      "summary": "Deploy with Argo CD, collect metrics with Prometheus, and trigger an alert.",
-      "link": "https://github.com/avizway1/Kubernetes-config-builder/blob/main/docs/first-k3s-lab.md"
     }
   ]
 }

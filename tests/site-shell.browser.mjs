@@ -8,7 +8,7 @@ const require = createRequire(new URL('../frontend/package.json', import.meta.ur
 const { chromium } = require('playwright-core');
 const appUrl = process.env.KCB_APP_URL ?? 'http://127.0.0.1:5173';
 
-test('first visit offers two starting options and the lesson overview opens existing templates', { timeout: 30000 }, async () => {
+test('the dashboard opens into Learn Kubernetes and nothing links to Build a config in phase 1', { timeout: 30000 }, async () => {
   const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
   try {
     const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
@@ -16,17 +16,20 @@ test('first visit offers two starting options and the lesson overview opens exis
     await page.goto(appUrl);
 
     assert.equal(await page.title(), 'Kubernetes Made Simple');
-    await page.getByRole('heading', { name: 'What would you like to do?' }).waitFor();
-    assert.equal(await page.locator('.door').count(), 2);
+    await page.getByRole('heading', { name: 'Learn Kubernetes', level: 1 }).waitFor();
     const logo = page.getByRole('img', { name: 'Aviz Academy' });
     await logo.waitFor();
     assert.ok(await logo.evaluate(image => image.complete && image.naturalWidth > 0), 'logo loads');
     assert.equal(await page.locator('link[rel="icon"][sizes="32x32"]').getAttribute('href'), '/brand/favicon-32.png');
     assert.equal(await page.getByRole('link', { name: 'Aviz Academy', exact: true }).getAttribute('href'), 'https://avizacademy.com');
 
-    await page.locator('.door-primary').click();
-    await page.getByRole('heading', { name: 'Learn Kubernetes', level: 1 }).waitFor();
-    assert.equal(new URL(page.url()).hash, '#learn');
+    // Build a config is hidden until phase 2: no doors, no header link, and no lesson opens it.
+    assert.equal(await page.locator('.door').count(), 0);
+    assert.equal(await page.locator('a[href="#build"]').count(), 0);
+    assert.equal(await page.getByText('Build a config').count(), 0);
+    assert.equal(await page.locator('.lesson-meta button').count(), 0);
+    assert.equal(await page.locator('.badge-k3s').count(), 0);
+
     assert.equal(await page.locator('section.level').count(), 11);
     const basics = page.locator('section[aria-labelledby="level-1-title"] .lesson');
     assert.equal(await basics.count(), 8);
@@ -34,28 +37,26 @@ test('first visit offers two starting options and the lesson overview opens exis
     assert.equal(await basics.getByText('Coming soon').count(), 0);
     assert.equal(await page.locator('section[aria-labelledby="level-0-title"] .lesson-start').count(), 2);
     assert.equal(await page.locator('section.level:not([aria-labelledby="labs-title"]) .badge-eks').count(), 7);
+    assert.equal(await page.locator('section[aria-labelledby="labs-title"] .lesson').count(), 2);
 
-    await page.getByRole('button', { name: 'Open Deploy an app from Git' }).click();
-    await page.getByRole('heading', { name: 'Build a config', level: 1 }).waitFor();
-    assert.equal(await page.getByRole('button', { name: 'Use the tool' }).getAttribute('aria-pressed'), 'true');
-    assert.equal(await page.getByRole('combobox', { name: 'Usage template' }).inputValue(), 'application');
-
-    await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Learn Kubernetes' }).click();
-    await page.getByRole('button', { name: 'Open Get an alert' }).click();
-    assert.equal(await page.getByRole('combobox', { name: /^Tool/ }).inputValue(), 'prometheus');
-    assert.equal(await page.getByRole('combobox', { name: 'Usage template' }).inputValue(), 'alert-rule');
-
-    await page.goto(appUrl);
-    await page.getByRole('heading', { name: 'Build a config', level: 1 }).waitFor();
-
+    // Old #home links and the logo both land on Learn Kubernetes.
+    await page.goto(`${appUrl}#home`);
+    await page.getByRole('heading', { name: 'Learn Kubernetes', level: 1 }).waitFor();
+    await page.goto(`${appUrl}#learn/pod`);
+    await page.getByRole('heading', { name: 'Run one container', level: 1 }).waitFor();
     await page.locator('.brand').click();
-    await page.getByRole('heading', { name: 'What would you like to do?' }).waitFor();
+    await page.getByRole('heading', { name: 'Learn Kubernetes', level: 1 }).waitFor();
+    assert.equal(new URL(page.url()).hash, '#learn');
+
+    // The Build a config screen still works when typed directly, so its existing tests keep running.
+    await page.goto(`${appUrl}#build`);
+    await page.getByRole('heading', { name: 'Build a config', level: 1 }).waitFor();
   } finally {
     await browser.close();
   }
 });
 
-test('starting options and lessons fit a phone screen without sideways scrolling', { timeout: 20000 }, async () => {
+test('the lesson list fits a phone screen without sideways scrolling', { timeout: 20000 }, async () => {
   const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
   try {
     const page = await browser.newPage({ viewport: { width: 375, height: 812 } });

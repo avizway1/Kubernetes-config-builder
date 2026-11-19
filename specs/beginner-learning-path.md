@@ -156,7 +156,7 @@ Charan approved this curriculum on 2026-11-19. It replaces the 12-lesson Level 1
 | 7 Scale | 33 | Scale with load | HorizontalPodAutoscaler, written as YAML | `21-hpa.yaml` | Anywhere, needs metrics-server |
 | 8 AWS access | 34 | Let a Pod call AWS safely | ServiceAccount with Pod Identity | none in class | EKS only |
 | 9 Read any manifest | 35 ✚ | Meet an unknown kind | API group → CustomResourceDefinition → official docs, `kubectl get crd`, `kubectl explain`, using `NodePool` and `IngressClassParams` from earlier lessons | — | Anywhere |
-| | 36 | GitOps and monitoring | Argo CD and Prometheus custom resources (existing Levels 2 and 3) | — | Tested on K3s |
+| | 36 | GitOps and monitoring (phase 2) | Argo CD and Prometheus custom resources (existing Levels 2 and 3) | — | Tested on K3s |
 | | 37 ✚ | Final challenge | read a mixed file of many kinds and explain each part | all levels | — |
 
 **Notes from official docs, checked on 2026-11-19**
@@ -252,6 +252,15 @@ Orange and navy together reach 5.9:1, so orange buttons use navy text, and orang
 
 ## Delivery phases
 
+**Two product phases (Charan, 2026-11-19).** Phase 1 is **Learn Kubernetes** end to end: Levels 0 to 9 without lesson 36, Lab 1, and Lab 2. Phase 2 is **Build a config**, with lesson 36 and Lab 3 (GitOps and monitoring). In phase 1:
+
+- The dashboard opens straight into Learn Kubernetes. The home page’s two doors and the header’s Build a config link are hidden behind one switch, `showBuildAConfig` in `frontend/src/Site.tsx`, which phase 2 turns back on.
+- `#build` still opens Build a config when typed directly, so its existing browser tests keep running in CI. Nothing in Learn Kubernetes links to it.
+- The seven Level 9 items that opened Build a config (`argo-application`, `argo-project`, `prometheus-service`, `argo-application-set`, `prometheus-scrape-job`, `prometheus-alert-rule`, `install-tool`) and Lab 3 are removed from `templates/kubernetes/lessons.json`. Commit `42796a0` has them for phase 2.
+- Build a config code changes only to keep its tests passing.
+
+The numbered steps below are the original plan. Steps 5 to 7 are phase 1; step 8 and lesson 36 are phase 2.
+
 Each phase gets its own spec section approval, small commits, tests, and a Chromium check, following the existing workflow.
 
 1. **Decisions and brand assets.** Answer the open questions below. Record answers here and in the Decision Log.
@@ -316,6 +325,8 @@ Each phase gets its own spec section approval, small commits, tests, and a Chrom
 - Claims checked with kubeconform 0.8.0’s YAML reader before writing them: one extra space before `country` gives the message above; moving `tool` left under the dash gives an error; list lines without dashes become one text value (`Linux Docker`), shown by a ConfigMap that accepts them as a string.
 - Verified on Node 26.13.1: `npm run lint`, `npm test` (39 passing, including a test that a mistake changes only the spaces on its named line), `npm run build`, `tests/lesson-manifests.check.mjs` (3 passing: strict kubeconform for 0.2 and Level 1, every 0.1 step parses, the exact mistake message), and `tests/site-shell.browser.mjs` (6 passing in Chrome, including the mistake view, its hover note, both downloads, and the reset on moving blocks). The two new kubeconform checks failed when the message’s line number and a list dash were changed on purpose.
 - **Not verified:** CI installs kubeconform 0.7.0, and the exact message was checked only with 0.8.0 locally. Lesson 0.2 has not been applied to a cluster, so its **Try it** results come from the official docs.
+
+**Phase 1 focus (2026-11-19).** Charan chose to build Learn Kubernetes end to end before returning to Build a config. The dashboard now opens into Learn Kubernetes, `#home` and the logo lead there, and the header has only the Learn Kubernetes link. The Level 9 tool items and Lab 3 are gone from the catalogue, along with the Learn page’s **Open** buttons and the `open` field. The README leads with Learn Kubernetes and marks Build a config and Install the tool as phase 2. Verified on Node 26.13.1: `npm run lint`, `npm test` (39 passing, including a check that no lesson or lab opens Build a config or is marked Tested on K3s), `npm run build`, `tests/lesson-manifests.check.mjs` (3 passing), and `tests/site-shell.browser.mjs` (6 passing, including that no link points to `#build` and that `#build` still opens when typed). The Build a config browser tests need the Go backend and run only in CI; they open `#build` directly and do not use the hidden links.
 
 ## Acceptance criteria
 

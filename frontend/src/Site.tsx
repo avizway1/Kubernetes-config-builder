@@ -1,7 +1,11 @@
 import { lessonContent } from './lesson-builder';
-import { labs, levels, runsOnLabels, type OpenTarget, type RunsOn } from './lessons';
+import { labs, levels, runsOnLabels, type RunsOn } from './lessons';
 
 export type View = 'home' | 'learn' | 'build';
+
+// Phase 1 builds Learn Kubernetes end to end. Build a config returns in phase 2 by turning this on.
+// While it is off, the dashboard opens into Learn Kubernetes and nothing links to #build.
+export const showBuildAConfig = false;
 
 const brand = `${import.meta.env.BASE_URL}brand/`;
 const repository = 'https://github.com/avizway1/Kubernetes-config-builder';
@@ -10,13 +14,13 @@ export function SiteHeader({ view }: { view: View }) {
   return (
     <header className="site-header">
       <div className="site-header-inner">
-        <a className="brand" href="#home">
+        <a className="brand" href={showBuildAConfig ? '#home' : '#learn'}>
           <img src={`${brand}aviz-academy-logo-header.webp`} alt="Aviz Academy" width={134} height={44} />
           <span className="product-name">Kubernetes Made Simple</span>
         </a>
         <nav className="site-nav" aria-label="Main">
           <a href="#learn" aria-current={view === 'learn' ? 'page' : undefined}>Learn Kubernetes</a>
-          <a href="#build" aria-current={view === 'build' ? 'page' : undefined}>Build a config</a>
+          {showBuildAConfig && <a href="#build" aria-current={view === 'build' ? 'page' : undefined}>Build a config</a>}
         </nav>
       </div>
     </header>
@@ -61,7 +65,7 @@ function Badge({ runsOn }: { runsOn: RunsOn }) {
   return <span className={`badge badge-${runsOn}`}>{runsOnLabels[runsOn]}</span>;
 }
 
-export function Learn({ onOpen }: { onOpen: (target: OpenTarget) => void }) {
+export function Learn() {
   return (
     <section className="learn" aria-labelledby="learn-title">
       <h1 id="learn-title">Learn Kubernetes</h1>
@@ -85,8 +89,6 @@ export function Learn({ onOpen }: { onOpen: (target: OpenTarget) => void }) {
                   <Badge runsOn={lesson.runsOn} />
                   {lessonContent[lesson.id]
                     ? <a className="lesson-start" href={`#learn/${lesson.id}`}>Start<span className="visually-hidden"> {lesson.title}</span></a>
-                    : lesson.open
-                    ? <button type="button" onClick={() => onOpen(lesson.open!)}>Open<span className="visually-hidden"> {lesson.title}</span></button>
                     : <span className="coming-soon">Coming soon</span>}
                 </div>
               </li>

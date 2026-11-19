@@ -2,11 +2,21 @@
 
 [![CI](https://github.com/avizway1/Kubernetes-config-builder/actions/workflows/ci.yml/badge.svg)](https://github.com/avizway1/Kubernetes-config-builder/actions/workflows/ci.yml)
 
-Build and learn Kubernetes configurations with short templates for tools you already use. The dashboard supports K3s 1.35, 1.36, and 1.37.
+**Kubernetes Made Simple** by Aviz Academy teaches Kubernetes one block at a time. Each lesson builds a real file, explains every line in plain English, and gives you commands to try on a free practice cluster on your laptop. Lessons are written for Amazon EKS with Auto Mode and Kubernetes 1.35, 1.36, and 1.37.
 
-## Use the tool
+## Learn Kubernetes
 
-**Use the tool** is the default view. Choose a template, fill in its example-backed fields, then copy or download the YAML.
+Start the dashboard with Docker below and open [localhost:8080](http://localhost:8080). Begin with **Level 0 · Reading YAML**, then work through the levels in order. The [beginner learning path](specs/beginner-learning-path.md) lists every lesson.
+
+The project is built in two phases. Phase 1, now, is Learn Kubernetes. Phase 2 brings back **Build a config**, the Argo CD and Prometheus template builder described below, which is hidden in the dashboard until then.
+
+## Build a config (phase 2)
+
+Build a config still works if you open [localhost:8080/#build](http://localhost:8080/#build) directly. Its content is unchanged and tested on K3s.
+
+### Use the tool
+
+**Use the tool** is Build a config’s default view. Choose a template, fill in its example-backed fields, then copy or download the YAML.
 
 | Tool | Templates |
 | --- | --- |
@@ -15,13 +25,13 @@ Build and learn Kubernetes configurations with short templates for tools you alr
 
 Learning mode explains every YAML line. Validation uses the Argo CD CRD schemas from chart 10.17.1, the Kubernetes Service schema, or `promtool` for configuration rendered by Prometheus chart 29.45.1.
 
-### Apply the generated files
+#### Apply the generated files
 
 For Argo CD, apply the generated manifest to a cluster where Argo CD is installed. For example, run `kubectl apply -f application.yaml`. To use ApplicationSet with the installation builder, choose **Full chart defaults** so the controller is running.
 
 For standalone Prometheus, apply the annotated Service with kubectl. For a custom scrape job or alert rule, follow the pinned Helm upgrade command at the top of the values download. Merge existing alert groups into the alert values file before upgrading.
 
-### Run the first K3s lab
+#### Run the first K3s lab
 
 Start the dashboard with Docker below, then follow the lab guide. You’ll deploy a sample app with Argo CD and use Prometheus to collect its metrics, trigger an alert, and verify recovery. [First K3s lab](docs/first-k3s-lab.md)
 
@@ -69,9 +79,9 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173) or the URL printed by Vite. The renderer listens on loopback port 8080.
 
-## Install the tool
+## Install the tool (phase 2)
 
-Switch to **Install the tool** to generate Helm or Kubernetes installation files. In **Deploy**, choose **Helm chart + values** and click **Download Helm bundle**. Unzip the bundle and run the install command in its README. The ZIP includes the verified pinned chart and its dependencies, so Helm needs no chart repository. The cluster still needs access to the container images or must already have them. **Copy values** copies the commented values file.
+In Build a config, switch to **Install the tool** to generate Helm or Kubernetes installation files. In **Deploy**, choose **Helm chart + values** and click **Download Helm bundle**. Unzip the bundle and run the install command in its README. The ZIP includes the verified pinned chart and its dependencies, so Helm needs no chart repository. The cluster still needs access to the container images or must already have them. **Copy values** copies the commented values file.
 
 Choose **YAML manifest** to copy or download the same explained Kubernetes YAML. The file begins with the apply command and after-install steps. Learning adds short explanations for key fields. Choose Compact for component and purpose headers with deployment instructions. Click a component name to open its preview. The Argo CD manifest includes its CRDs, namespace, and Redis initialization Job.
 
