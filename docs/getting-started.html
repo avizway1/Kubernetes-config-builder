@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Beginner start guide for Kubernetes Made Simple. Open this file in a browser. -->
+<title>Kubernetes Made Simple Start Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one readable column of numbered setup steps under a sticky "your laptop" switch, in the dashboard's navy and orange. */
+:root {
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --ink: #17253b;
+  --muted: #4a5873;
+  --line: #d6deeb;
+  --navy: #233483;
+  --navy-ink: #ffffff;
+  --orange: #f69327;
+  --orange-ink: #1f2865;
+  --code-bg: #121a33;
+  --code-ink: #e8edf8;
+  --code-dim: #8f9bbd;
+  --tip-bg: #eef3ff;
+  --warn-bg: #fff4e6;
+  --warn-line: #c76a05;
+  --ok: #1d7a46;
+  --link: #233483;
+  --font-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-code: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1424; --surface: #171e33; --ink: #e6ebf5; --muted: #a8b3cc; --line: #2b3553;
+    --navy: #1b2766; --navy-ink: #ffffff; --orange: #f7a24a; --orange-ink: #1a1f3d;
+    --code-bg: #0a0f1f; --code-ink: #e8edf8; --code-dim: #8f9bbd;
+    --tip-bg: #1b2546; --warn-bg: #2e2312; --warn-line: #f2a34c; --ok: #5cc98b; --link: #f7a24a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1424; --surface: #171e33; --ink: #e6ebf5; --muted: #a8b3cc; --line: #2b3553;
+  --navy: #1b2766; --navy-ink: #ffffff; --orange: #f7a24a; --orange-ink: #1a1f3d;
+  --code-bg: #0a0f1f; --code-ink: #e8edf8; --code-dim: #8f9bbd;
+  --tip-bg: #1b2546; --warn-bg: #2e2312; --warn-line: #f2a34c; --ok: #5cc98b; --link: #f7a24a;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; }
+:root { padding-block: env(safe-area-inset-top, 0px) env(safe-area-inset-bottom, 0px); }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface);
+}
+a { color: var(--link); font-weight: 600; text-underline-offset: 2px; }
+.hero a { color: var(--orange); }
+
+.wrap {
+  max-width: 780px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+header.hero {
+  background: var(--navy);
+  color: var(--navy-ink);
+  border-bottom: 5px solid var(--orange);
+}
+header.hero .wrap { padding-block: 40px 32px; display: grid; gap: 12px; }
+.eyebrow {
+  font-family: var(--font-code); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--orange);
+}
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.2; margin: 0; }
+h1 { font-size: clamp(1.9rem, 5vw, 2.6rem); font-weight: 700; }
+.hero p { margin: 0; max-width: 62ch; color: var(--navy-ink); opacity: 0.92; }
+.hero .facts { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 0.92rem; }
+.hero .facts span { display: inline-flex; gap: 6px; align-items: baseline; }
+.hero .facts b { font-family: var(--font-display); color: var(--orange); }
+
+.os-bar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--surface); border-bottom: 1px solid var(--line);
+}
+.os-bar .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding-block: 10px; }
+.os-bar .label { font-weight: 600; font-size: 0.92rem; color: var(--muted); }
+.os-choice { display: flex; gap: 6px; flex-wrap: wrap; }
+.os-choice button {
+  font: inherit; font-weight: 600; font-size: 0.92rem;
+  padding: 6px 14px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+}
+.os-choice button[aria-pressed="true"] { background: var(--orange); border-color: var(--orange); color: var(--orange-ink); }
+.os-choice button:focus-visible, .copy:focus-visible, summary:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+
+main .wrap { padding-block: 28px 56px; display: grid; gap: 22px; }
+.intro p { margin: 0 0 10px; max-width: 65ch; }
+
+.step {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 22px; display: grid; gap: 12px; min-width: 0;
+}
+.step-head { display: flex; gap: 14px; align-items: center; }
+.num {
+  flex: none; width: 38px; height: 38px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--navy); color: var(--navy-ink);
+  font-family: var(--font-display); font-weight: 700; font-size: 1.1rem;
+}
+.num.opt { background: transparent; color: var(--muted); border: 2px dashed var(--line); }
+.step h2 { font-size: 1.35rem; }
+.step-head small { display: block; color: var(--muted); font-size: 0.88rem; font-family: var(--font-body); font-weight: 500; }
+.step p, .step li { max-width: 65ch; }
+.step p { margin: 0; }
+.step ol, .step ul { margin: 0; padding-left: 1.3rem; display: grid; gap: 4px; }
+h3 { font-size: 1.05rem; margin-top: 4px; }
+
+.cmd { display: grid; gap: 6px; min-width: 0; }
+.cmd-label { font-size: 0.86rem; color: var(--muted); font-weight: 600; }
+.code {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: var(--code-bg); color: var(--code-ink);
+  border-radius: 8px; min-width: 0;
+}
+.code pre {
+  flex: 1; min-width: 0;
+  margin: 0; padding: 14px 4px 14px 16px; overflow-x: auto;
+  font-family: var(--font-code); font-size: 0.88rem; line-height: 1.55; white-space: pre;
+}
+.code .copy {
+  flex: none; margin: 9px 9px 0 0;
+  font: 600 0.8rem var(--font-body); padding: 5px 10px; border-radius: 6px; cursor: pointer;
+  background: var(--orange); color: var(--orange-ink); border: 0;
+}
+.code .copy.done { background: var(--ok); color: #ffffff; }
+
+.expect {
+  font-size: 0.92rem; color: var(--muted); border-left: 3px solid var(--ok); padding-left: 10px;
+}
+.expect b { color: var(--ink); }
+.note, .warn {
+  border-radius: 8px; padding: 12px 14px; font-size: 0.95rem;
+}
+.note { background: var(--tip-bg); }
+.warn { background: var(--warn-bg); border-left: 4px solid var(--warn-line); }
+.note p + p, .warn p + p { margin-top: 6px; }
+kbd, code.inline {
+  font-family: var(--font-code); font-size: 0.85em;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px;
+}
+.path { font-weight: 600; }
+
+.screen { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.screen div { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: var(--bg); min-width: 0; }
+.screen b { display: block; font-family: var(--font-display); }
+.screen span { font-size: 0.92rem; color: var(--muted); }
+@media (max-width: 560px) { .screen { grid-template-columns: 1fr; } .step { padding: 18px; } }
+
+details { border-top: 1px solid var(--line); padding-block: 10px; }
+details:last-of-type { border-bottom: 1px solid var(--line); }
+summary { cursor: pointer; font-weight: 600; }
+details > div { display: grid; gap: 10px; padding-top: 10px; }
+
+footer { color: var(--muted); font-size: 0.88rem; }
+footer .wrap { padding-block: 0 40px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .os-choice button, .code .copy { transition: background-color 120ms ease, color 120ms ease; }
+}
+</style>
+
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow">Aviz Academy · Kubernetes Made Simple</span>
+    <h1>Run Kubernetes Made Simple on your laptop</h1>
+    <p>This guide takes you from a laptop with nothing installed to the Learn Kubernetes lessons open in your browser. Copy each command, paste it into your terminal, and press Enter.</p>
+    <div class="facts">
+      <span><b>16 GB</b> laptop memory</span>
+      <span><b>3</b> free tools to install</span>
+      <span><b>4</b> commands to start</span>
+    </div>
+  </div>
+</header>
+
+<nav class="os-bar" aria-label="Your laptop">
+  <div class="wrap">
+    <span class="label" id="os-label">Show steps for</span>
+    <div class="os-choice" role="group" aria-labelledby="os-label">
+      <button type="button" id="os-mac" data-os="mac" aria-pressed="true">macOS</button>
+      <button type="button" id="os-win" data-os="win" aria-pressed="false">Windows</button>
+      <button type="button" id="os-linux" data-os="linux" aria-pressed="false">Linux</button>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <div class="wrap">
+
+    <section class="intro" aria-label="What you are setting up">
+      <p><strong>What this is.</strong> Kubernetes Made Simple is a website that runs on your own laptop. It teaches Kubernetes one small block at a time and explains every line in plain English.</p>
+      <p><strong>Why Docker.</strong> Docker runs the website inside a sealed box called a container, so you don't have to install its programming tools yourself. You install Docker once, and one command builds and starts everything.</p>
+    </section>
+
+    <section class="step" aria-labelledby="s0">
+      <div class="step-head"><span class="num" aria-hidden="true">✓</span><h2 id="s0">Check your laptop<small>Two minutes</small></h2></div>
+      <ul>
+        <li><strong>Memory:</strong> 16 GB of RAM or more. The first build needs 8 GB just for Docker.</li>
+        <li><strong>Disk:</strong> about 10 GB free, to be safe.</li>
+        <li><strong>Internet:</strong> a steady connection. The first build downloads all the tools it needs.</li>
+        <li><strong>Permission to install apps.</strong> On a work laptop you may need IT's help.</li>
+      </ul>
+      <div data-os-only="mac" class="note"><p>To check your memory, open the Apple menu, then <span class="path">About This Mac</span>. The <span class="path">Chip</span> line also tells you which Docker download you need: <em>Apple M…</em> means Apple silicon, <em>Intel</em> means Intel.</p></div>
+      <div data-os-only="win" class="note" hidden><p>To check your memory, open <span class="path">Settings → System → About</span> and look at <span class="path">Installed RAM</span>. Docker Desktop needs 64-bit Windows 10 (22H2) or Windows 11 (23H2 or later), Pro, Enterprise, or Education.</p></div>
+      <div data-os-only="linux" class="note" hidden><p>To check your memory, run <code class="inline">free -h</code> and look at the <span class="path">total</span> column.</p></div>
+      <div class="note"><p><strong>Opening a terminal.</strong> A terminal is a window where you type commands.
+        <span data-os-only="mac">Press <kbd>Cmd</kbd> + <kbd>Space</kbd>, type <em>Terminal</em>, and press Enter.</span>
+        <span data-os-only="win" hidden>Click Start, type <em>PowerShell</em>, and open <span class="path">Windows PowerShell</span>. Every command in this guide works there.</span>
+        <span data-os-only="linux" hidden>Open your distribution's Terminal app.</span>
+        To paste, use <span data-os-only="mac"><kbd>Cmd</kbd> + <kbd>V</kbd></span><span data-os-only="win" hidden><kbd>Ctrl</kbd> + <kbd>V</kbd> or a right-click</span><span data-os-only="linux" hidden><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd></span>.</p></div>
+    </section>
+
+    <section class="step" aria-labelledby="s1">
+      <div class="step-head"><span class="num" aria-hidden="true">1</span><h2 id="s1">Install Docker<small>About 10 minutes</small></h2></div>
+
+      <div data-os-only="mac">
+        <ol>
+          <li>Open <a href="https://docs.docker.com/desktop/setup/install/mac-install/" target="_blank" rel="noopener">Docker Desktop for Mac</a> and download the installer for your chip: <em>Apple silicon</em> or <em>Intel chip</em>.</li>
+          <li>Double-click <span class="path">Docker.dmg</span> and drag Docker into <span class="path">Applications</span>.</li>
+          <li>Open <span class="path">Docker</span> from Applications, then select <span class="path">Accept</span> on the subscription agreement. Docker won't start until you accept.</li>
+          <li>Wait until the whale icon in the menu bar stops moving.</li>
+        </ol>
+      </div>
+      <div data-os-only="win" hidden>
+        <ol>
+          <li>Open <a href="https://docs.docker.com/desktop/setup/install/windows-install/" target="_blank" rel="noopener">Docker Desktop for Windows</a> and download <span class="path">Docker Desktop Installer.exe</span>.</li>
+          <li>Run the installer. On the configuration page, keep <span class="path">Use WSL 2 instead of Hyper-V</span> selected.</li>
+          <li>Select <span class="path">Close</span> when it finishes, and restart Windows if it asks.</li>
+          <li>Open <span class="path">Docker Desktop</span> from Start, then accept the subscription terms. Docker won't start until you accept.</li>
+        </ol>
+        <p>WSL is the Windows feature Docker runs on. If Docker says WSL needs an update, run this in PowerShell, then reopen Docker Desktop:</p>
+        <div class="cmd"><div class="code"><pre><code>wsl --update</code></pre></div></div>
+      </div>
+      <div data-os-only="linux" hidden>
+        <ol>
+          <li>Install Docker Engine for your distribution with the <a href="https://docs.docker.com/engine/install/" target="_blank" rel="noopener">official Docker Engine instructions</a>. It includes the Compose plugin.</li>
+          <li>Follow the <a href="https://docs.docker.com/engine/install/linux-postinstall/" target="_blank" rel="noopener">post-install steps</a> so you can run <code class="inline">docker</code> without <code class="inline">sudo</code>.</li>
+        </ol>
+      </div>
+
+      <div class="warn"><p><strong>Work laptops:</strong> Docker Desktop is free for personal use, education, and businesses with fewer than 250 employees and under $10 million in yearly revenue. Larger companies need a paid Docker subscription, so check with your IT team.</p></div>
+
+      <div class="cmd">
+        <span class="cmd-label">Check that Docker works</span>
+        <div class="code"><pre><code>docker version
+docker compose version</code></pre></div>
+      </div>
+      <p class="expect"><b>You should see</b> version details for both a Client and a Server, then a Docker Compose version. If you see “Cannot connect to the Docker daemon”, Docker isn't running yet: open Docker Desktop and wait a minute.</p>
+    </section>
+
+    <section class="step" aria-labelledby="s2">
+      <div class="step-head"><span class="num" aria-hidden="true">2</span><h2 id="s2">Give Docker 8 GB of memory<small>Two minutes</small></h2></div>
+      <p>The first build compiles a large program and stops with “cannot allocate memory” if Docker has less than 8 GB.</p>
+
+      <div data-os-only="mac">
+        <ol>
+          <li>Click the Docker whale in the menu bar and open <span class="path">Settings</span>.</li>
+          <li>Go to <span class="path">Resources → Advanced</span>.</li>
+          <li>Set <span class="path">Memory limit</span> to <strong>8 GB</strong> or more, then select <span class="path">Apply &amp; restart</span>.</li>
+        </ol>
+      </div>
+      <div data-os-only="win" hidden>
+        <p>On Windows, Docker uses the memory that WSL allows, which is half your laptop's memory by default. A 16 GB laptop already gives it 8 GB. To give it more:</p>
+        <ol>
+          <li>Open <span class="path">WSL Settings</span> from the Start menu and set the memory size to <strong>8 GB</strong> or more.</li>
+          <li>Quit Docker Desktop, run the command below in PowerShell, then open Docker Desktop again.</li>
+        </ol>
+        <div class="cmd"><div class="code"><pre><code>wsl --shutdown</code></pre></div></div>
+      </div>
+      <div data-os-only="linux" hidden>
+        <p>Docker Engine can use all of your laptop's memory, so there is nothing to change. If you use Docker Desktop for Linux, set <span class="path">Settings → Resources → Advanced → Memory limit</span> to 8 GB or more.</p>
+      </div>
+
+      <div class="cmd">
+        <span class="cmd-label">Check how much memory Docker has</span>
+        <div class="code" data-os-only="mac"><pre><code>docker info | grep "Total Memory"</code></pre></div>
+        <div class="code" data-os-only="win" hidden><pre><code>docker info | Select-String "Total Memory"</code></pre></div>
+        <div class="code" data-os-only="linux" hidden><pre><code>docker info | grep "Total Memory"</code></pre></div>
+      </div>
+      <p class="expect"><b>You should see</b> about <code class="inline">Total Memory: 7.5GiB</code> or more. Docker shows memory in GiB, which reads a little lower than GB.</p>
+    </section>
+
+    <section class="step" aria-labelledby="s3">
+      <div class="step-head"><span class="num" aria-hidden="true">3</span><h2 id="s3">Install Git<small>Five minutes</small></h2></div>
+      <p>Git downloads the project and, later, its updates.</p>
+
+      <div data-os-only="mac">
+        <p>macOS installs Git with Apple's Command Line Tools. Run this and select <span class="path">Install</span> in the window that appears. If it says the tools are already installed, you're done.</p>
+        <div class="cmd"><div class="code"><pre><code>xcode-select --install</code></pre></div></div>
+      </div>
+      <div data-os-only="win" hidden>
+        <p>Run this in PowerShell, then close PowerShell and open a new one so it finds Git. You can also use the <a href="https://git-scm.com/install/windows" target="_blank" rel="noopener">Git for Windows installer</a>.</p>
+        <div class="cmd"><div class="code"><pre><code>winget install --id Git.Git -e --source winget</code></pre></div></div>
+      </div>
+      <div data-os-only="linux" hidden>
+        <p>Use your package manager. On Ubuntu or Debian:</p>
+        <div class="cmd"><div class="code"><pre><code>sudo apt install git</code></pre></div></div>
+      </div>
+
+      <div class="cmd">
+        <span class="cmd-label">Check that Git works</span>
+        <div class="code"><pre><code>git --version</code></pre></div>
+      </div>
+      <p class="expect"><b>You should see</b> a line such as <code class="inline">git version 2.x</code>.</p>
+      <div class="note"><p><strong>Can't install Git?</strong> Download the project as a <a href="https://github.com/avizway1/Kubernetes-config-builder/archive/refs/heads/main.zip" target="_blank" rel="noopener">ZIP file</a> and unzip it into your home folder. The folder is called <span class="path">Kubernetes-config-builder-main</span>, so use that name in the <code class="inline">cd</code> commands below and skip the <code class="inline">git clone</code> line. To update later, download the ZIP again.</p></div>
+    </section>
+
+    <section class="step" aria-labelledby="s4">
+      <div class="step-head"><span class="num" aria-hidden="true">4</span><h2 id="s4">Download and start the dashboard<small>The first build takes a while</small></h2></div>
+      <p>Make sure Docker Desktop is running, then paste these four lines into your terminal. They are the same on every laptop.</p>
+      <div class="cmd">
+        <div class="code"><pre><code>cd ~
+git clone https://github.com/avizway1/Kubernetes-config-builder.git
+cd Kubernetes-config-builder
+docker compose -f compose.yaml -f compose.build.yaml up -d --build</code></pre></div>
+      </div>
+      <ul>
+        <li><code class="inline">cd ~</code> goes to your home folder.</li>
+        <li><code class="inline">git clone</code> downloads the project into a new <span class="path">Kubernetes-config-builder</span> folder.</li>
+        <li><code class="inline">docker compose … up -d --build</code> builds the dashboard and starts it in the background.</li>
+      </ul>
+      <p class="expect"><b>You should see</b> many build lines scroll past, ending with a line that says <code class="inline">Started</code>. The first build downloads and compiles everything, so it often takes 20 minutes or more, and up to an hour on a slower laptop or connection. Leave the terminal open until it finishes.</p>
+    </section>
+
+    <section class="step" aria-labelledby="s5">
+      <div class="step-head"><span class="num" aria-hidden="true">5</span><h2 id="s5">Open it and start learning</h2></div>
+      <p>Open <a href="http://localhost:8080" target="_blank" rel="noopener">http://localhost:8080</a> in your browser. <span class="path">localhost</span> means your own laptop: nothing is sent anywhere else.</p>
+      <p>You land on <strong>Learn Kubernetes</strong>. Start with <strong>Level 0 · Reading YAML</strong> and click <strong>Start</strong> on <em>Read a YAML file</em>. Lessons marked <em>Coming soon</em> aren't built yet.</p>
+      <div class="screen" aria-label="What you see in a lesson">
+        <div><b>Left: the lesson card</b><span>What the block does, why it's there, and what happens if you remove it. Click <strong>Next block</strong> to add the next few lines.</span></div>
+        <div><b>Right: the file</b><span>New lines are highlighted. Hover over any line to see what it means in plain English.</span></div>
+        <div><b>See the mistake</b><span>In the first lesson, this button shows the most common indentation mistake and the real error it causes.</span></div>
+        <div><b>Copy and Download</b><span>Save the file you built. <strong>Show explanations</strong> adds or removes the comment lines.</span></div>
+      </div>
+      <p>From <em>Parts of every manifest</em> onwards, a <strong>Try it</strong> panel lists commands to run the file on a practice cluster. Set one up in the optional step below when you're ready.</p>
+    </section>
+
+    <section class="step" aria-labelledby="s6">
+      <div class="step-head"><span class="num opt" aria-hidden="true">6</span><h2 id="s6">Optional: a practice cluster for Try it<small>Free, runs inside Docker</small></h2></div>
+      <p>A cluster is where Kubernetes runs your files. <strong>k3d</strong> creates a small one inside Docker, and <strong>kubectl</strong> is the command you use to talk to it.</p>
+
+      <div data-os-only="mac">
+        <p>Install them with Homebrew. If <code class="inline">brew --version</code> doesn't work, first install Homebrew with the command on <a href="https://brew.sh/" target="_blank" rel="noopener">brew.sh</a>.</p>
+        <div class="cmd"><div class="code"><pre><code>brew install k3d
+brew install kubectl</code></pre></div></div>
+      </div>
+      <div data-os-only="win" hidden>
+        <p>Install them with Scoop, a free installer for command-line tools. If <code class="inline">scoop --version</code> doesn't work, install Scoop first in a normal (not administrator) PowerShell window:</p>
+        <div class="cmd">
+          <span class="cmd-label">Install Scoop (once)</span>
+          <div class="code"><pre><code>Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression</code></pre></div>
+        </div>
+        <div class="cmd">
+          <span class="cmd-label">Install k3d and kubectl</span>
+          <div class="code"><pre><code>scoop install k3d
+scoop install kubectl</code></pre></div>
+        </div>
+      </div>
+      <div data-os-only="linux" hidden>
+        <p>Download the official k3d installer, read it, then run it.</p>
+        <div class="cmd"><div class="code"><pre><code>curl -fsSL -o install-k3d.sh https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh
+bash install-k3d.sh</code></pre></div></div>
+        <p>Install kubectl from the <a href="https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/" target="_blank" rel="noopener">official Linux instructions</a>.</p>
+      </div>
+
+      <div class="cmd">
+        <span class="cmd-label">Create the practice cluster</span>
+        <div class="code"><pre><code>k3d cluster create practice --image rancher/k3s:v1.37.2-k3s1 --wait
+kubectl get nodes</code></pre></div>
+      </div>
+      <p class="expect"><b>You should see</b> one node named <code class="inline">k3d-practice-server-0</code> with STATUS <code class="inline">Ready</code>.</p>
+
+      <h3>Try your first file</h3>
+      <p>In the lesson <em>Run one container</em>, click <strong>Show whole file</strong>, then <strong>Download</strong>. Your browser saves <span class="path">pod.yaml</span> in your Downloads folder. Then run:</p>
+      <div class="cmd"><div class="code"><pre><code>cd ~/Downloads
+kubectl apply -f pod.yaml
+kubectl get pod web</code></pre></div></div>
+      <p class="expect"><b>You should see</b> <code class="inline">pod/web created</code>, then STATUS <code class="inline">Running</code> after a few seconds. Each lesson's Try it panel lists the next commands.</p>
+
+      <div class="cmd">
+        <span class="cmd-label">When you finish, delete the practice cluster</span>
+        <div class="code"><pre><code>k3d cluster delete practice</code></pre></div>
+      </div>
+    </section>
+
+    <section class="step" aria-labelledby="s7">
+      <div class="step-head"><span class="num" aria-hidden="true">↻</span><h2 id="s7">Everyday commands</h2></div>
+      <p>Run these from the project folder. Docker Desktop must be running.</p>
+
+      <div class="cmd">
+        <span class="cmd-label">Start it again, for example after restarting your laptop</span>
+        <div class="code"><pre><code>cd ~/Kubernetes-config-builder
+docker compose -f compose.yaml -f compose.build.yaml up -d --build</code></pre></div>
+      </div>
+      <p class="expect">This is much faster than the first time, because Docker reuses what it already built.</p>
+
+      <div class="cmd">
+        <span class="cmd-label">Get the latest lessons</span>
+        <div class="code"><pre><code>cd ~/Kubernetes-config-builder
+git pull
+docker compose -f compose.yaml -f compose.build.yaml up -d --build</code></pre></div>
+      </div>
+      <p class="expect">Then reload the page with <span data-os-only="mac"><kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd></span><span data-os-only="win" hidden><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd></span><span data-os-only="linux" hidden><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd></span>.</p>
+
+      <div class="cmd">
+        <span class="cmd-label">Check whether it's running</span>
+        <div class="code"><pre><code>docker compose -f compose.yaml -f compose.build.yaml ps</code></pre></div>
+      </div>
+
+      <div class="cmd">
+        <span class="cmd-label">Stop it</span>
+        <div class="code"><pre><code>docker compose -f compose.yaml -f compose.build.yaml down</code></pre></div>
+      </div>
+
+      <div class="cmd">
+        <span class="cmd-label">Remove it completely</span>
+        <div class="code"><pre><code>docker compose -f compose.yaml -f compose.build.yaml down --rmi all</code></pre></div>
+      </div>
+      <p class="expect">This stops the dashboard and deletes the image it built. Then delete the <span class="path">Kubernetes-config-builder</span> folder from your home folder.</p>
+    </section>
+
+    <section class="step" aria-labelledby="s8">
+      <div class="step-head"><span class="num" aria-hidden="true">?</span><h2 id="s8">If something goes wrong</h2></div>
+
+      <details>
+        <summary>“docker: command not found” or “Cannot connect to the Docker daemon”</summary>
+        <div><p>Docker isn't installed or isn't running. Open Docker Desktop, wait until it says it's running, then try again. On Windows, close PowerShell and open a new one after installing.</p></div>
+      </details>
+
+      <details>
+        <summary>The build stops with “cannot allocate memory”</summary>
+        <div><p>Docker has less than 8 GB. Follow step 2, check with the memory command, and run the start command again. Docker continues from where it stopped.</p></div>
+      </details>
+
+      <details>
+        <summary>“no configuration file provided: not found”</summary>
+        <div><p>The terminal isn't in the project folder. Run <code class="inline">cd ~/Kubernetes-config-builder</code> first, or the <span class="path">-main</span> folder name if you used the ZIP.</p></div>
+      </details>
+
+      <details>
+        <summary>“port is already allocated” or “address already in use”</summary>
+        <div>
+          <p>Another program already uses port 8080. Find it with the command below, close that program, then start the dashboard again.</p>
+          <div class="code" data-os-only="mac"><pre><code>lsof -i :8080</code></pre></div>
+          <div class="code" data-os-only="win" hidden><pre><code>netstat -ano | findstr :8080</code></pre></div>
+          <div class="code" data-os-only="linux" hidden><pre><code>sudo lsof -i :8080</code></pre></div>
+        </div>
+      </details>
+
+      <details>
+        <summary>“fatal: destination path 'Kubernetes-config-builder' already exists”</summary>
+        <div><p>You already downloaded the project. Skip the <code class="inline">git clone</code> line and use <strong>Get the latest lessons</strong> above.</p></div>
+      </details>
+
+      <details>
+        <summary>localhost:8080 doesn't load</summary>
+        <div><p>Run the <strong>Check whether it's running</strong> command. If nothing is listed, start it again. If the first build is still running in your terminal, wait for it to finish.</p></div>
+      </details>
+
+      <details>
+        <summary>The page looks old after an update</summary>
+        <div><p>Your browser kept an earlier copy. Reload once with <span data-os-only="mac"><kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd></span><span data-os-only="win" hidden><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd></span><span data-os-only="linux" hidden><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd></span>.</p></div>
+      </details>
+
+      <details>
+        <summary>“Unable to connect to the server” from kubectl</summary>
+        <div><p>The practice cluster isn't running. Run <code class="inline">k3d cluster list</code>. If it's missing, create it again with the command in step 6.</p></div>
+      </details>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Project source: <a href="https://github.com/avizway1/Kubernetes-config-builder" target="_blank" rel="noopener">github.com/avizway1/Kubernetes-config-builder</a>. Built by <a href="https://avizacademy.com" target="_blank" rel="noopener">Aviz Academy</a>.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var key = 'kms-start-guide-os';
+  var buttons = Array.prototype.slice.call(document.querySelectorAll('.os-choice button'));
+
+  function guess() {
+    var ua = (navigator.userAgent || '') + ' ' + (navigator.platform || '');
+    if (/Win/i.test(ua)) return 'win';
+    if (/Linux|X11/i.test(ua) && !/Android/i.test(ua)) return 'linux';
+    return 'mac';
+  }
+
+  function show(os) {
+    buttons.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.os === os)); });
+    document.querySelectorAll('[data-os-only]').forEach(function (el) { el.hidden = el.dataset.osOnly !== os; });
+    try { localStorage.setItem(key, os); } catch (e) { /* the choice is only a convenience */ }
+  }
+
+  var saved = null;
+  try { saved = localStorage.getItem(key); } catch (e) { saved = null; }
+  show(saved === 'mac' || saved === 'win' || saved === 'linux' ? saved : guess());
+  buttons.forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.os); }); });
+
+  document.querySelectorAll('.code').forEach(function (block) {
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'copy';
+    button.textContent = 'Copy';
+    button.setAttribute('aria-label', 'Copy command');
+    block.appendChild(button);
+    button.addEventListener('click', function () {
+      var text = block.querySelector('code').textContent;
+      function done(label) {
+        button.textContent = label;
+        button.classList.toggle('done', label === 'Copied');
+        setTimeout(function () { button.textContent = 'Copy'; button.classList.remove('done'); }, 1600);
+      }
+      function select() {
+        var range = document.createRange();
+        range.selectNodeContents(block.querySelector('code'));
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        done('Selected');
+      }
+      try {
+        navigator.clipboard.writeText(text).then(function () { done('Copied'); }, select);
+      } catch (e) { select(); }
+    });
+  });
+})();
+</script>
+</body>
+</html>

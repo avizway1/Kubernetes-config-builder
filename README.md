@@ -6,7 +6,9 @@
 
 ## Learn Kubernetes
 
-Start the dashboard with Docker below and open [localhost:8080](http://localhost:8080). Begin with **Level 0 · Reading YAML**, then work through the levels in order. The [beginner learning path](specs/beginner-learning-path.md) lists every lesson.
+Start the dashboard with Docker below and open [localhost:8080](http://localhost:8080). Begin with **Level 0 · Reading YAML**, then work through the levels in order.
+
+**New to Docker or the terminal?** Use the [start guide](docs/getting-started.html). It goes from a laptop with nothing installed to the first lesson, with copy-paste commands for macOS, Windows, and Linux. GitHub shows HTML files as code, so save the [raw file](https://raw.githubusercontent.com/avizway1/Kubernetes-config-builder/main/docs/getting-started.html) (right-click, then **Save Link As**) and open it in your browser. The [beginner learning path](specs/beginner-learning-path.md) lists every lesson.
 
 The project is built in two phases. Phase 1, now, is Learn Kubernetes. Phase 2 brings back **Build a config**, the Argo CD and Prometheus template builder described below, which is hidden in the dashboard until then.
 
