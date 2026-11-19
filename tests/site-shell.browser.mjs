@@ -32,6 +32,7 @@ test('first visit offers two starting options and the lesson overview opens exis
     assert.equal(await basics.count(), 8);
     assert.equal(await basics.locator('.lesson-start').count(), 8);
     assert.equal(await basics.getByText('Coming soon').count(), 0);
+    assert.equal(await page.locator('section[aria-labelledby="level-0-title"] .lesson-start').count(), 2);
     assert.equal(await page.locator('section.level:not([aria-labelledby="labs-title"]) .badge-eks').count(), 7);
 
     await page.getByRole('button', { name: 'Open Deploy an app from Git' }).click();
@@ -193,6 +194,64 @@ test('a file with two objects explains each one and exports both', { timeout: 30
     assert.equal(file.suggestedFilename(), 'configmap.yaml');
     const content = lessonContent.configmap;
     assert.equal(readFileSync(await file.path(), 'utf8'), lessonText(renderLesson(content, content.blocks.length - 1, {}, true)));
+  } finally {
+    await browser.close();
+  }
+});
+
+test('Level 0 shows the indentation mistake with the real error, then returns to the fixed file', { timeout: 30000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
+    page.setDefaultTimeout(8000);
+    const yaml = page.getByTestId('lesson-yaml');
+    const lesson = lessonContent['reading-yaml'];
+    const mistake = lesson.blocks[1].mistake;
+    async function download() {
+      const pending = page.waitForEvent('download');
+      await page.getByRole('button', { name: 'Download' }).click();
+      return readFileSync(await (await pending).path(), 'utf8');
+    }
+
+    await page.goto(`${appUrl}#learn`);
+    await page.getByRole('link', { name: 'Start Read a YAML file' }).click();
+    await page.getByRole('heading', { name: 'Read a YAML file', level: 1 }).waitFor();
+    await yaml.locator('.view-line').filter({ hasText: 'name: Asha' }).waitFor();
+    assert.equal(await page.getByText('Not finished yet.').count(), 0);
+    await page.getByText('Nothing to run for this lesson.').waitFor();
+    assert.equal(await page.getByRole('button', { name: 'See the mistake' }).count(), 0);
+
+    await page.getByRole('button', { name: 'Next block' }).click();
+    const toggle = page.getByRole('button', { name: 'See the mistake' });
+    await toggle.click();
+    await page.getByText(mistake.error, { exact: true }).waitFor();
+    await page.getByText(`Line ${mistake.line} is wrong.`, { exact: false }).waitFor();
+    assert.equal(await page.getByRole('button', { name: 'Show the fixed file' }).getAttribute('aria-pressed'), 'true');
+    // Only the broken line is marked, and the broken copy has no comments, so its line number matches the error.
+    await page.waitForFunction(() => document.querySelectorAll('[data-testid="lesson-yaml"] .lesson-mistake-line').length === 1);
+    assert.equal(await yaml.locator('.view-line').filter({ hasText: /^#/ }).count(), 0);
+    assert.equal(await download(), mistake.yaml);
+    await yaml.locator('.view-line span').filter({ hasText: /^country$/ }).first().hover();
+    await page.locator('.monaco-hover').getByText(/one more than city/).waitFor();
+
+    await page.getByRole('button', { name: 'Show the fixed file' }).click();
+    await yaml.locator('.view-line').filter({ hasText: 'address holds two keys' }).waitFor();
+    assert.equal(await download(), lessonText(renderLesson(lesson, 1, {}, true)));
+
+    // Moving to another block always returns to the fixed file.
+    await toggle.click();
+    await page.getByRole('button', { name: 'Next block' }).click();
+    await page.getByRole('button', { name: 'Back' }).click();
+    await page.getByRole('button', { name: 'See the mistake' }).waitFor();
+    assert.equal(await page.getByText(mistake.error, { exact: true }).count(), 0);
+
+    await page.getByRole('button', { name: 'Show whole file' }).click();
+    await page.getByRole('link', { name: 'Next lesson: Parts of every manifest' }).click();
+    await page.getByRole('heading', { name: 'Parts of every manifest', level: 1 }).waitFor();
+    await page.getByRole('button', { name: 'Show whole file' }).click();
+    await page.getByRole('heading', { name: 'Try it' }).waitFor();
+    await page.getByText('kubectl explain pod.spec.containers', { exact: true }).waitFor();
+    assert.equal(await page.locator('.lesson-term dfn').textContent(), 'status');
   } finally {
     await browser.close();
   }

@@ -1,0 +1,67 @@
+{
+  "id": "reading-yaml",
+  "filename": "student.yaml",
+  "finishedAt": 0,
+  "blocks": [
+    {
+      "title": "Keys and values",
+      "what": "Each line is a key, then a colon and a space, then its value.",
+      "why": "Programs find each value by its key. Kubernetes reads every file this way.",
+      "ifRemoved": "The file is empty, so a program reading it finds nothing.",
+      "comment": "Three keys, each followed by a colon, a space, and a value",
+      "term": "key",
+      "yaml": "name: Asha\ncourse: Kubernetes\nbatch: 10\n"
+    },
+    {
+      "title": "Nesting with two spaces",
+      "what": "address has no value on its own line. The lines indented below it belong to address.",
+      "why": "Nesting groups related keys together. Kubernetes uses it everywhere, such as metadata holding a name.",
+      "ifRemoved": "Without the two spaces, city and country stop belonging to address. YAML reads them as separate top-level keys.",
+      "comment": "address holds two keys, each indented by two spaces",
+      "term": "indentation",
+      "yaml": "name: Asha\ncourse: Kubernetes\nbatch: 10\naddress:\n  city: Hyderabad\n  country: India\n",
+      "mistake": {
+        "yaml": "name: Asha\ncourse: Kubernetes\nbatch: 10\naddress:\n  city: Hyderabad\n   country: India\n",
+        "line": 6,
+        "error": "yaml: line 6: mapping values are not allowed in this context",
+        "explain": "country has three spaces, one more than city. YAML reads it as part of the value Hyderabad, where a colon is not allowed.",
+        "fix": "Line up country with city, two spaces from the left."
+      }
+    },
+    {
+      "title": "A list with dashes",
+      "what": "Each line starting with a dash and a space is one item. skills holds a list of two items.",
+      "why": "A list holds several values under one key. Kubernetes uses lists for containers, ports, and volumes.",
+      "ifRemoved": "Without the dashes, YAML joins the lines into one text value: Linux Docker.",
+      "comment": "skills is a list. Each dash starts one item",
+      "term": "list",
+      "yaml": "name: Asha\ncourse: Kubernetes\nbatch: 10\naddress:\n  city: Hyderabad\n  country: India\nskills:\n  - Linux\n  - Docker\n"
+    },
+    {
+      "title": "A list of nested items",
+      "what": "Each dash starts one item, and each item holds its own keys. The second key lines up under the first.",
+      "why": "Kubernetes lists containers this way. Each container is one item with its own name and image.",
+      "ifRemoved": "If tool moves left to line up with the dash, YAML reports an error and rejects the file.",
+      "comment": "projects is a list. Each item has its own name and tool",
+      "yaml": "name: Asha\ncourse: Kubernetes\nbatch: 10\naddress:\n  city: Hyderabad\n  country: India\nskills:\n  - Linux\n  - Docker\nprojects:\n  - name: website\n    tool: Docker\n  - name: cluster\n    tool: Kubernetes\n"
+    }
+  ],
+  "notes": {
+    "name": "A key with the text value Asha.",
+    "course": "A key with the text value Kubernetes.",
+    "batch": "A key with the number 10 as its value.",
+    "address": "A key with no value on its line. The indented lines below are its value.",
+    "address.city": "Nested under address, because it is indented two spaces more.",
+    "address.country": "Also nested under address. It lines up exactly with city.",
+    "skills": "A key whose value is a list.",
+    "skills[]": "One list item. A dash and a space start it.",
+    "projects": "A key whose value is a list of items, each with its own keys.",
+    "projects[].name": "The first key of a list item. The dash before it starts a new item.",
+    "projects[].tool": "Another key in the same item. It lines up with name, not with the dash."
+  },
+  "tryIt": [],
+  "sources": [
+    { "title": "YAML 1.2.2 specification", "url": "https://yaml.org/spec/1.2.2/" },
+    { "title": "Objects in Kubernetes", "url": "https://kubernetes.io/docs/concepts/overview/working-with-objects/" }
+  ]
+}

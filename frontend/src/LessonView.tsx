@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ExportActions } from './ExportActions';
 import { LessonEditor } from './LessonEditor';
 import {
-  glossary, lessonText, lineNote, matchLines, renderLesson,
+  glossary, lessonText, lineNote, matchLines, renderLesson, renderMistake,
   type LessonContent, type LessonValues,
 } from './lesson-builder';
 import { runsOnLabels, type Lesson } from './lessons';
@@ -34,9 +34,18 @@ export function LessonView({ lesson, content, progress, onProgress, next }: {
     shown.current = lines.map(line => line.text);
   }, [lines]);
 
+  // The broken copy replaces the file until the learner returns to it or moves to another block.
+  const [mistakeShown, setMistakeShown] = useState(false);
+  const mistake = mistakeShown ? block.mistake : undefined;
+  const broken = useMemo(() => (mistake ? renderMistake(content, mistake) : undefined), [content, mistake]);
+  const shownText = broken?.text ?? text;
+
   const choice = block.tryChange ? content.choices?.[block.tryChange] : undefined;
   const finished = step >= content.finishedAt;
-  const go = (target: number) => onProgress({ ...progress, step: Math.max(0, Math.min(last, target)) });
+  const go = (target: number) => {
+    setMistakeShown(false);
+    onProgress({ ...progress, step: Math.max(0, Math.min(last, target)) });
+  };
 
   return (
     <section className="lesson-view" aria-labelledby="lesson-title">
@@ -70,6 +79,26 @@ export function LessonView({ lesson, content, progress, onProgress, next }: {
               </select>
             </label>
           )}
+          {block.mistake && (
+            <div className="lesson-mistake-area">
+              <button type="button" className="lesson-mistake-toggle" aria-pressed={mistakeShown}
+                onClick={() => setMistakeShown(!mistakeShown)}>
+                {mistakeShown ? 'Show the fixed file' : 'See the mistake'}
+              </button>
+              <div aria-live="polite">
+                {mistake && (
+                  <div className="lesson-mistake">
+                    <p className="lesson-mistake-label">Line {mistake.line} is wrong. The YAML reader says:</p>
+                    <p><code>{mistake.error}</code></p>
+                    <h3>Why</h3>
+                    <p>{mistake.explain}</p>
+                    <h3>How to fix it</h3>
+                    <p>{mistake.fix}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           {!finished && (
             <p className="lesson-unfinished">
               Not finished yet. Block {content.finishedAt + 1}, “{content.blocks[content.finishedAt].title}”, makes this a working file.
@@ -97,10 +126,17 @@ export function LessonView({ lesson, content, progress, onProgress, next }: {
               Show explanations
             </label>
           </div>
-          <LessonEditor text={text} notes={notes} highlights={highlights} label={`${content.filename}, block ${step + 1} of ${content.blocks.length}`} />
+          {broken && mistake ? (
+            <LessonEditor text={broken.text} notes={broken.notes} highlights={[mistake.line]} highlightClass="lesson-mistake-line"
+              label={`${content.filename}, broken copy with a mistake on line ${mistake.line}`} />
+          ) : (
+            <LessonEditor text={text} notes={notes} highlights={highlights} label={`${content.filename}, block ${step + 1} of ${content.blocks.length}`} />
+          )}
           <p className="lesson-hint">Hover over any line to see what it means.</p>
-          <ExportActions text={text} filename={content.filename} />
-          {finished ? (
+          <ExportActions text={shownText} filename={content.filename} />
+          {!content.tryIt.length ? (
+            <p className="lesson-hint">Nothing to run for this lesson. You only need a text editor to write YAML.</p>
+          ) : finished ? (
             <section className="lesson-try-it" aria-labelledby="try-it-title">
               <h3 id="try-it-title">Try it</h3>
               <p>Save the file, then run these commands against your practice cluster.</p>

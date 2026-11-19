@@ -14,6 +14,7 @@
   --highlight: #dbeafe;
   --sticky-bg: #f1f5fb;
   --error: #9b2020;
+  --error-soft: #fbe3e3;
   --focus: #233483;
 
   font-family: system-ui, sans-serif;
@@ -771,6 +772,37 @@ section.lesson-try-it {
   border: 1px solid var(--border);
   border-radius: 0.4rem;
   background: var(--sticky-bg);
+}
+
+.lesson-mistake-toggle {
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--error);
+  border-radius: 0.4rem;
+  color: var(--error);
+  background: var(--surface);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lesson-mistake {
+  margin-block-start: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-left: 4px solid var(--error);
+  background: var(--sticky-bg);
+}
+
+.lesson-mistake-label {
+  font-weight: 700;
+}
+
+.lesson-mistake code {
+  color: var(--error);
+  overflow-wrap: anywhere;
+}
+
+.lesson-mistake-line {
+  background: var(--error-soft);
 }
 
 .lesson-nav {

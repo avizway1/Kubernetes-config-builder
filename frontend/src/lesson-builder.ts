@@ -1,3 +1,5 @@
+import readingYamlLesson from '../../templates/kubernetes/lessons/reading-yaml.json' with { type: 'json' };
+import manifestPartsLesson from '../../templates/kubernetes/lessons/manifest-parts.json' with { type: 'json' };
 import podLesson from '../../templates/kubernetes/lessons/pod.json' with { type: 'json' };
 import replicaSetLesson from '../../templates/kubernetes/lessons/replicaset.json' with { type: 'json' };
 import deploymentLesson from '../../templates/kubernetes/lessons/deployment.json' with { type: 'json' };
@@ -7,6 +9,9 @@ import configMapLesson from '../../templates/kubernetes/lessons/configmap.json' 
 import secretLesson from '../../templates/kubernetes/lessons/secret.json' with { type: 'json' };
 import jobsLesson from '../../templates/kubernetes/lessons/jobs.json' with { type: 'json' };
 import glossaryData from '../../templates/kubernetes/glossary.json' with { type: 'json' };
+
+// A broken copy of a block's file, with the message a YAML reader prints for it. Line numbers count from 1.
+export type LessonMistake = { yaml: string; line: number; error: string; explain: string; fix: string };
 
 export type LessonChoice = { label: string; options: string[]; default: string };
 
@@ -19,12 +24,14 @@ export type LessonBlock = {
   comment: string;
   term?: string;
   tryChange?: string;
+  mistake?: LessonMistake;
   yaml: string;
 };
 
 export type LessonContent = {
   id: string;
-  kind: string;
+  // The Kubernetes kind the file builds. Level 0's YAML lesson has none, so it is checked only as YAML.
+  kind?: string;
   filename: string;
   finishedAt: number;
   choices?: Record<string, LessonChoice>;
@@ -39,6 +46,8 @@ export type LessonValues = Record<string, string>;
 export type LessonLine = { text: string; block: number; path?: string; kind?: string; comment?: boolean };
 
 export const lessonContent: Record<string, LessonContent> = {
+  'reading-yaml': readingYamlLesson as LessonContent,
+  'manifest-parts': manifestPartsLesson as LessonContent,
   pod: podLesson as LessonContent,
   replicaset: replicaSetLesson as LessonContent,
   deployment: deploymentLesson as LessonContent,
@@ -167,4 +176,14 @@ export function lineNote(lesson: LessonContent, line: LessonLine) {
   if (line.comment) return lesson.blocks[line.block].what;
   const key = noteKey(lesson, line);
   return key && lesson.notes[key];
+}
+
+// The broken copy as shown: no block comments, so the line numbers match the error message.
+export function renderMistake(lesson: LessonContent, mistake: LessonMistake): { text: string; notes: (string | undefined)[] } {
+  const lines = mistake.yaml.replace(/\n$/, '').split('\n');
+  const paths = yamlPaths(lines);
+  return {
+    text: `${lines.join('\n')}\n`,
+    notes: lines.map((_, index) => (index + 1 === mistake.line ? mistake.explain : lesson.notes[paths[index] ?? ''])),
+  };
 }

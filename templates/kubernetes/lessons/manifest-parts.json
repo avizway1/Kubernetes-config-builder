@@ -1,0 +1,67 @@
+{
+  "id": "manifest-parts",
+  "kind": "Pod",
+  "filename": "myfirstpod.yaml",
+  "finishedAt": 2,
+  "blocks": [
+    {
+      "title": "apiVersion and kind",
+      "what": "apiVersion names the API that defines this object. kind names the type of object, here a Pod.",
+      "why": "Kubernetes reads these two lines first to know which rules apply to the rest.",
+      "ifRemoved": "kubectl refuses the file, because it cannot tell what you want to create.",
+      "comment": "Part 1: the API version and the kind of object",
+      "term": "manifest",
+      "yaml": "apiVersion: v1\nkind: Pod\n"
+    },
+    {
+      "title": "metadata: who it is",
+      "what": "metadata identifies the object. Here it gives the Pod its name, myfirstpod.",
+      "why": "You use the name to find, change, or delete the object later.",
+      "ifRemoved": "Kubernetes rejects the Pod, because every object needs a name.",
+      "comment": "Part 2: metadata, which names the object",
+      "term": "metadata",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: myfirstpod\n"
+    },
+    {
+      "title": "spec: what you want",
+      "what": "spec describes what you want. Here it is one container started from the nginx image.",
+      "why": "Kubernetes compares spec with what is really running and works to make them match.",
+      "ifRemoved": "Kubernetes rejects the Pod, because a Pod needs at least one container.",
+      "comment": "Part 3: spec, the state you want",
+      "term": "spec",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: myfirstpod\nspec:\n  containers:\n    - name: myfirstcontainer\n      image: nginx:1.30.4\n"
+    },
+    {
+      "title": "The four parts together",
+      "what": "The last lines record port 80, where nginx listens. Every line now sits under one of the four parts.",
+      "why": "After you apply the file, Kubernetes adds a fifth part, status. It reports what is really happening.",
+      "ifRemoved": "Without ports, the Pod runs the same. The list only tells readers which port nginx uses.",
+      "comment": "The port nginx listens on, inside spec",
+      "term": "status",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: myfirstpod\nspec:\n  containers:\n    - name: myfirstcontainer\n      image: nginx:1.30.4\n      ports:\n        - containerPort: 80\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "Part 1: the API that defines this kind. Pods are in the core v1 API.",
+    "kind": "Part 1: the type of object to create. Here, a Pod.",
+    "metadata": "Part 2: details that identify the object, such as its name.",
+    "metadata.name": "The Pod's name. It must be unique among Pods in the same namespace.",
+    "spec": "Part 3: the state you want. Kubernetes works to make the cluster match it.",
+    "spec.containers": "The containers in this Pod. Run kubectl explain pod.spec.containers to see every field.",
+    "spec.containers[].name": "The container's name. It must be unique within the Pod.",
+    "spec.containers[].image": "The image to run, with a fixed version tag, so every run uses the same version.",
+    "spec.containers[].ports": "Ports the container listens on. This list is mostly informational.",
+    "spec.containers[].ports[].containerPort": "The port number nginx listens on inside the container."
+  },
+  "tryIt": [
+    { "command": "kubectl apply -f myfirstpod.yaml", "result": "Prints pod/myfirstpod created." },
+    { "command": "kubectl get pod myfirstpod -o yaml", "result": "Shows your four parts, plus a status section Kubernetes added, such as phase: Running." },
+    { "command": "kubectl explain pod", "result": "Describes a Pod and lists its top-level fields: apiVersion, kind, metadata, spec, and status." },
+    { "command": "kubectl explain pod.spec.containers", "result": "Describes the containers field and every field you can set inside it." },
+    { "command": "kubectl delete -f myfirstpod.yaml", "result": "Removes the Pod." }
+  ],
+  "sources": [
+    { "title": "Objects in Kubernetes", "url": "https://kubernetes.io/docs/concepts/overview/working-with-objects/" },
+    { "title": "kubectl explain", "url": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_explain/" }
+  ]
+}

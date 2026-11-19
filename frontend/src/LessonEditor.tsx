@@ -5,11 +5,12 @@ import EditorWorker from 'monaco-editor/editor/editor.worker.js?worker';
 self.MonacoEnvironment ??= { getWorker: () => new EditorWorker() };
 
 // Read-only YAML for a lesson. Highlighted lines are what the last action added or changed.
-export function LessonEditor({ text, notes, highlights, label }: {
+export function LessonEditor({ text, notes, highlights, label, highlightClass = 'comparison-value-line' }: {
   text: string;
   notes: (string | undefined)[];
   highlights: number[];
   label: string;
+  highlightClass?: string;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor>(null);
@@ -49,11 +50,11 @@ export function LessonEditor({ text, notes, highlights, label }: {
     if (model.getValue() !== text) model.setValue(text);
     const decorations = editor.createDecorationsCollection(highlights.map(line => ({
       range: new monaco.Range(line, 1, line, 1),
-      options: { isWholeLine: true, className: 'comparison-value-line' },
+      options: { isWholeLine: true, className: highlightClass },
     })));
     if (highlights.length) editor.revealLinesInCenterIfOutsideViewport(highlights[0], highlights[highlights.length - 1]);
     return () => decorations.clear();
-  }, [text, notes, highlights]);
+  }, [text, notes, highlights, highlightClass]);
 
   return <div className="preview lesson-preview" ref={container} data-testid="lesson-yaml" />;
 }

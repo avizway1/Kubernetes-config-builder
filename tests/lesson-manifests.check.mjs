@@ -27,7 +27,7 @@ test('every finished lesson step passes strict kubeconform', () => {
   try {
     const files = [];
     let objects = 0;
-    for (const lesson of Object.values(lessonContent)) {
+    for (const lesson of Object.values(lessonContent).filter(lesson => lesson.kind)) {
       for (const [set, values] of valueSets(lesson).entries()) {
         for (let step = lesson.finishedAt; step < lesson.blocks.length; step++) {
           const file = join(folder, `${lesson.id}-${set}-${step + 1}.yaml`);
@@ -49,4 +49,44 @@ test('every finished lesson step passes strict kubeconform', () => {
   } finally {
     rmSync(folder, { recursive: true, force: true });
   }
+});
+
+// kubeconform reads YAML before it looks for a kind, so a file without one fails only with "missing 'kind' key"
+// when it parses, and with the YAML reader's own message when it does not.
+function readYaml(text) {
+  const folder = mkdtempSync(join(tmpdir(), 'lesson-yaml-'));
+  try {
+    const file = join(folder, 'file.yaml');
+    writeFileSync(file, text);
+    try {
+      return execFileSync('kubeconform', [file], { encoding: 'utf8' });
+    } catch (error) {
+      return String(error.stdout);
+    }
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
+}
+
+test('every step of a YAML-only lesson parses', () => {
+  for (const lesson of Object.values(lessonContent).filter(lesson => !lesson.kind)) {
+    for (let step = 0; step < lesson.blocks.length; step++) {
+      for (const explanations of [true, false]) {
+        const output = readYaml(lessonText(renderLesson(lesson, step, defaultLessonValues(lesson), explanations)));
+        ok(output.includes("missing 'kind' key") && !output.includes('yaml:'), `${lesson.id} step ${step + 1}: ${output}`);
+      }
+    }
+  }
+});
+
+test('each mistake shows the exact message the YAML reader prints', () => {
+  let checked = 0;
+  for (const lesson of Object.values(lessonContent)) {
+    for (const block of lesson.blocks.filter(block => block.mistake)) {
+      const output = readYaml(block.mistake.yaml);
+      ok(output.includes(`error converting YAML to JSON: ${block.mistake.error}\n`), `${lesson.id}: ${output}`);
+      checked++;
+    }
+  }
+  ok(checked >= 1, 'no mistakes were checked');
 });

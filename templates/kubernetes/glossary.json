@@ -16,5 +16,12 @@
   "volume": "Storage that containers in a Pod can mount as a folder.",
   "Secret": "An object for small private values, such as passwords. Stored base64-encoded, which is not encryption.",
   "Job": "An object that runs Pods until a task finishes successfully.",
-  "CronJob": "An object that creates a Job on a repeating schedule, written in cron format."
+  "CronJob": "An object that creates a Job on a repeating schedule, written in cron format.",
+  "key": "The name before the colon on a YAML line, such as name in name: Asha.",
+  "indentation": "Spaces at the start of a line. In YAML, they show which key a line belongs to.",
+  "list": "Several values under one key. In YAML, each item starts with a dash and a space.",
+  "manifest": "A file that describes the Kubernetes objects you want. Kubernetes works to make the cluster match it.",
+  "metadata": "Details that identify an object, such as its name, namespace, and labels.",
+  "spec": "The desired state: what you want Kubernetes to create or run.",
+  "status": "The current state of an object, written by Kubernetes. You never write it in your file."
 }

@@ -1,7 +1,7 @@
 import { deepEqual, equal, ok } from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  blockLines, defaultLessonValues, glossary, lessonContent, lessonText, lineNote, matchLines, noteKey, renderLesson, yamlPaths,
+  blockLines, defaultLessonValues, glossary, lessonContent, lessonText, lineNote, matchLines, noteKey, renderLesson, renderMistake, yamlPaths,
 } from '../frontend/src/lesson-builder.ts';
 import { levels } from '../frontend/src/lessons.ts';
 
@@ -91,11 +91,20 @@ test('lesson text follows the style rules', () => {
       }
       if (block.term) ok(glossary[block.term], `${label}: ${block.term} is not in the glossary`);
       if (block.tryChange) ok(lesson.choices?.[block.tryChange], label);
+      if (block.mistake) {
+        for (const section of [block.mistake.explain, block.mistake.fix]) {
+          ok(sentences(section).length <= 2, `${label}: ${section}`);
+          for (const sentence of sentences(section)) ok(words(sentence) <= 20, `${label}: ${sentence}`);
+        }
+      }
     }
     ok(lesson.finishedAt >= 0 && lesson.finishedAt < lesson.blocks.length, lesson.id);
-    equal(lesson.tryIt[0].command, `kubectl apply -f ${lesson.filename}`);
+    // A file with a kind is applied to a cluster. Level 0's YAML-only file has nothing to run.
+    if (lesson.kind) equal(lesson.tryIt[0].command, `kubectl apply -f ${lesson.filename}`);
+    else equal(lesson.tryIt.length, 0, lesson.id);
     for (const item of lesson.tryIt) ok(!/\b8080\b/.test(item.command), 'port 8080 is the dashboard port');
-    for (const source of lesson.sources) ok(source.url.startsWith('https://kubernetes.io/docs/'), source.url);
+    const official = lesson.kind ? ['https://kubernetes.io/docs/'] : ['https://kubernetes.io/docs/', 'https://yaml.org/spec/'];
+    for (const source of lesson.sources) ok(official.some(prefix => source.url.startsWith(prefix)), source.url);
   }
   for (const definition of Object.values(glossary)) ok(words(definition) <= 20, definition);
 });
@@ -114,6 +123,25 @@ test('built lessons appear in the catalogue and run anywhere', () => {
     ok(catalogue.has(lesson.id), lesson.id);
     equal(catalogue.get(lesson.id).runsOn, 'anywhere', lesson.id);
     const lines = blockLines(lesson, lesson.blocks.length - 1, defaultLessonValues(lesson));
-    ok(lines.includes(`kind: ${lesson.kind}`), `${lesson.id} builds a ${lesson.kind}`);
+    if (lesson.kind) ok(lines.includes(`kind: ${lesson.kind}`), `${lesson.id} builds a ${lesson.kind}`);
+    else ok(!lines.some(line => line.startsWith('kind:')), `${lesson.id} has no kind`);
+  }
+  for (const id of ['reading-yaml', 'manifest-parts']) ok(lessonContent[id], `Level 0 lesson ${id} is built`);
+});
+
+test('a mistake changes only the line it names, and every line it shows has a note', () => {
+  const mistakes = lessons.flatMap(lesson => lesson.blocks.flatMap((block, index) => (block.mistake ? [{ lesson, block, index }] : [])));
+  ok(mistakes.length >= 1, 'Level 0 shows the indentation mistake');
+  for (const { lesson, block, index } of mistakes) {
+    const label = `${lesson.id} block ${index + 1}`;
+    const fixed = blockLines(lesson, index, defaultLessonValues(lesson));
+    const shown = renderMistake(lesson, block.mistake);
+    const broken = shown.text.trimEnd().split('\n');
+    equal(broken.length, fixed.length, label);
+    deepEqual(broken.flatMap((line, at) => (line === fixed[at] ? [] : [at + 1])), [block.mistake.line], label);
+    equal(broken[block.mistake.line - 1].trim(), fixed[block.mistake.line - 1].trim(), `${label}: only the spaces change`);
+    ok(shown.notes.every(Boolean), `${label}: every line has a note`);
+    equal(shown.notes[block.mistake.line - 1], block.mistake.explain, label);
+    ok(block.mistake.error.startsWith(`yaml: line ${block.mistake.line}: `), `${label}: the error names the line`);
   }
 });

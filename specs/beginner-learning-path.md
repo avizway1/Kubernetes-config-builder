@@ -301,6 +301,22 @@ Each phase gets its own spec section approval, small commits, tests, and a Chrom
 
 **Jump link fix (2026-11-19).** The first CI run of the lesson work failed in `tests/workflow-layout.browser.mjs`. Since Phase 3, any address the router did not know, such as the narrow-screen jump link `#usage-preview`, sent the visitor to the home page. The lesson jump links had the same bug. In-page anchors now keep the current view, and `tests/site-shell.browser.mjs` clicks both lesson jump links on a phone-sized screen. The new test failed without the fix and passes with it.
 
+**Level 0 plan (approved by Charan on 2026-11-19).**
+
+- Both Level 0 lessons use the block-at-a-time lesson screen. No layout change.
+- **0.1 Read a YAML file** builds `student.yaml`, an everyday file with no Kubernetes words, in four blocks: keys and values, nesting with two spaces, a list with dashes, and a list of nested items, the pattern of every `containers:` list. Every step is valid YAML, so there is no “not finished” state and no **Try it** commands. CI checks every step parses, using kubeconform’s YAML reader: a file without `kind` must fail only with `missing 'kind' key`.
+- **See the mistake** is a new button on the nesting block. It shows a copy with `country` indented one space too far, highlights that line, and shows the message the YAML reader prints: `yaml: line 6: mapping values are not allowed in this context`. The copy has no block comments, so the line number matches. CI checks that kubeconform prints this exact message for the copy. **Show the fixed file** returns to the lesson. This is the first small piece of **Fix it**; the full Read it and Fix it practice is a separate step after Level 0.
+- **0.2 Parts of every manifest** builds a corrected copy of the class file `01-pod.yaml` in four blocks: `apiVersion` and `kind`, `metadata`, `spec`, and `ports`. The last card explains that Kubernetes adds `status` itself after you apply. **Try it** shows the `status` Kubernetes adds, then `kubectl explain pod` and `kubectl explain pod.spec.containers`. The copy pins `nginx:1.30.4`, as the Pod lesson does, and indents list items by two spaces, as every lesson does.
+- Sources: the [YAML 1.2.2 specification](https://yaml.org/spec/1.2.2/), [Objects in Kubernetes](https://kubernetes.io/docs/concepts/overview/working-with-objects/), and [kubectl explain](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_explain/).
+
+**Level 0 lessons (2026-11-19).**
+
+- Both Level 0 lessons are built and show **Start**. The glossary adds key, indentation, list, manifest, metadata, spec, and status.
+- Lessons without a `kind` are checked as YAML only and have no **Try it** commands; the panel says nothing needs to run. Blocks can carry a `mistake`: the broken copy, the line, the YAML reader’s message, why it happens, and how to fix it. Copy and Download export the broken copy while it is shown.
+- Claims checked with kubeconform 0.8.0’s YAML reader before writing them: one extra space before `country` gives the message above; moving `tool` left under the dash gives an error; list lines without dashes become one text value (`Linux Docker`), shown by a ConfigMap that accepts them as a string.
+- Verified on Node 26.13.1: `npm run lint`, `npm test` (39 passing, including a test that a mistake changes only the spaces on its named line), `npm run build`, `tests/lesson-manifests.check.mjs` (3 passing: strict kubeconform for 0.2 and Level 1, every 0.1 step parses, the exact mistake message), and `tests/site-shell.browser.mjs` (6 passing in Chrome, including the mistake view, its hover note, both downloads, and the reset on moving blocks). The two new kubeconform checks failed when the message’s line number and a list dash were changed on purpose.
+- **Not verified:** CI installs kubeconform 0.7.0, and the exact message was checked only with 0.8.0 locally. Lesson 0.2 has not been applied to a cluster, so its **Try it** results come from the official docs.
+
 ## Acceptance criteria
 
 - [ ] A first-time visitor sees the two front doors and can start a lesson with one click.
