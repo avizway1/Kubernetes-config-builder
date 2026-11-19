@@ -411,10 +411,25 @@ func main() {
 	})
 
 	if *webDir != "" {
-		mux.Handle("GET /", http.FileServer(http.Dir(*webDir)))
+		mux.Handle("GET /", webHandler(*webDir))
 	}
 
 	server := &http.Server{Addr: *listen, Handler: mux, ReadHeaderTimeout: 5 * time.Second}
 	log.Printf("Chart renderer listening on %s", server.Addr)
 	log.Fatal(server.ListenAndServe())
+}
+
+// webHandler serves the built frontend. Vite puts a content hash in every file name under /assets/, so those files
+// can be cached for a year. Every other file, including index.html, must be checked with the server on each visit.
+// Without that, browsers keep showing an older dashboard after a rebuild.
+func webHandler(dir string) http.Handler {
+	files := http.FileServer(http.Dir(dir))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/assets/") {
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		} else {
+			w.Header().Set("Cache-Control", "no-cache")
+		}
+		files.ServeHTTP(w, r)
+	})
 }
