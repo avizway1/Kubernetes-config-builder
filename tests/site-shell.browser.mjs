@@ -152,16 +152,17 @@ test('a lesson stacks on a phone with jump links and no sideways scrolling', { t
     await page.goto(`${appUrl}#learn/deployment`);
     await page.getByRole('heading', { name: 'Keep your app running', level: 1 }).waitFor();
     await page.getByRole('link', { name: 'Jump to the YAML' }).click();
-    await page.waitForFunction(() => {
-      const top = document.getElementById('lesson-file')?.getBoundingClientRect().top;
-      return top !== undefined && top >= 0 && top < window.innerHeight;
-    });
+    // Font metrics differ between systems, so allow a pixel of rounding at the top edge.
+    const visible = id => page.evaluate(target => {
+      const top = document.getElementById(target).getBoundingClientRect().top;
+      return top > -1 && top < window.innerHeight;
+    }, id);
+    await page.waitForFunction(() => document.activeElement?.id === 'lesson-file');
     assert.match(page.url(), /#lesson-file$/);
+    assert.ok(await visible('lesson-file'), 'YAML heading is on screen after the jump');
     await page.getByRole('link', { name: 'Back to the lesson' }).click();
-    await page.waitForFunction(() => {
-      const top = document.getElementById('block-title')?.getBoundingClientRect().top;
-      return top !== undefined && top >= 0 && top < window.innerHeight;
-    });
+    await page.waitForFunction(() => document.activeElement?.id === 'block-title');
+    assert.ok(await visible('block-title'), 'lesson card is on screen after jumping back');
     await page.getByRole('heading', { name: 'Keep your app running', level: 1 }).waitFor({ state: 'attached' });
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     assert.ok(overflow <= 0, `lesson scrolls sideways by ${overflow}px`);

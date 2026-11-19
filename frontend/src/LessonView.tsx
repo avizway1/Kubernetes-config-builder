@@ -50,7 +50,7 @@ export function LessonView({ lesson, content, progress, onProgress, next }: {
           <a className="pane-jump" href="#lesson-file">Jump to the YAML</a>
           <p className="lesson-progress" id="lesson-progress">Block {step + 1} of {content.blocks.length}</p>
           <progress max={content.blocks.length} value={step + 1} aria-labelledby="lesson-progress" />
-          <h2 id="block-title">{block.title}</h2>
+          <h2 id="block-title" tabIndex={-1}>{block.title}</h2>
           <h3>What it does</h3>
           <p>{block.what}</p>
           <h3>Why it is there</h3>
@@ -89,7 +89,7 @@ export function LessonView({ lesson, content, progress, onProgress, next }: {
         </section>
         <section className="step builder-output lesson-output" aria-labelledby="lesson-file">
           <div className="lesson-output-heading">
-            <h2 id="lesson-file">{content.filename}</h2>
+            <h2 id="lesson-file" tabIndex={-1}>{content.filename}</h2>
             <a className="pane-jump" href="#block-title">Back to the lesson</a>
             <label className="lesson-switch">
               <input type="checkbox" checked={explanations}
