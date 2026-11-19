@@ -299,6 +299,8 @@ Each phase gets its own spec section approval, small commits, tests, and a Chrom
 - Verified on Node 26.13.1: `npm run lint`, `npm test` (38 passing), `npm run build`, `tests/site-shell.browser.mjs` (5 passing in Chrome, including a two-object lesson), and `tests/lesson-manifests.check.mjs` (strict kubeconform for every finished step and choice on 1.35, 1.36, and 1.37). At 1366 × 900, the lesson buttons stay on screen on every block of every lesson.
 - **Not verified:** no lesson has been applied to a cluster, because Docker was not running. The **Try it** results, such as the log output, come from the official docs and have not been observed.
 
+**Jump link fix (2026-11-19).** The first CI run of the lesson work failed in `tests/workflow-layout.browser.mjs`. Since Phase 3, any address the router did not know, such as the narrow-screen jump link `#usage-preview`, sent the visitor to the home page. The lesson jump links had the same bug. In-page anchors now keep the current view, and `tests/site-shell.browser.mjs` clicks both lesson jump links on a phone-sized screen. The new test failed without the fix and passes with it.
+
 ## Acceptance criteria
 
 - [ ] A first-time visitor sees the two front doors and can start a lesson with one click.

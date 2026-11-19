@@ -43,6 +43,8 @@ function App() {
   useEffect(() => {
     const onHashChange = () => {
       const next = routeFromHash();
+      // Jump links such as #usage-preview are anchors on the current page, not routes. Let the browser scroll to them.
+      if (!next.view && window.location.hash.length > 1) return;
       setRoute({ view: next.view ?? 'home', lesson: next.lesson });
       window.scrollTo(0, 0);
     };

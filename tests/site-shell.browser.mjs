@@ -151,7 +151,18 @@ test('a lesson stacks on a phone with jump links and no sideways scrolling', { t
     page.setDefaultTimeout(8000);
     await page.goto(`${appUrl}#learn/deployment`);
     await page.getByRole('heading', { name: 'Keep your app running', level: 1 }).waitFor();
-    await page.getByRole('link', { name: 'Jump to the YAML' }).waitFor();
+    await page.getByRole('link', { name: 'Jump to the YAML' }).click();
+    await page.waitForFunction(() => {
+      const top = document.getElementById('lesson-file')?.getBoundingClientRect().top;
+      return top !== undefined && top >= 0 && top < window.innerHeight;
+    });
+    assert.match(page.url(), /#lesson-file$/);
+    await page.getByRole('link', { name: 'Back to the lesson' }).click();
+    await page.waitForFunction(() => {
+      const top = document.getElementById('block-title')?.getBoundingClientRect().top;
+      return top !== undefined && top >= 0 && top < window.innerHeight;
+    });
+    await page.getByRole('heading', { name: 'Keep your app running', level: 1 }).waitFor({ state: 'attached' });
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     assert.ok(overflow <= 0, `lesson scrolls sideways by ${overflow}px`);
     const card = await page.locator('.lesson-card').boundingBox();
