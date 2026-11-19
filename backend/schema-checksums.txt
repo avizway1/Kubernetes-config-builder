@@ -8,6 +8,7 @@ ab8e088a1acd07d4e27797d23743df96f5a059abe58e35745ffed8ff064298da  v1.35.0-standa
 f2e647b4dfb300f76ee892b7327fe27366d48aa72351abd2a2fa26a24d52fa3f  v1.35.0-standalone-strict/namespace-v1.json
 0e9b587a893d9fbabab17e9c0547e23d34a0314d8a22e19b82ae82e87f5be3a6  v1.35.0-standalone-strict/networkpolicy-networking-v1.json
 7acd2d08433cbdcd31a9edd5e784a9089b3e98b7cc3b393eed4553c4a690debb  v1.35.0-standalone-strict/persistentvolumeclaim-v1.json
+a46df75287c35cf546027c6e423c0d85b934393a721fd9a51fd2f3144bea2b40  v1.35.0-standalone-strict/pod-v1.json
 8af79df0d1afbaa7446e7f14babcd49371e214dd59b133eb6fadd79be2cc808b  v1.35.0-standalone-strict/role-rbac-v1.json
 44851e5c3c796dc07bc35fc2d9c461dffe17f2b345e76f8f827c419554449dbe  v1.35.0-standalone-strict/rolebinding-rbac-v1.json
 50a24fbcc7b5d235517363909e4b9f6bc6eb53d8197509168066aaf633d7d250  v1.35.0-standalone-strict/secret-v1.json
@@ -24,6 +25,7 @@ f5d75e8017a40f949e1a37eb3bf7e5dd0c76eab414375414e211a5670a83fac9  v1.36.0-standa
 f2e647b4dfb300f76ee892b7327fe27366d48aa72351abd2a2fa26a24d52fa3f  v1.36.0-standalone-strict/namespace-v1.json
 0e9b587a893d9fbabab17e9c0547e23d34a0314d8a22e19b82ae82e87f5be3a6  v1.36.0-standalone-strict/networkpolicy-networking-v1.json
 7acd2d08433cbdcd31a9edd5e784a9089b3e98b7cc3b393eed4553c4a690debb  v1.36.0-standalone-strict/persistentvolumeclaim-v1.json
+34a42f50e9bc7a79ff314aecf4a83cbb4fa46d8b4259a146afd622c97db8bbcf  v1.36.0-standalone-strict/pod-v1.json
 8af79df0d1afbaa7446e7f14babcd49371e214dd59b133eb6fadd79be2cc808b  v1.36.0-standalone-strict/role-rbac-v1.json
 44b7a2184b640707e2bf765855909be7440a48fff1d939a1b207011495ba1907  v1.36.0-standalone-strict/rolebinding-rbac-v1.json
 50a24fbcc7b5d235517363909e4b9f6bc6eb53d8197509168066aaf633d7d250  v1.36.0-standalone-strict/secret-v1.json
@@ -40,6 +42,7 @@ d55fb502d4f6a137cf1c282619892b8a2eef145d3a4fad78d1bab85a2cce046c  v1.37.0-standa
 f2e647b4dfb300f76ee892b7327fe27366d48aa72351abd2a2fa26a24d52fa3f  v1.37.0-standalone-strict/namespace-v1.json
 0e9b587a893d9fbabab17e9c0547e23d34a0314d8a22e19b82ae82e87f5be3a6  v1.37.0-standalone-strict/networkpolicy-networking-v1.json
 772573fafd1b01b258ac25c32ddeac99854d5a822b8aad8b04979ce0129d03f6  v1.37.0-standalone-strict/persistentvolumeclaim-v1.json
+de14bd82a17e6f83ecad47ddce5495f3f760831a97a83798f03dc2c849ac9e74  v1.37.0-standalone-strict/pod-v1.json
 424ec50cb6976e2c64f279c1b6a794ac20e288e86891d606080eac58c012e052  v1.37.0-standalone-strict/role-rbac-v1.json
 419dea026256ca3c98217c778430023febf4601700d78055f6b3f589aac532d6  v1.37.0-standalone-strict/rolebinding-rbac-v1.json
 50a24fbcc7b5d235517363909e4b9f6bc6eb53d8197509168066aaf633d7d250  v1.37.0-standalone-strict/secret-v1.json

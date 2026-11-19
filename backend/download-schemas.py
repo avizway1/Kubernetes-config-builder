@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare the local kubeconform schemas used by the two MVP charts."""
+"""Prepare the local kubeconform schemas used by the two MVP charts and the Kubernetes lessons."""
 
 import json
 from concurrent.futures import ThreadPoolExecutor
@@ -24,6 +24,7 @@ NATIVE_SCHEMAS = (
     "namespace-v1",
     "networkpolicy-networking-v1",
     "persistentvolumeclaim-v1",
+    "pod-v1",
     "role-rbac-v1",
     "rolebinding-rbac-v1",
     "secret-v1",
