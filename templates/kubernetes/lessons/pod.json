@@ -56,11 +56,19 @@
     "spec.containers[].ports[].containerPort": "The port number the app listens on inside the container."
   },
   "tryIt": [
-    { "command": "kubectl apply -f pod.yaml", "result": "Prints pod/web created." },
-    { "command": "kubectl get pod web", "result": "STATUS shows Running after a few seconds." },
-    { "command": "kubectl port-forward pod/web 8090:80", "result": "Open http://localhost:8090 to see the nginx welcome page. Press Ctrl+C to stop." },
-    { "command": "kubectl delete -f pod.yaml", "result": "Removes the Pod. Nothing brings it back." }
+    { "command": "kubectl apply -f pod.yaml", "result": "Prints pod/web created.", "check": {"expect": ["pod/web created"]} },
+    { "command": "kubectl get pod web", "result": "STATUS shows Running after a few seconds.", "check": {"pattern": "web\\s+1/1\\s+Running"} },
+    { "command": "kubectl port-forward pod/web 8090:80", "result": "Open http://localhost:8090 to see the nginx welcome page. Press Ctrl+C to stop.", "check": {"run": "kubectl port-forward pod/web 8090:80 >/dev/null 2>&1 & pf=$!; for i in 1 2 3 4 5 6 7 8 9 10; do curl -s http://127.0.0.1:8090/ && break; sleep 1; done; kill $pf", "expect": ["Welcome to nginx!"]} },
+    { "command": "kubectl delete -f pod.yaml", "result": "Removes the Pod. Nothing brings it back.", "check": {"expect": ["pod \"web\" deleted"], "then": {"run": "kubectl get pod web --ignore-not-found -o name", "lines": 0}} }
   ],
+  "practice": {
+    "questions": [
+      {"question": "What does image: nginx:1.30.4 choose?", "answers": ["The container image and its version", "The name of the Pod", "The node the Pod runs on"], "correct": 0, "explain": "Kubernetes downloads this image and runs it. The tag after the colon picks the version.", "line": 10},
+      {"question": "What is the label app: web for?", "answers": ["It names the container", "It lets other objects find this Pod", "It opens port 80"], "correct": 1, "explain": "Labels are tags. Services and Deployments use them to find Pods.", "line": 6},
+      {"question": "You delete this Pod. What happens?", "answers": ["Kubernetes starts a new one", "It stays gone until you apply the file again", "It moves to another node"], "correct": 1, "explain": "Nothing replaces a Pod on its own. A Deployment brings Pods back.", "line": 2}
+    ],
+    "fix": {"line": 10, "text": "      image: nginx:1.30.44", "source": "command", "command": "kubectl get pod web", "expect": "ErrImagePull|ImagePullBackOff", "message": "ErrImagePull, then ImagePullBackOff, under STATUS", "explain": "The file is valid, but nginx has no image tagged 1.30.44. Kubernetes keeps trying to download it.", "fix": "Use a tag that exists: nginx:1.30.4."}
+  },
   "sources": [
     { "title": "Pods", "url": "https://kubernetes.io/docs/concepts/workloads/pods/" },
     { "title": "Labels and selectors", "url": "https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/" }

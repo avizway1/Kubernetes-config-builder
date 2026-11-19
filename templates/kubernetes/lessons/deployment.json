@@ -91,11 +91,19 @@
     "spec.template.spec.containers[].ports[].containerPort": "The port number the app listens on inside the container."
   },
   "tryIt": [
-    { "command": "kubectl apply -f deployment.yaml", "result": "Prints deployment.apps/web created." },
-    { "command": "kubectl get pods -l app=web", "result": "One line per replica. Each Pod name starts with web- and shows Running." },
-    { "command": "kubectl delete pod <name of one Pod>", "result": "Run kubectl get pods -l app=web again. A new Pod has already replaced it." },
-    { "command": "kubectl delete -f deployment.yaml", "result": "Removes the Deployment and all of its Pods." }
+    { "command": "kubectl apply -f deployment.yaml", "result": "Prints deployment.apps/web created.", "check": {"expect": ["deployment.apps/web created"]} },
+    { "command": "kubectl get pods -l app=web", "result": "One line per replica. Each Pod name starts with web- and shows Running.", "check": {"run": "kubectl get pods -l app=web --field-selector=status.phase=Running --no-headers", "expect": ["web-", "Running"], "lines": "{{replicas}}"} },
+    { "command": "kubectl delete pod <name of one Pod>", "result": "Run kubectl get pods -l app=web again. A new Pod has already replaced it.", "check": {"run": "kubectl delete $(kubectl get pods -l app=web -o name | head -n 1)", "expect": ["deleted"], "then": {"run": "kubectl get pods -l app=web --field-selector=status.phase=Running --no-headers", "lines": "{{replicas}}"}} },
+    { "command": "kubectl delete -f deployment.yaml", "result": "Removes the Deployment and all of its Pods.", "check": {"expect": ["deployment.apps \"web\" deleted"], "then": {"run": "kubectl get pods -l app=web --no-headers", "lines": 0}} }
   ],
+  "practice": {
+    "questions": [
+      {"question": "What does replicas: 2 do?", "answers": ["Keeps two copies of the Pod running", "Gives each Pod two containers", "Restarts the Pod twice if it fails"], "correct": 0, "explain": "The Deployment keeps two Pods running and replaces any that stop.", "line": 6},
+      {"question": "Which Pods does this Deployment look after?", "answers": ["Every Pod in the namespace", "Pods with the label app: web", "Only Pods named web"], "correct": 1, "explain": "The selector picks Pods by label. The template gives new Pods that label.", "line": 9},
+      {"question": "You change the image tag and apply again. What happens?", "answers": ["Nothing until you delete the Pods", "Kubernetes rejects the change", "New Pods replace the old ones, a few at a time"], "correct": 2, "explain": "The Deployment rolls out the change. It starts new Pods and stops old ones gradually.", "line": 17}
+    ],
+    "fix": {"line": 13, "text": "        app: wbe", "source": "apply", "message": "The Deployment \"web\" is invalid: spec.template.metadata.labels: Invalid value: {\"app\":\"wbe\"}: `selector` does not match template `labels`", "explain": "The Pod label says wbe, but the selector looks for web. The Deployment would manage none of its own Pods.", "fix": "Make the label match the selector: app: web."}
+  },
   "sources": [
     { "title": "Deployments", "url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/" },
     { "title": "Labels and selectors", "url": "https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/" }

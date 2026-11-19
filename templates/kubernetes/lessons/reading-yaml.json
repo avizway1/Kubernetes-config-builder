@@ -60,6 +60,14 @@
     "projects[].tool": "Another key in the same item. It lines up with name, not with the dash."
   },
   "tryIt": [],
+  "practice": {
+    "questions": [
+      {"question": "What is the value of city?", "answers": ["Hyderabad", "address", "India"], "correct": 0, "explain": "city sits two spaces inside address. Its value is Hyderabad.", "line": 5},
+      {"question": "How many items are in the skills list?", "answers": ["One: Linux Docker", "Two: Linux and Docker", "None, because skills is a key"], "correct": 1, "explain": "Each line that starts with a dash is one list item. skills has two.", "line": 7},
+      {"question": "What does each item under projects hold?", "answers": ["One word", "A name and a tool", "Another list"], "correct": 1, "explain": "The dash starts an item. name and tool line up under it, so both belong to that item.", "line": 11}
+    ],
+    "fix": {"line": 12, "text": "    tool Docker", "source": "yaml", "message": "yaml: line 13: could not find expected ':'", "explain": "A key needs a colon and a space before its value. The reader reports line 13, where it notices.", "fix": "Add the colon: tool: Docker."}
+  },
   "sources": [
     { "title": "YAML 1.2.2 specification", "url": "https://yaml.org/spec/1.2.2/" },
     { "title": "Objects in Kubernetes", "url": "https://kubernetes.io/docs/concepts/overview/working-with-objects/" }

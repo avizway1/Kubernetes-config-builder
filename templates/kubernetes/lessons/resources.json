@@ -71,21 +71,33 @@
   "tryIt": [
     {
       "command": "kubectl apply -f resources.yaml",
-      "result": "Prints pod/sized-web created."
+      "result": "Prints pod/sized-web created.",
+      "check": {"expect": ["pod/sized-web created"]}
     },
     {
       "command": "kubectl describe pod sized-web",
-      "result": "The Requests and Limits sections show your values."
+      "result": "The Requests and Limits sections show your values.",
+      "check": {"expect": ["Requests:", "Limits:", "cpu:", "{{cpu}}", "memory:"]}
     },
     {
       "command": "kubectl describe nodes",
-      "result": "Allocated resources shows how much of each node is already requested."
+      "result": "Allocated resources shows how much of each node is already requested.",
+      "check": {"expect": ["Allocated resources"]}
     },
     {
       "command": "kubectl delete -f resources.yaml",
-      "result": "Removes the Pod."
+      "result": "Removes the Pod.",
+      "check": {"expect": ["pod \"sized-web\" deleted"]}
     }
   ],
+  "practice": {
+    "questions": [
+      {"question": "What does cpu: 250m under requests mean?", "answers": ["The container can never use more than that", "Kubernetes sets aside a quarter of a CPU when it picks a node", "The container gets 250 MB of memory"], "correct": 1, "explain": "A request is space set aside on a node. 250m means 250 thousandths of one CPU.", "line": 11},
+      {"question": "What happens when the container tries to use more than 500m of CPU?", "answers": ["It is stopped", "It is slowed down to the limit", "The Pod moves to a bigger node"], "correct": 1, "explain": "CPU above the limit is held back, so the app runs slower. It is not stopped.", "line": 14},
+      {"question": "What happens when the container uses more than 128Mi of memory?", "answers": ["It is stopped, then restarted", "Kubernetes gives it more memory", "Nothing happens"], "correct": 0, "explain": "A container that goes over its memory limit is stopped. Kubernetes then restarts it.", "line": 15}
+    ],
+    "fix": {"line": 11, "text": "          cpu: 750m", "source": "apply", "message": "The Pod \"sized-web\" is invalid: spec.containers[0].resources.requests: Invalid value: \"750m\": must be less than or equal to cpu limit of 500m", "explain": "A request cannot be larger than the limit. The container would ask for more than it may use.", "fix": "Lower the request to 500m or less, or raise the limit."}
+  },
   "sources": [
     {
       "title": "Resource management for Pods and containers",

@@ -272,6 +272,34 @@ Each phase gets its own spec section approval, small commits, tests, and a Chrom
 7. **README and docs restructure.**
 8. **Later:** move Level 2 and Level 3 Argo CD and Prometheus content to EKS.
 
+### Phase 1 milestones (approved by Charan on 2026-11-19)
+
+Phase 1 still needs 28 lessons (21 Anywhere, 7 EKS only), Read it and Fix it practice, Lab 1, Lab 2, and the docs restructure. Each milestone gets its own spec section, commit, and CI run.
+
+1. **Practice and cluster checks.** Add a **Practise** step with Read it and Fix it to the lesson screen, after Charan approves a mock-up, and add it to the ten existing lessons. Add a deploy check that applies every Anywhere lesson to fresh K3s 1.35, 1.36, and 1.37 and checks its **Try it** results. Run it on Levels 0 and 1, which have not yet been applied to a cluster.
+2. **Level 2 Anywhere lessons:** 9 ClusterIP, 10 DNS, 11 NodePort, 12 ExternalName.
+3. **Lab 1.** It needs the Level 2 ClusterIP Service. Timed from cluster creation, target under 15 minutes. Its sample image follows the lab image rule in section 5 and needs Charan’s approval.
+4. **Level 3 Anywhere lessons:** 16 headless Service, 19 DaemonSet.
+5. **Level 4:** lessons 20 to 24, with the class-file fixes for `11.1`, `11.2`, and `05-pdb.yml`.
+6. **Level 5 Anywhere lessons:** 25 to 27. They need a cluster with several nodes, so the practice cluster gains agent nodes for this level.
+7. **Level 6:** lessons 29 to 32, including the canary 9-to-1 fix.
+8. **Level 7:** lesson 33. Check whether the pinned K3s release ships metrics-server before writing its prerequisites.
+9. **Level 9:** lessons 35 and 37.
+10. **EKS only lessons and Lab 2:** 13, 14, 15, 17, 18, 28, and 34. Written and checked with pinned schemas without a cluster. Deploying them waits for Charan’s approval of the AWS account, Region, and budget (open question 4).
+11. **Docs:** the README and `docs/contributing.md` restructure from section 8, and acceptance criteria updated to match phase 1.
+
+#### Milestone 1: the Practise step (layout approved by Charan on 2026-11-19)
+
+- **Where it appears.** After the last block, the lesson card offers **Practise**. Practise is optional: the next-lesson link stays on the last block. The card shows two tabs, **Read it** and **Fix it**, and the YAML pane shows the file each tab is about. Narrow screens stack the card above the file, as lessons do now.
+- **Read it.** The YAML pane shows the finished file without block comments, using the corrected class file where the lesson has one. The card asks two or three questions, each with three answers and one right answer. Choosing an answer shows **Correct** or **Not quite**, a short explanation, and highlights the line it is about. Questions ask what a field does or what happens when it changes.
+- **Fix it.** The YAML pane shows a copy with one mistake. The learner clicks the line or picks its number, then **Check my answer**. A right answer shows the exact message Kubernetes or the YAML reader prints, why it happens, and how to fix it. A wrong answer says **Not that line** and offers **Show the answer**. **Show the fixed file** returns to the working file. Copy and Download export what the pane shows, as **See the mistake** does.
+- **Every message is real.** A YAML or schema mistake uses kubeconform’s message, checked in CI. A mistake only the API server catches, such as a selector that does not match the Pod labels, uses the message from a server-side dry run on K3s, checked by the cluster check. A mistake Kubernetes accepts, such as a Service selector that matches no Pods, shows what a `kubectl` command reveals instead, also checked on K3s.
+- **Data.** Each lesson file gains `practice.read` (questions, answers, the right answer, explanation, line) and `practice.fix` (broken copy, line, message, where the message comes from, why, how to fix). The existing note rules apply: at most 20 words a sentence and two sentences an explanation.
+- **Progress.** Answers are kept per lesson, like block progress, and survive moving between views.
+- Mock-ups on the Deployment lesson: Read it with the first question answered, and Fix it with a label that does not match the selector. The selector message was taken from a server-side dry run on K3s 1.37.2.
+
+Every milestone pins the schemas its kinds need. Ingress, IngressClass, StorageClass, LimitRange, ResourceQuota, PodDisruptionBudget, HorizontalPodAutoscaler, `IngressClassParams`, and `NodePool` are not pinned yet.
+
 ## Progress
 
 **Phase 2, explanation rewrite (2026-11-18).** Rewrote every Learning note in `frontend/src/usage-values.ts` and every template and field description in `templates/*/usage.json` to the style rules. Labels are unchanged until the UI phase because browser tests and the lab guide refer to them. The in-cluster destination note now appears only for `https://kubernetes.default.svc`. The lab and Guestbook notes keep their required facts. `tests/usage-values.test.mjs` now fails if any note, template description, or field description exceeds 20 words. Verified with `npm test` (27 passing) and `npm run build` on Node 26.13.1. The browser tests were not run.
@@ -327,6 +355,16 @@ Each phase gets its own spec section approval, small commits, tests, and a Chrom
 - **Not verified:** CI installs kubeconform 0.7.0, and the exact message was checked only with 0.8.0 locally. Lesson 0.2 has not been applied to a cluster, so its **Try it** results come from the official docs.
 
 **Phase 1 focus (2026-11-19).** Charan chose to build Learn Kubernetes end to end before returning to Build a config. The dashboard now opens into Learn Kubernetes, `#home` and the logo lead there, and the header has only the Learn Kubernetes link. The Level 9 tool items and Lab 3 are gone from the catalogue, along with the Learn page’s **Open** buttons and the `open` field. The README leads with Learn Kubernetes and marks Build a config and Install the tool as phase 2. Verified on Node 26.13.1: `npm run lint`, `npm test` (39 passing, including a check that no lesson or lab opens Build a config or is marked Tested on K3s), `npm run build`, `tests/lesson-manifests.check.mjs` (3 passing), and `tests/site-shell.browser.mjs` (6 passing, including that no link points to `#build` and that `#build` still opens when typed). The Build a config browser tests need the Go backend and run only in CI; they open `#build` directly and do not use the hidden links.
+
+**Milestone 1, Practise and cluster checks (2026-11-19).**
+
+- After the last block, **Practise: Read it and Fix it** opens the approved Practise step. All ten built lessons have three Read it questions and one Fix it mistake, stored as `practice` in each lesson file. Read it and Fix it show the finished file with default choices and no block comments. Copy and Download export what the pane shows. Learners can pick the wrong line by clicking it or from the **Wrong line** list.
+- Fix it mistakes change only the words on one line, never its indentation. Sources: the YAML reader for 0.1 (missing colon), `kubectl apply` for 0.2, ReplicaSet, Deployment, CPU and memory, Namespace, and Jobs, and a follow-up command for Pod (`nginx:1.30.44` does not exist), ConfigMap, and Secret, where Kubernetes accepts the file and the container cannot start.
+- The YAML reader reports a missing colon on the next line (line 13 for a mistake on line 12). Fix it explains this instead of hiding it.
+- Every **Try it** step now has a `check` the cluster test can confirm. `tests/check-lessons-k3s.sh <version>` creates a fresh k3d cluster, applies the exact download of every Anywhere lesson, runs every Try it step, applies every Fix it copy, and deletes the cluster.
+- K3s 1.37.2 runs `metrics-server` in `kube-system` by default, which Level 7 can rely on for local practice.
+- Verified on Node 26.13.1: `npm run lint`, `npm test` (40 passing, including the practice style rules), `npm run build`, `tests/lesson-manifests.check.mjs` (4 passing, including the YAML Fix it message), `tests/site-shell.browser.mjs` (7 passing in Chrome, including the full Practise flow and the phone layout), and `tests/check-lessons-k3s.sh` on fresh K3s 1.37.2, 1.36.6, and 1.35.10 (19 passing on each, on ARM64, in 225, 180, and 179 seconds). Levels 0 and 1 have now been applied to a cluster, and every **Try it** result was observed.
+- **Not verified:** the cluster check does not run in CI, because CI has no K3s cluster. Client-side messages, such as the missing `apiVersion`, come from kubectl 1.36.1.
 
 ## Acceptance criteria
 

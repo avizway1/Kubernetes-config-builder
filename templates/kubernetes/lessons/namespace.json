@@ -63,21 +63,33 @@
   "tryIt": [
     {
       "command": "kubectl apply -f namespace.yaml",
-      "result": "Prints namespace/shop created and pod/web created."
+      "result": "Prints namespace/shop created and pod/web created.",
+      "check": {"expect": ["namespace/shop created", "pod/web created"]}
     },
     {
       "command": "kubectl get pods -n shop",
-      "result": "Shows the web Pod."
+      "result": "Shows the web Pod.",
+      "check": {"pattern": "web\\s+1/1\\s+Running"}
     },
     {
       "command": "kubectl get namespaces",
-      "result": "Lists shop beside default and the system namespaces."
+      "result": "Lists shop beside default and the system namespaces.",
+      "check": {"expect": ["shop", "default", "kube-system"]}
     },
     {
       "command": "kubectl delete -f namespace.yaml",
-      "result": "Deleting a Namespace also deletes everything inside it."
+      "result": "Deleting a Namespace also deletes everything inside it.",
+      "check": {"expect": ["namespace \"shop\" deleted"], "then": {"run": "kubectl get namespace shop --ignore-not-found -o name", "lines": 0}}
     }
   ],
+  "practice": {
+    "questions": [
+      {"question": "Why does the Namespace come first in the file?", "answers": ["kubectl reads files from the bottom up", "The Pod goes into shop, so shop must exist first", "Every file must start with a Namespace"], "correct": 1, "explain": "kubectl creates objects in the order they appear. The Pod needs its namespace to exist already.", "line": 2},
+      {"question": "Which line puts the Pod in shop?", "answers": ["Line 4", "Line 9", "Line 10"], "correct": 2, "explain": "namespace under the Pod’s metadata says where it lives. Line 4 names the Namespace itself.", "line": 10},
+      {"question": "You run kubectl get pods without -n shop. What do you see?", "answers": ["The web Pod", "Only Pods in the default namespace", "Pods in every namespace"], "correct": 1, "explain": "kubectl looks in the default namespace unless you name another. Add -n shop to see this Pod.", "line": 10}
+    ],
+    "fix": {"line": 10, "text": "  namespace: shopp", "source": "apply", "message": "Error from server (NotFound): error when creating \"namespace.yaml\": namespaces \"shopp\" not found", "explain": "The Pod names a namespace that does not exist. Kubernetes creates shop, then rejects the Pod.", "fix": "Spell it shop, to match line 4."}
+  },
   "sources": [
     {
       "title": "Namespaces",

@@ -5,16 +5,20 @@ import EditorWorker from 'monaco-editor/editor/editor.worker.js?worker';
 self.MonacoEnvironment ??= { getWorker: () => new EditorWorker() };
 
 // Read-only YAML for a lesson. Highlighted lines are what the last action added or changed.
-export function LessonEditor({ text, notes, highlights, label, highlightClass = 'comparison-value-line' }: {
+// `onLineClick` lets Fix it learners pick a line by clicking it.
+export function LessonEditor({ text, notes, highlights, label, highlightClass = 'comparison-value-line', onLineClick }: {
   text: string;
   notes: (string | undefined)[];
   highlights: number[];
   label: string;
   highlightClass?: string;
+  onLineClick?: (line: number) => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor>(null);
   const notesRef = useRef(notes);
+  const clickRef = useRef(onLineClick);
+  clickRef.current = onLineClick;
 
   useEffect(() => {
     const model = monaco.editor.createModel('', 'yaml');
@@ -34,8 +38,13 @@ export function LessonEditor({ text, notes, highlights, label, highlightClass = 
         if (note) return { contents: [{ value: note.replace(/[\\`*_{}\[\]()<>#+.!|]/g, '\\$&') }] };
       },
     });
+    const click = editor.onMouseDown(event => {
+      const line = event.target.position?.lineNumber;
+      if (line) clickRef.current?.(line);
+    });
     editorRef.current = editor;
     return () => {
+      click.dispose();
       hover.dispose();
       editor.dispose();
       model.dispose();

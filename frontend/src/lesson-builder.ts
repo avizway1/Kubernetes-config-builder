@@ -13,6 +13,33 @@ import glossaryData from '../../templates/kubernetes/glossary.json' with { type:
 // A broken copy of a block's file, with the message a YAML reader prints for it. Line numbers count from 1.
 export type LessonMistake = { yaml: string; line: number; error: string; explain: string; fix: string };
 
+// How the cluster check confirms a Try it result. `run` replaces a command learners cannot run as written, such as
+// one with a placeholder or one that keeps running. The output must contain every `expect` text and match `pattern`,
+// and `lines` counts the non-empty lines it prints. `then` checks the effect of the command afterwards.
+// Values such as {{replicas}} are filled from the lesson's choices.
+export type LessonCheck = { run?: string; expect?: string[]; pattern?: string; lines?: number | string };
+export type LessonTryIt = { command: string; result: string; check?: LessonCheck & { then?: LessonCheck } };
+
+// Read it: a question about the finished file, with three answers. `line` is the line the question is about.
+export type LessonQuestion = { question: string; answers: string[]; correct: number; explain: string; line: number };
+
+// Fix it: the finished file with one line replaced. `message` is what learners see when they find the line:
+// - yaml: the YAML reader's message, checked with kubeconform in CI.
+// - apply: what `kubectl apply` prints for the broken copy, checked on K3s.
+// - command: the copy applies, and `command` shows the problem. `expect` is a pattern its output matches on K3s.
+export type LessonFix = {
+  line: number;
+  text: string;
+  source: 'yaml' | 'apply' | 'command';
+  command?: string;
+  expect?: string;
+  message: string;
+  explain: string;
+  fix: string;
+};
+
+export type LessonPractice = { questions: LessonQuestion[]; fix: LessonFix };
+
 export type LessonChoice = { label: string; options: string[]; default: string };
 
 // Each block holds the whole file as it stands after that block, so authors can read every step as written.
@@ -37,7 +64,8 @@ export type LessonContent = {
   choices?: Record<string, LessonChoice>;
   blocks: LessonBlock[];
   notes: Record<string, string>;
-  tryIt: { command: string; result: string }[];
+  tryIt: LessonTryIt[];
+  practice?: LessonPractice;
   sources: { title: string; url: string }[];
 };
 
@@ -186,4 +214,21 @@ export function renderMistake(lesson: LessonContent, mistake: LessonMistake): { 
     text: `${lines.join('\n')}\n`,
     notes: lines.map((_, index) => (index + 1 === mistake.line ? mistake.explain : lesson.notes[paths[index] ?? ''])),
   };
+}
+
+// The finished file as Read it and Fix it show it: default choices and no block comments, so line numbers are plain.
+export function practiceLines(lesson: LessonContent): LessonLine[] {
+  return renderLesson(lesson, lesson.blocks.length - 1, defaultLessonValues(lesson), false);
+}
+
+export function practiceFile(lesson: LessonContent) {
+  const lines = practiceLines(lesson);
+  return { text: lessonText(lines), notes: lines.map(line => lineNote(lesson, line)) };
+}
+
+// The broken copy for Fix it: the practice file with one line replaced.
+export function brokenFile(lesson: LessonContent, fix: LessonFix) {
+  const lines = practiceLines(lesson);
+  const texts = lines.map((line, index) => (index + 1 === fix.line ? fix.text : line.text));
+  return { text: `${texts.join('\n')}\n`, notes: lines.map(line => lineNote(lesson, line)) };
 }

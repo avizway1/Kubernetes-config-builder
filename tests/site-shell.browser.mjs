@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { lessonContent, lessonText, renderLesson } from '../frontend/src/lesson-builder.ts';
+import { brokenFile, lessonContent, lessonText, practiceFile, renderLesson } from '../frontend/src/lesson-builder.ts';
 
 const require = createRequire(new URL('../frontend/package.json', import.meta.url));
 const { chromium } = require('playwright-core');
@@ -253,6 +253,97 @@ test('Level 0 shows the indentation mistake with the real error, then returns to
     await page.getByRole('heading', { name: 'Try it' }).waitFor();
     await page.getByText('kubectl explain pod.spec.containers', { exact: true }).waitFor();
     assert.equal(await page.locator('.lesson-term dfn').textContent(), 'status');
+  } finally {
+    await browser.close();
+  }
+});
+
+test('Practise asks Read it questions and finds the Fix it mistake, keeping answers when learners go back', { timeout: 40000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
+    page.setDefaultTimeout(8000);
+    const yaml = page.getByTestId('lesson-yaml');
+    const lesson = lessonContent.deployment;
+    const { questions, fix } = lesson.practice;
+    async function download() {
+      const pending = page.waitForEvent('download');
+      await page.getByRole('button', { name: 'Download' }).click();
+      return readFileSync(await (await pending).path(), 'utf8');
+    }
+    const marked = selector => page.evaluate(css => document.querySelectorAll(`[data-testid="lesson-yaml"] ${css}`).length, selector);
+
+    await page.goto(`${appUrl}#learn/deployment`);
+    assert.equal(await page.getByRole('button', { name: 'Practise: Read it and Fix it' }).count(), 0, 'Practise waits for the last block');
+    await page.getByRole('button', { name: 'Show whole file' }).click();
+    await page.getByRole('button', { name: 'Practise: Read it and Fix it' }).click();
+
+    // Read it: the finished file without block comments, and feedback for right and wrong answers.
+    await page.getByRole('heading', { name: 'Read it', level: 2 }).waitFor();
+    assert.equal(await page.getByRole('tab', { name: 'Read it · 0 of 3' }).getAttribute('aria-selected'), 'true');
+    assert.equal(await page.getByLabel('Show explanations').count(), 0);
+    await yaml.locator('.view-line').filter({ hasText: 'replicas: 2' }).waitFor();
+    assert.equal(await yaml.locator('.view-line').filter({ hasText: /^#/ }).count(), 0);
+    assert.equal(await download(), practiceFile(lesson).text);
+    const first = page.getByRole('group', { name: `1. ${questions[0].question}` });
+    await first.getByLabel(questions[0].answers[1]).check();
+    await first.getByText('Not quite.').waitFor();
+    await first.getByLabel(questions[0].answers[questions[0].correct]).check();
+    await first.getByText('Correct.').waitFor();
+    await first.getByText(questions[0].explain, { exact: false }).waitFor();
+    await page.getByRole('tab', { name: 'Read it · 1 of 3' }).waitFor();
+    await page.waitForFunction(() => document.querySelectorAll('[data-testid="lesson-yaml"] .comparison-value-line').length === 1);
+
+    // Fix it: a wrong pick, then the right line clicked in the file, with the message Kubernetes printed on K3s.
+    await page.getByRole('button', { name: 'Next: Fix it' }).click();
+    await page.getByRole('heading', { name: 'Fix it', level: 2 }).waitFor();
+    await yaml.locator('.view-line').filter({ hasText: fix.text.trim() }).waitFor();
+    assert.equal(await download(), brokenFile(lesson, fix).text);
+    const check = page.getByRole('button', { name: 'Check my answer' });
+    assert.equal(await check.isDisabled(), true);
+    await page.getByLabel('Wrong line').selectOption(String(fix.line - 1));
+    await check.click();
+    await page.getByText('Not that line.').waitFor();
+    assert.equal(await marked('.lesson-mistake-line'), 0);
+    await yaml.locator('.view-line').filter({ hasText: fix.text.trim() }).click();
+    assert.equal(await page.getByLabel('Wrong line').inputValue(), String(fix.line));
+    await check.click();
+    await page.getByText(`Right, line ${fix.line}.`, { exact: false }).waitFor();
+    await page.getByText(fix.message, { exact: true }).waitFor();
+    await page.getByRole('tab', { name: 'Fix it · found' }).waitFor();
+    await page.waitForFunction(() => document.querySelectorAll('[data-testid="lesson-yaml"] .lesson-mistake-line').length === 1);
+    await page.getByRole('button', { name: 'Show the fixed file' }).click();
+    assert.equal(await page.getByRole('button', { name: 'Show the broken copy' }).getAttribute('aria-pressed'), 'true');
+    assert.equal(await download(), practiceFile(lesson).text);
+    await page.getByRole('link', { name: 'Next lesson: CPU and memory' }).waitFor();
+
+    // Going back to the blocks keeps the answers.
+    await page.getByRole('button', { name: 'Back to the blocks' }).click();
+    await page.getByText('Block 7 of 7').waitFor();
+    await page.getByLabel('Show explanations').waitFor();
+    await page.getByRole('button', { name: 'Practise: Read it and Fix it' }).click();
+    await page.getByRole('tab', { name: 'Read it · 1 of 3' }).waitFor();
+    await page.getByRole('tab', { name: 'Fix it · found' }).click();
+    await page.getByText(fix.message, { exact: true }).waitFor();
+
+    // Show the answer, on a lesson whose mistake Kubernetes accepts.
+    const pod = lessonContent.pod;
+    await page.goto(`${appUrl}#learn/pod`);
+    await page.getByRole('button', { name: 'Show whole file' }).click();
+    await page.getByRole('button', { name: 'Practise: Read it and Fix it' }).click();
+    await page.getByRole('tab', { name: 'Fix it' }).click();
+    await page.getByLabel('Wrong line').selectOption('1');
+    await page.getByRole('button', { name: 'Check my answer' }).click();
+    await page.getByRole('button', { name: 'Show the answer' }).click();
+    await page.getByText(`The mistake is on line ${pod.practice.fix.line}. The copy applies, but kubectl get pod web shows:`).waitFor();
+
+    // On a phone the card stacks above the file without sideways scrolling, once the editor fits the new width.
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.getByRole('heading', { name: 'Fix it', level: 2 }).waitFor();
+    await page.waitForFunction(() => document.documentElement.scrollWidth <= window.innerWidth);
+    const card = await page.locator('.lesson-card').boundingBox();
+    const output = await page.locator('.lesson-output').boundingBox();
+    assert.ok(output.y >= card.y + card.height - 1, 'YAML sits below the Practise card');
   } finally {
     await browser.close();
   }

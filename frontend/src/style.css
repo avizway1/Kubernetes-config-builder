@@ -15,6 +15,8 @@
   --sticky-bg: #f1f5fb;
   --error: #9b2020;
   --error-soft: #fbe3e3;
+  --success: #155c34;
+  --success-soft: #e6f4ec;
   --focus: #233483;
 
   font-family: system-ui, sans-serif;
@@ -832,6 +834,127 @@ section.lesson-try-it {
   border-color: var(--border);
   color: var(--text-muted);
   background: var(--sticky-bg);
+  cursor: default;
+}
+
+/* Practise: Read it and Fix it after the last block. */
+.lesson-practise {
+  justify-self: start;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--brand-navy);
+  border-radius: 0.4rem;
+  color: var(--brand-navy-dark);
+  background: var(--brand-orange);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.practice-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.practice-tabs button {
+  margin-block-end: -2px;
+  padding: 0.45rem 0.9rem;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  color: var(--text-muted);
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.practice-tabs button[aria-selected='true'] {
+  border-bottom-color: var(--brand-orange);
+  color: var(--brand-navy);
+}
+
+.practice-panel {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.practice-question {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+}
+
+.practice-question legend {
+  padding: 0 0.25rem;
+  font-weight: 700;
+}
+
+.practice-question label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  padding: 0.2rem 0;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.practice-question input {
+  margin-block-start: 0.2rem;
+}
+
+.practice-correct,
+.practice-wrong {
+  margin-block-start: 0.4rem;
+  padding: 0.5rem 0.7rem;
+}
+
+.practice-correct {
+  border-left: 4px solid var(--success);
+  background: var(--success-soft);
+}
+
+.practice-correct strong {
+  color: var(--success);
+}
+
+.practice-wrong {
+  border-left: 4px solid var(--error);
+  background: var(--error-soft);
+}
+
+.practice-wrong strong {
+  color: var(--error);
+}
+
+.practice-wrong button {
+  margin-block-start: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--error);
+  border-radius: 0.4rem;
+  color: var(--error);
+  background: var(--surface);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.practice-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.practice-pick select {
+  font: inherit;
+  padding: 0.35rem;
+}
+
+.lesson-mistake-toggle:disabled {
+  border-color: var(--border);
+  color: var(--text-muted);
   cursor: default;
 }
 

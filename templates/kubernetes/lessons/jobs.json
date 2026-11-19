@@ -102,21 +102,33 @@
   "tryIt": [
     {
       "command": "kubectl apply -f jobs.yaml",
-      "result": "Prints job.batch/hello-once created and cronjob.batch/hello-every-minute created."
+      "result": "Prints job.batch/hello-once created and cronjob.batch/hello-every-minute created.",
+      "check": {"expect": ["job.batch/hello-once created", "cronjob.batch/hello-every-minute created"]}
     },
     {
       "command": "kubectl get jobs",
-      "result": "hello-once shows Complete. A new hello-every-minute Job appears each minute."
+      "result": "hello-once shows Complete. A new hello-every-minute Job appears each minute.",
+      "check": {"pattern": "(?=[\\s\\S]*hello-once\\s+Complete)[\\s\\S]*hello-every-minute-\\d+"}
     },
     {
       "command": "kubectl logs job/hello-once",
-      "result": "Prints Hello from a Job."
+      "result": "Prints Hello from a Job.",
+      "check": {"expect": ["Hello from a Job"]}
     },
     {
       "command": "kubectl delete -f jobs.yaml",
-      "result": "Removes both, including the Jobs the CronJob created."
+      "result": "Removes both, including the Jobs the CronJob created.",
+      "check": {"expect": ["job.batch \"hello-once\" deleted", "cronjob.batch \"hello-every-minute\" deleted"], "then": {"run": "kubectl get jobs --no-headers", "lines": 0}}
     }
   ],
+  "practice": {
+    "questions": [
+      {"question": "Why is restartPolicy Never on line 9?", "answers": ["A Job’s Pod should stop when the task ends", "It stops the Job from running", "It saves memory"], "correct": 0, "explain": "A Job runs a task to the end. A Pod that always restarted would never finish.", "line": 9},
+      {"question": "How often does hello-every-minute run?", "answers": ["Once", "Every minute", "Every hour"], "correct": 1, "explain": "Five stars mean every minute of every hour of every day. Each run creates a new Job.", "line": 20},
+      {"question": "What does backoffLimit: 2 do?", "answers": ["Retries a failed task up to two times", "Runs the task twice", "Waits two seconds before starting"], "correct": 0, "explain": "If the task fails, the Job tries again. After two retries, the Job is marked failed.", "line": 6}
+    ],
+    "fix": {"line": 20, "text": "  schedule: \"* * * *\"", "source": "apply", "message": "The CronJob \"hello-every-minute\" is invalid: spec.schedule: Invalid value: \"* * * *\": expected exactly 5 fields, found 4: [* * * *]", "explain": "A schedule needs five fields: minute, hour, day of month, month, and day of week. This one has four.", "fix": "Add the fifth star: \"* * * * *\"."}
+  },
   "sources": [
     {
       "title": "Jobs",

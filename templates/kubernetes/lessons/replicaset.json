@@ -92,21 +92,33 @@
   "tryIt": [
     {
       "command": "kubectl apply -f replicaset.yaml",
-      "result": "Prints replicaset.apps/web-copies created."
+      "result": "Prints replicaset.apps/web-copies created.",
+      "check": {"expect": ["replicaset.apps/web-copies created"]}
     },
     {
       "command": "kubectl get replicaset web-copies",
-      "result": "DESIRED, CURRENT, and READY all match your replica count."
+      "result": "DESIRED, CURRENT, and READY all match your replica count.",
+      "check": {"pattern": "web-copies\\s+{{replicas}}\\s+{{replicas}}\\s+{{replicas}}\\s"}
     },
     {
       "command": "kubectl delete pod <name of one web-copies Pod>",
-      "result": "Run kubectl get pods -l app=web-copies again. A new Pod has replaced it."
+      "result": "Run kubectl get pods -l app=web-copies again. A new Pod has replaced it.",
+      "check": {"run": "kubectl delete $(kubectl get pods -l app=web-copies -o name | head -n 1)", "expect": ["deleted"], "then": {"run": "kubectl get pods -l app=web-copies --field-selector=status.phase=Running --no-headers", "lines": "{{replicas}}"}}
     },
     {
       "command": "kubectl delete -f replicaset.yaml",
-      "result": "Removes the ReplicaSet and its Pods."
+      "result": "Removes the ReplicaSet and its Pods.",
+      "check": {"expect": ["replicaset.apps \"web-copies\" deleted"]}
     }
   ],
+  "practice": {
+    "questions": [
+      {"question": "What does replicas: 3 ask for?", "answers": ["Three containers in one Pod", "Three copies of the Pod", "Three restarts if a Pod fails"], "correct": 1, "explain": "The ReplicaSet keeps three Pods running and replaces any that stop.", "line": 6},
+      {"question": "Why must the label on line 13 match the selector on line 9?", "answers": ["The ReplicaSet counts only Pods with that label", "Kubernetes sorts Pods by label", "The label sets the Pod name"], "correct": 0, "explain": "The selector finds the Pods to count. Pods made from the template must carry the same label.", "line": 13},
+      {"question": "Why do most people write a Deployment instead?", "answers": ["A ReplicaSet cannot run nginx", "A Deployment manages ReplicaSets and handles updates for you", "ReplicaSets need more memory"], "correct": 1, "explain": "A Deployment creates a ReplicaSet for you. It also replaces Pods safely when you change the image.", "line": 2}
+    ],
+    "fix": {"line": 6, "text": "  replicas: \"3\"", "source": "apply", "message": "Error from server (BadRequest): error when creating \"replicaset.yaml\": ReplicaSet in version \"v1\" cannot be handled as a ReplicaSet: json: cannot unmarshal string into Go struct field ReplicaSetSpec.spec.replicas of type int32", "explain": "Quotes turn 3 into text. replicas needs a number.", "fix": "Remove the quotes: replicas: 3."}
+  },
   "sources": [
     {
       "title": "ReplicaSet",

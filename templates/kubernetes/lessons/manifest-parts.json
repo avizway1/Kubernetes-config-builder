@@ -54,12 +54,20 @@
     "spec.containers[].ports[].containerPort": "The port number nginx listens on inside the container."
   },
   "tryIt": [
-    { "command": "kubectl apply -f myfirstpod.yaml", "result": "Prints pod/myfirstpod created." },
-    { "command": "kubectl get pod myfirstpod -o yaml", "result": "Shows your four parts, plus a status section Kubernetes added, such as phase: Running." },
-    { "command": "kubectl explain pod", "result": "Describes a Pod and lists its top-level fields: apiVersion, kind, metadata, spec, and status." },
-    { "command": "kubectl explain pod.spec.containers", "result": "Describes the containers field and every field you can set inside it." },
-    { "command": "kubectl delete -f myfirstpod.yaml", "result": "Removes the Pod." }
+    { "command": "kubectl apply -f myfirstpod.yaml", "result": "Prints pod/myfirstpod created.", "check": {"expect": ["pod/myfirstpod created"]} },
+    { "command": "kubectl get pod myfirstpod -o yaml", "result": "Shows your four parts, plus a status section Kubernetes added, such as phase: Running.", "check": {"expect": ["status:", "phase: Running"]} },
+    { "command": "kubectl explain pod", "result": "Describes a Pod and lists its top-level fields: apiVersion, kind, metadata, spec, and status.", "check": {"expect": ["KIND:", "Pod", "apiVersion", "metadata", "spec", "status"]} },
+    { "command": "kubectl explain pod.spec.containers", "result": "Describes the containers field and every field you can set inside it.", "check": {"expect": ["FIELD: containers"]} },
+    { "command": "kubectl delete -f myfirstpod.yaml", "result": "Removes the Pod.", "check": {"expect": ["pod \"myfirstpod\" deleted"]} }
   ],
+  "practice": {
+    "questions": [
+      {"question": "Which line tells Kubernetes what to create?", "answers": ["Line 1, apiVersion", "Line 2, kind", "Line 4, name"], "correct": 1, "explain": "kind names the type of object. Here it is a Pod.", "line": 2},
+      {"question": "Where do you describe what the Pod should run?", "answers": ["metadata", "spec", "status"], "correct": 1, "explain": "spec holds what you want. Kubernetes writes status itself after you apply.", "line": 5},
+      {"question": "What does containerPort: 80 tell Kubernetes?", "answers": ["The port nginx listens on inside the container", "A port opened on your laptop", "How many containers to run"], "correct": 0, "explain": "It records the port the app listens on. It does not open anything outside the cluster.", "line": 10}
+    ],
+    "fix": {"line": 1, "text": "apiversion: v1", "source": "apply", "message": "error: error validating \"myfirstpod.yaml\": error validating data: apiVersion not set; if you choose to ignore these errors, turn validation off with --validate=false", "explain": "Field names are case-sensitive. apiversion is not apiVersion, so Kubernetes finds no API version.", "fix": "Write apiVersion with a capital V."}
+  },
   "sources": [
     { "title": "Objects in Kubernetes", "url": "https://kubernetes.io/docs/concepts/overview/working-with-objects/" },
     { "title": "kubectl explain", "url": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_explain/" }

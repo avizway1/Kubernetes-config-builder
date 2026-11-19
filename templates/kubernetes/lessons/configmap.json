@@ -102,21 +102,33 @@
   "tryIt": [
     {
       "command": "kubectl apply -f configmap.yaml",
-      "result": "Prints configmap/app-settings created and pod/settings-demo created."
+      "result": "Prints configmap/app-settings created and pod/settings-demo created.",
+      "check": {"expect": ["configmap/app-settings created", "pod/settings-demo created"]}
     },
     {
       "command": "kubectl logs settings-demo",
-      "result": "Prints Hello from a ConfigMap."
+      "result": "Prints Hello from a ConfigMap.",
+      "check": {"expect": ["Hello from a ConfigMap"]}
     },
     {
       "command": "kubectl exec settings-demo -- cat /etc/settings/COLOR",
-      "result": "Prints blue, read from the mounted file."
+      "result": "Prints blue, read from the mounted file.",
+      "check": {"expect": ["blue"]}
     },
     {
       "command": "kubectl delete -f configmap.yaml",
-      "result": "Removes the ConfigMap and the Pod."
+      "result": "Removes the ConfigMap and the Pod.",
+      "check": {"expect": ["configmap \"app-settings\" deleted", "pod \"settings-demo\" deleted"]}
     }
   ],
+  "practice": {
+    "questions": [
+      {"question": "How does the container get GREETING as a variable?", "answers": ["envFrom copies every key into the environment", "The image already has it", "volumeMounts sets it"], "correct": 0, "explain": "envFrom with configMapRef turns each key into an environment variable.", "line": 18},
+      {"question": "What is in the file /etc/settings/COLOR?", "answers": ["The text blue", "A folder called COLOR", "Nothing, because COLOR is only a variable"], "correct": 0, "explain": "The volume makes one file per key. The mount puts the files in /etc/settings.", "line": 23},
+      {"question": "You change COLOR to green and apply again. What does the running container see?", "answers": ["Both the file and the variable change at once", "The file changes after a short wait. The variable stays blue until a restart.", "Nothing changes"], "correct": 1, "explain": "Mounted files update after a short delay. Environment variables are set only when the container starts.", "line": 7}
+    ],
+    "fix": {"line": 20, "text": "            name: app-setting", "source": "command", "command": "kubectl describe pod settings-demo", "expect": "Error: configmap \"app-setting\" not found", "message": "Error: configmap \"app-setting\" not found", "explain": "The Pod asks for a ConfigMap called app-setting. None exists, so the container cannot start.", "fix": "Use the ConfigMap’s name: app-settings."}
+  },
   "sources": [
     {
       "title": "ConfigMaps",

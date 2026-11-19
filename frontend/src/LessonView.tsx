@@ -2,12 +2,20 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ExportActions } from './ExportActions';
 import { LessonEditor } from './LessonEditor';
 import {
-  glossary, lessonText, lineNote, matchLines, renderLesson, renderMistake,
+  brokenFile, glossary, lessonText, lineNote, matchLines, practiceFile, renderLesson, renderMistake,
   type LessonContent, type LessonValues,
 } from './lesson-builder';
+import { fixFound, LessonPractice, newPractice, type PracticeProgress } from './LessonPractice';
 import { runsOnLabels, type Lesson } from './lessons';
 
-export type LessonProgress = { step: number; values: LessonValues; explanations: boolean };
+// `practising` shows Read it and Fix it after the last block. `practice` keeps their answers when learners go back.
+export type LessonProgress = {
+  step: number;
+  values: LessonValues;
+  explanations: boolean;
+  practising?: boolean;
+  practice?: PracticeProgress;
+};
 
 export function LessonView({ lesson, content, progress, onProgress, next }: {
   lesson: Lesson;
@@ -38,7 +46,29 @@ export function LessonView({ lesson, content, progress, onProgress, next }: {
   const [mistakeShown, setMistakeShown] = useState(false);
   const mistake = mistakeShown ? block.mistake : undefined;
   const broken = useMemo(() => (mistake ? renderMistake(content, mistake) : undefined), [content, mistake]);
-  const shownText = broken?.text ?? text;
+
+  // Read it and Fix it show the finished file without block comments, so line numbers match the questions and messages.
+  const practice = progress.practising && content.practice ? progress.practice ?? newPractice() : undefined;
+  const setPractice = (next: PracticeProgress) => onProgress({ ...progress, practising: true, practice: next });
+  const practiceView = useMemo(() => {
+    if (!practice || !content.practice) return undefined;
+    const { fix, questions } = content.practice;
+    if (practice.tab === 'read') {
+      const focus = practice.focus === undefined ? [] : [questions[practice.focus].line];
+      return { ...practiceFile(content), highlights: focus, highlightClass: undefined, label: `${content.filename}, finished file to read` };
+    }
+    if (practice.showFixed) return { ...practiceFile(content), highlights: [fix.line], highlightClass: undefined, label: `${content.filename}, fixed file` };
+    const found = fixFound(fix, practice);
+    return {
+      ...brokenFile(content, fix),
+      highlights: found ? [fix.line] : practice.picked ? [practice.picked] : [],
+      highlightClass: found ? 'lesson-mistake-line' : undefined,
+      label: `${content.filename}, broken copy with one mistake`,
+    };
+  }, [content, practice]);
+  const pickable = practice?.tab === 'fix' && !practice.showFixed && !fixFound(content.practice!.fix, practice);
+  const nextLink = next ? <a href={`#learn/${next.id}`}>Next lesson: {next.title}</a> : <a href="#learn">Back to all lessons</a>;
+  const shownText = practiceView?.text ?? broken?.text ?? text;
 
   const choice = block.tryChange ? content.choices?.[block.tryChange] : undefined;
   const finished = step >= content.finishedAt;
@@ -57,6 +87,10 @@ export function LessonView({ lesson, content, progress, onProgress, next }: {
       <div className="builder lesson-builder">
         <section className="step lesson-card" aria-labelledby="block-title">
           <a className="pane-jump" href="#lesson-file">Jump to the YAML</a>
+          {practice ? (
+            <LessonPractice content={content} practice={practice} lineCount={practiceView!.notes.length} onChange={setPractice}
+              onLeave={() => onProgress({ ...progress, practising: false })} next={nextLink} />
+          ) : (<>
           <p className="lesson-progress" id="lesson-progress">Block {step + 1} of {content.blocks.length}</p>
           <progress max={content.blocks.length} value={step + 1} aria-labelledby="lesson-progress" />
           <h2 id="block-title" tabIndex={-1}>{block.title}</h2>
@@ -111,22 +145,33 @@ export function LessonView({ lesson, content, progress, onProgress, next }: {
           </div>
           {step === last && (
             <p className="lesson-done">
-              You built the whole file.{' '}
-              {next ? <a href={`#learn/${next.id}`}>Next lesson: {next.title}</a> : <a href="#learn">Back to all lessons</a>}
+              You built the whole file.{' '}{nextLink}
             </p>
           )}
+          {step === last && content.practice && (
+            <button type="button" className="lesson-practise" onClick={() => setPractice(practice ?? progress.practice ?? newPractice())}>
+              Practise: Read it and Fix it
+            </button>
+          )}
+          </>)}
         </section>
         <section className="step builder-output lesson-output" aria-labelledby="lesson-file">
           <div className="lesson-output-heading">
             <h2 id="lesson-file" tabIndex={-1}>{content.filename}</h2>
             <a className="pane-jump" href="#block-title">Back to the lesson</a>
-            <label className="lesson-switch">
-              <input type="checkbox" checked={explanations}
-                onChange={event => onProgress({ ...progress, explanations: event.target.checked })} />
-              Show explanations
-            </label>
+            {!practice && (
+              <label className="lesson-switch">
+                <input type="checkbox" checked={explanations}
+                  onChange={event => onProgress({ ...progress, explanations: event.target.checked })} />
+                Show explanations
+              </label>
+            )}
           </div>
-          {broken && mistake ? (
+          {practiceView ? (
+            <LessonEditor text={practiceView.text} notes={practiceView.notes} highlights={practiceView.highlights}
+              highlightClass={practiceView.highlightClass} label={practiceView.label}
+              onLineClick={pickable ? line => setPractice({ ...practice!, picked: line, checked: false }) : undefined} />
+          ) : broken && mistake ? (
             <LessonEditor text={broken.text} notes={broken.notes} highlights={[mistake.line]} highlightClass="lesson-mistake-line"
               label={`${content.filename}, broken copy with a mistake on line ${mistake.line}`} />
           ) : (

@@ -1,7 +1,7 @@
 import { deepEqual, equal, ok } from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  blockLines, defaultLessonValues, glossary, lessonContent, lessonText, lineNote, matchLines, noteKey, renderLesson, renderMistake, yamlPaths,
+  blockLines, defaultLessonValues, glossary, brokenFile, lessonContent, lessonText, lineNote, matchLines, noteKey, practiceLines, renderLesson, renderMistake, yamlPaths,
 } from '../frontend/src/lesson-builder.ts';
 import { levels } from '../frontend/src/lessons.ts';
 
@@ -102,7 +102,14 @@ test('lesson text follows the style rules', () => {
     // A file with a kind is applied to a cluster. Level 0's YAML-only file has nothing to run.
     if (lesson.kind) equal(lesson.tryIt[0].command, `kubectl apply -f ${lesson.filename}`);
     else equal(lesson.tryIt.length, 0, lesson.id);
-    for (const item of lesson.tryIt) ok(!/\b8080\b/.test(item.command), 'port 8080 is the dashboard port');
+    for (const item of lesson.tryIt) {
+      ok(!/\b8080\b/.test(item.command), 'port 8080 is the dashboard port');
+      // tests/lesson-cluster.check.mjs confirms every result on K3s, so each one needs something to check.
+      const tests = check => check && (check.expect?.length || check.pattern || check.lines !== undefined);
+      ok(tests(item.check), `${lesson.id}: "${item.command}" has no cluster check`);
+      if (item.check.then) ok(item.check.then.run && tests(item.check.then), `${lesson.id}: "${item.command}" has an incomplete follow-up check`);
+      if (item.command.includes('<')) ok(item.check.run, `${lesson.id}: "${item.command}" has a placeholder, so its check needs a command to run`);
+    }
     const official = lesson.kind ? ['https://kubernetes.io/docs/'] : ['https://kubernetes.io/docs/', 'https://yaml.org/spec/'];
     for (const source of lesson.sources) ok(official.some(prefix => source.url.startsWith(prefix)), source.url);
   }
@@ -143,5 +150,42 @@ test('a mistake changes only the line it names, and every line it shows has a no
     ok(shown.notes.every(Boolean), `${label}: every line has a note`);
     equal(shown.notes[block.mistake.line - 1], block.mistake.explain, label);
     ok(block.mistake.error.startsWith(`yaml: line ${block.mistake.line}: `), `${label}: the error names the line`);
+  }
+});
+
+test('every lesson has Read it and Fix it practice that follows the style rules', () => {
+  const short = (label, text, most) => {
+    ok(sentences(text).length <= most, `${label}: ${text}`);
+    for (const sentence of sentences(text)) ok(words(sentence) <= 20, `${label}: ${sentence}`);
+  };
+  for (const lesson of lessons) {
+    ok(lesson.practice, `${lesson.id} has no practice`);
+    const { questions, fix } = lesson.practice;
+    const lines = practiceLines(lesson).map(line => line.text);
+    ok(questions.length >= 2 && questions.length <= 3, `${lesson.id} needs two or three questions`);
+    for (const [index, question] of questions.entries()) {
+      const label = `${lesson.id} question ${index + 1}`;
+      short(label, question.question, 2);
+      equal(question.answers.length, 3, label);
+      equal(new Set(question.answers).size, 3, `${label} repeats an answer`);
+      for (const answer of question.answers) short(label, answer, 2);
+      ok(Number.isInteger(question.correct) && question.correct >= 0 && question.correct < 3, label);
+      ok(question.line >= 1 && question.line <= lines.length, `${label} points past the file`);
+      short(label, question.explain, 2);
+    }
+    const label = `${lesson.id} fix`;
+    ok(fix.line >= 1 && fix.line <= lines.length, `${label} points past the file`);
+    const original = lines[fix.line - 1];
+    ok(fix.text !== original, `${label} changes nothing`);
+    // The mistake is in what the line says, not where it sits, so learners can find it by reading.
+    equal(fix.text.length - fix.text.trimStart().length, original.length - original.trimStart().length, `${label} changes the indentation`);
+    deepEqual(brokenFile(lesson, fix).text.split('\n').filter((line, index) => line !== lines[index] && index < lines.length), [fix.text], label);
+    ok(fix.message.trim(), `${label} has no message`);
+    if (lesson.kind) ok(['apply', 'command'].includes(fix.source), `${label}: a Kubernetes file shows what Kubernetes says`);
+    else equal(fix.source, 'yaml', label);
+    if (fix.source === 'command') ok(fix.command?.startsWith('kubectl ') && fix.expect, `${label} needs a kubectl command and the pattern it shows`);
+    else ok(!fix.command && !fix.expect, label);
+    short(label, fix.explain, 2);
+    short(label, fix.fix, 2);
   }
 });

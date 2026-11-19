@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
-import { defaultLessonValues, lessonContent, lessonText, renderLesson } from '../frontend/src/lesson-builder.ts';
+import { brokenFile, defaultLessonValues, lessonContent, lessonText, renderLesson } from '../frontend/src/lesson-builder.ts';
 
 const schemas = fileURLToPath(new URL('../.runtime/schemas', import.meta.url));
 const versions = ['1.35.0', '1.36.0', '1.37.0'];
@@ -89,4 +89,14 @@ test('each mistake shows the exact message the YAML reader prints', () => {
     }
   }
   ok(checked >= 1, 'no mistakes were checked');
+});
+
+test('each YAML Fix it shows the exact message the YAML reader prints', () => {
+  let checked = 0;
+  for (const lesson of Object.values(lessonContent).filter(lesson => lesson.practice?.fix.source === 'yaml')) {
+    const output = readYaml(brokenFile(lesson, lesson.practice.fix).text);
+    ok(output.includes(`error converting YAML to JSON: ${lesson.practice.fix.message}\n`), `${lesson.id}: ${output}`);
+    checked++;
+  }
+  ok(checked >= 1, 'no YAML Fix it was checked');
 });
