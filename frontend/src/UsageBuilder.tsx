@@ -45,7 +45,7 @@ export function UsageBuilder({ id, tool, kubernetesVersion, draft, projectValues
           </select>
         </label>
         <p className="usage-description">{template.description}</p>
-        <a href="https://github.com/cavula/Kubernetes-config-builder/blob/main/docs/first-k3s-lab.md">Start the first lab or set up a cluster</a>
+        <a href="https://github.com/avizway1/Kubernetes-config-builder/blob/main/docs/first-k3s-lab.md">Start the first lab or set up a cluster</a>
         {id === 'application' && (
           <div className="example-actions" aria-label="Application examples">
             <button className="example-button" type="button" onClick={() => onDraftChange({

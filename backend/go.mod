@@ -1,4 +1,4 @@
-module github.com/cavula/Kubernetes-config-builder/backend
+module github.com/avizway1/Kubernetes-config-builder/backend
 
 go 1.27.4
 

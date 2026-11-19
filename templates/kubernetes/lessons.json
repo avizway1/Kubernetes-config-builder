@@ -435,7 +435,7 @@
       "runsOn": "k3s",
       "cost": "Free, on your laptop",
       "summary": "Deploy with Argo CD, collect metrics with Prometheus, and trigger an alert.",
-      "link": "https://github.com/cavula/Kubernetes-config-builder/blob/main/docs/first-k3s-lab.md"
+      "link": "https://github.com/avizway1/Kubernetes-config-builder/blob/main/docs/first-k3s-lab.md"
     }
   ]
 }

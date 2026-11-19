@@ -134,7 +134,7 @@ export function renderUsage(id: UsageTemplateId, values: UsageValues, learning: 
       (input.repoURL === 'https://github.com/argoproj/argocd-example-apps.git' ||
        input.repoURL === 'https://github.com/argoproj/argocd-example-apps');
     const lab = input.path === 'templates/lab/metrics-demo' &&
-      input.repoURL === 'https://github.com/cavula/Kubernetes-config-builder.git';
+      input.repoURL === 'https://github.com/avizway1/Kubernetes-config-builder.git';
     const pathNote = 'The folder in the repository that holds the files.';
     write(indent + 2, `path: ${quoted('path')}`, guestbook
       ? 'The Guestbook folder. Its AMD64-only image runs under AMD64 emulation on ARM64 hosts such as Apple Silicon Macs.'

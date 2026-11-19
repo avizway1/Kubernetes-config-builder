@@ -1,6 +1,6 @@
 # Kubernetes Config Builder and Learning Dashboard
 
-[![CI](https://github.com/cavula/Kubernetes-config-builder/actions/workflows/ci.yml/badge.svg)](https://github.com/cavula/Kubernetes-config-builder/actions/workflows/ci.yml)
+[![CI](https://github.com/avizway1/Kubernetes-config-builder/actions/workflows/ci.yml/badge.svg)](https://github.com/avizway1/Kubernetes-config-builder/actions/workflows/ci.yml)
 
 Build and learn Kubernetes configurations with short templates for tools you already use. The dashboard supports K3s 1.35, 1.36, and 1.37.
 
@@ -23,25 +23,23 @@ For standalone Prometheus, apply the annotated Service with kubectl. For a custo
 
 ### Run the first K3s lab
 
-Start the dashboard with the v0.4.0 image below, then follow the lab guide. You’ll deploy a sample app with Argo CD and use Prometheus to collect its metrics, trigger an alert, and verify recovery. [First K3s lab](docs/first-k3s-lab.md)
+Start the dashboard with Docker below, then follow the lab guide. You’ll deploy a sample app with Argo CD and use Prometheus to collect its metrics, trigger an alert, and verify recovery. [First K3s lab](docs/first-k3s-lab.md)
 
 ## Start with Docker
 
-With Docker Desktop or Docker Engine with Compose running, download the [v0.4.0 compose.yaml](https://github.com/cavula/Kubernetes-config-builder/releases/download/v0.4.0/compose.yaml) and run this in the download folder.
+With Docker Desktop or Docker Engine with Compose running, clone this repository and build the latest dashboard, including the Learn Kubernetes lessons. Give Docker at least 8 GB of memory first (Docker Desktop: Settings, then Resources). With 4 GB, the build stops with “cannot allocate memory” while compiling promtool.
 
 ```sh
-docker compose up -d
-```
-
-Open [localhost:8080](http://localhost:8080). Compose pulls `ghcr.io/cavula/kubernetes-config-builder:v0.4.0` for your machine. The first run needs internet access to download the image. Run `docker compose down` from the same folder to stop the dashboard.
-
-### Build locally with Docker
-
-From a repository checkout, use the build override to compile the dashboard and patched promtool locally. Docker verifies the pinned source archive, charts, and Kubernetes schemas during the build.
-
-```sh
+git clone https://github.com/avizway1/Kubernetes-config-builder.git
+cd Kubernetes-config-builder
 docker compose -f compose.yaml -f compose.build.yaml up -d --build
 ```
+
+Open [localhost:8080](http://localhost:8080). Docker verifies the pinned source archive, charts, and Kubernetes schemas during the build, and compiles the patched promtool, so the first build can take a while. Run `docker compose -f compose.yaml -f compose.build.yaml down` from the same folder to stop the dashboard.
+
+### Older prebuilt release
+
+`docker compose up -d` without the build file pulls the v0.4.0 image, `ghcr.io/cavula/kubernetes-config-builder:v0.4.0`, published from the original repository before this one. It has the Argo CD and Prometheus builder and the first K3s lab, but not Kubernetes Made Simple or the lessons.
 
 ## Run from source for development
 

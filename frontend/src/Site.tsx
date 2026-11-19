@@ -4,7 +4,7 @@ import { labs, levels, runsOnLabels, type OpenTarget, type RunsOn } from './less
 export type View = 'home' | 'learn' | 'build';
 
 const brand = `${import.meta.env.BASE_URL}brand/`;
-const repository = 'https://github.com/cavula/Kubernetes-config-builder';
+const repository = 'https://github.com/avizway1/Kubernetes-config-builder';
 
 export function SiteHeader({ view }: { view: View }) {
   return (

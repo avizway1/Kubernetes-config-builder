@@ -32,8 +32,8 @@
         "label": "Git repository URL",
         "description": "The Git repository that holds your Kubernetes files.",
         "type": "text",
-        "default": "https://github.com/cavula/Kubernetes-config-builder.git",
-        "example": "https://github.com/cavula/Kubernetes-config-builder.git"
+        "default": "https://github.com/avizway1/Kubernetes-config-builder.git",
+        "example": "https://github.com/avizway1/Kubernetes-config-builder.git"
       },
       {
         "id": "targetRevision",
@@ -129,8 +129,8 @@
         "label": "Allowed repository URL",
         "description": "The Git repository that Applications in this project may use.",
         "type": "text",
-        "default": "https://github.com/cavula/Kubernetes-config-builder.git",
-        "example": "https://github.com/cavula/Kubernetes-config-builder.git"
+        "default": "https://github.com/avizway1/Kubernetes-config-builder.git",
+        "example": "https://github.com/avizway1/Kubernetes-config-builder.git"
       },
       {
         "id": "destinationServer",
@@ -199,8 +199,8 @@
         "label": "Git repository URL",
         "description": "The Git repository that holds your Kubernetes files.",
         "type": "text",
-        "default": "https://github.com/cavula/Kubernetes-config-builder.git",
-        "example": "https://github.com/cavula/Kubernetes-config-builder.git"
+        "default": "https://github.com/avizway1/Kubernetes-config-builder.git",
+        "example": "https://github.com/avizway1/Kubernetes-config-builder.git"
       },
       {
         "id": "targetRevision",
