@@ -1,0 +1,10 @@
+{
+  "Pod": "The smallest thing Kubernetes runs: one or more containers that share a network address and storage.",
+  "label": "A key and value tag on an object, such as app: web. Other objects use labels to find it.",
+  "image": "A packaged app with everything it needs to run. Kubernetes downloads it from a registry.",
+  "port": "A numbered door on a network address. A web server usually listens on port 80.",
+  "Deployment": "An object that keeps a set number of identical Pods running and rolls out changes to them.",
+  "replica": "One copy of a Pod. Several replicas share the work and keep the app up if one fails.",
+  "selector": "A rule that picks objects by their labels, such as every Pod labelled app: web.",
+  "Pod template": "The part of a Deployment that describes each Pod it creates."
+}

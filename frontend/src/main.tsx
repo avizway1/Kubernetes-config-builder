@@ -5,15 +5,21 @@ import { UsageBuilder, type UsageDraft } from './UsageBuilder';
 import { Builder, type InstallDraft } from './Builder';
 import { kubernetesVersions, platform, selectConfiguration, tools } from './selection';
 import { Home, Learn, SiteFooter, SiteHeader, type View } from './Site';
-import type { OpenTarget } from './lessons';
+import { levels, type OpenTarget } from './lessons';
+import { defaultLessonValues, lessonContent } from './lesson-builder';
+import { LessonView, type LessonProgress } from './LessonView';
 import { defaultUsageValues, usageTemplateIds, type UsageTemplateId, type UsageTool } from './usage-values';
 import './style.css';
 
 const startKey = 'kubernetes-made-simple:start';
 
-function viewFromHash(): View | undefined {
-  const hash = window.location.hash.slice(1);
-  return hash === 'home' || hash === 'learn' || hash === 'build' ? hash : undefined;
+const allLessons = levels.flatMap(level => level.lessons);
+
+// #learn/pod opens a lesson inside Learn Kubernetes.
+function routeFromHash(): { view?: View; lesson?: string } {
+  const [view, lesson] = window.location.hash.slice(1).split('/');
+  if (view === 'learn' && lesson && lessonContent[lesson]) return { view, lesson };
+  return view === 'home' || view === 'learn' || view === 'build' ? { view } : {};
 }
 
 // Returning visitors skip the starting options. Storage can be unavailable, so the page works without it.
@@ -27,11 +33,17 @@ function storedStart(): View | undefined {
 }
 
 function App() {
-  const [view, setView] = useState<View>(() => viewFromHash() ?? storedStart() ?? 'home');
+  const [route, setRoute] = useState(() => {
+    const initial = routeFromHash();
+    return { view: initial.view ?? storedStart() ?? 'home', lesson: initial.lesson };
+  });
+  const view = route.view;
+  const [lessonProgress, setLessonProgress] = useState<Record<string, LessonProgress>>({});
 
   useEffect(() => {
     const onHashChange = () => {
-      setView(viewFromHash() ?? 'home');
+      const next = routeFromHash();
+      setRoute({ view: next.view ?? 'home', lesson: next.lesson });
       window.scrollTo(0, 0);
     };
     window.addEventListener('hashchange', onHashChange);
@@ -72,7 +84,20 @@ function App() {
     <>
       <SiteHeader view={view} />
       {view === 'home' && <main><Home /></main>}
-      {view === 'learn' && <main><Learn onOpen={open} /></main>}
+      {view === 'learn' && !route.lesson && <main><Learn onOpen={open} /></main>}
+      {view === 'learn' && route.lesson && (() => {
+        const id = route.lesson;
+        const content = lessonContent[id];
+        const index = allLessons.findIndex(lesson => lesson.id === id);
+        const next = allLessons.slice(index + 1).find(lesson => lessonContent[lesson.id]);
+        return (
+          <main>
+            <LessonView key={id} lesson={allLessons[index]} content={content} next={next}
+              progress={lessonProgress[id] ?? { step: 0, values: defaultLessonValues(content), explanations: true }}
+              onProgress={progress => setLessonProgress(all => ({ ...all, [id]: progress }))} />
+          </main>
+        );
+      })()}
       {view === 'build' && (
         <main>
           <div className="build-heading">

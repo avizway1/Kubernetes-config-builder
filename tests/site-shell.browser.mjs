@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
+import { lessonContent, lessonText, renderLesson } from '../frontend/src/lesson-builder.ts';
 
 const require = createRequire(new URL('../frontend/package.json', import.meta.url));
 const { chromium } = require('playwright-core');
@@ -25,10 +27,12 @@ test('first visit offers two starting options and the lesson overview opens exis
     await page.locator('.door-primary').click();
     await page.getByRole('heading', { name: 'Learn Kubernetes', level: 1 }).waitFor();
     assert.equal(new URL(page.url()).hash, '#learn');
+    assert.equal(await page.locator('section.level').count(), 11);
     const basics = page.locator('section[aria-labelledby="level-1-title"] .lesson');
-    assert.equal(await basics.count(), 12);
-    assert.equal(await basics.locator('.badge-eks').count(), 4);
-    assert.equal(await basics.getByText('Coming soon').count(), 12);
+    assert.equal(await basics.count(), 8);
+    assert.equal(await basics.locator('.lesson-start').count(), 2);
+    assert.equal(await basics.getByText('Coming soon').count(), 6);
+    assert.equal(await page.locator('section.level:not([aria-labelledby="labs-title"]) .badge-eks').count(), 7);
 
     await page.getByRole('button', { name: 'Open Deploy an app from Git' }).click();
     await page.getByRole('heading', { name: 'Build a config', level: 1 }).waitFor();
@@ -61,6 +65,96 @@ test('starting options and lessons fit a phone screen without sideways scrolling
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       assert.ok(overflow <= 0, `${hash} scrolls sideways by ${overflow}px`);
     }
+  } finally {
+    await browser.close();
+  }
+});
+
+test('a lesson builds the file one block at a time and exports exactly what is shown', { timeout: 40000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1366, height: 900 }, permissions: ['clipboard-read', 'clipboard-write'] });
+    page.setDefaultTimeout(8000);
+    const yaml = page.getByTestId('lesson-yaml');
+    const progress = page.locator('.lesson-progress');
+    async function download() {
+      const pending = page.waitForEvent('download');
+      await page.getByRole('button', { name: 'Download' }).click();
+      const file = await pending;
+      return { name: file.suggestedFilename(), text: readFileSync(await file.path(), 'utf8') };
+    }
+
+    await page.goto(`${appUrl}#learn`);
+    await page.getByRole('link', { name: 'Start Run one container' }).click();
+    await page.getByRole('heading', { name: 'Run one container', level: 1 }).waitFor();
+    assert.equal(new URL(page.url()).hash, '#learn/pod');
+    assert.equal(await progress.textContent(), 'Block 1 of 4');
+    assert.equal(await page.getByRole('button', { name: 'Back' }).isDisabled(), true);
+    await yaml.locator('.view-line').filter({ hasText: 'kind: Pod' }).waitFor();
+    await page.getByText('Not finished yet.').waitFor();
+
+    // The new block and its comment are highlighted: four YAML lines plus one comment.
+    await page.getByRole('button', { name: 'Next block' }).click();
+    assert.equal(await progress.textContent(), 'Block 2 of 4');
+    await yaml.locator('.view-line').filter({ hasText: 'app: web' }).waitFor();
+    await page.waitForFunction(() => document.querySelectorAll('[data-testid="lesson-yaml"] .comparison-value-line').length === 5);
+    assert.equal(await page.locator('.lesson-term dfn').textContent(), 'label');
+
+    // Hovering a line explains it in plain English.
+    await yaml.locator('.view-line span').filter({ hasText: /^name$/ }).first().hover();
+    await page.locator('.monaco-hover').getByText(/unique among Pods in the same namespace/).waitFor();
+
+    await page.getByRole('button', { name: 'Next block' }).click();
+    await page.getByRole('heading', { name: 'Try it' }).waitFor();
+    await page.getByRole('button', { name: 'Back' }).click();
+    assert.equal(await progress.textContent(), 'Block 2 of 4');
+    await page.getByRole('button', { name: 'Show whole file' }).click();
+    assert.equal(await progress.textContent(), 'Block 4 of 4');
+    assert.equal(await page.getByRole('button', { name: 'Next block' }).isDisabled(), true);
+    const pod = lessonContent.pod;
+    const whole = await download();
+    assert.equal(whole.name, 'pod.yaml');
+    assert.equal(whole.text, lessonText(renderLesson(pod, 3, {}, true)));
+    await page.getByRole('button', { name: 'Copy' }).click();
+    await page.getByText('Copied to clipboard.').waitFor();
+    assert.equal(await page.evaluate(() => navigator.clipboard.readText()), whole.text);
+    await page.getByLabel('Show explanations').uncheck();
+    assert.equal((await download()).text, lessonText(renderLesson(pod, 3, {}, false)));
+
+    // The next lesson keeps its own progress and lets the learner try a different replica count.
+    await page.getByRole('link', { name: 'Next lesson: Keep your app running' }).click();
+    await page.getByRole('heading', { name: 'Keep your app running', level: 1 }).waitFor();
+    await page.getByRole('button', { name: 'Next block' }).click();
+    await page.getByRole('button', { name: 'Next block' }).click();
+    await page.getByLabel(/Try changing/).selectOption('3');
+    await yaml.locator('.view-line').filter({ hasText: 'replicas: 3' }).waitFor();
+    await page.getByRole('button', { name: 'Show whole file' }).click();
+    const deployment = await download();
+    assert.equal(deployment.name, 'deployment.yaml');
+    assert.equal(deployment.text, lessonText(renderLesson(lessonContent.deployment, 6, { replicas: '3' }, true)));
+
+    await page.getByRole('link', { name: 'All lessons', exact: true }).click();
+    await page.getByRole('link', { name: 'Start Run one container' }).click();
+    assert.equal(await progress.textContent(), 'Block 4 of 4');
+    assert.equal(await page.getByLabel('Show explanations').isChecked(), false);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('a lesson stacks on a phone with jump links and no sideways scrolling', { timeout: 20000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  try {
+    const page = await browser.newPage({ viewport: { width: 375, height: 812 } });
+    page.setDefaultTimeout(8000);
+    await page.goto(`${appUrl}#learn/deployment`);
+    await page.getByRole('heading', { name: 'Keep your app running', level: 1 }).waitFor();
+    await page.getByRole('link', { name: 'Jump to the YAML' }).waitFor();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    assert.ok(overflow <= 0, `lesson scrolls sideways by ${overflow}px`);
+    const card = await page.locator('.lesson-card').boundingBox();
+    const output = await page.locator('.lesson-output').boundingBox();
+    assert.ok(output.y >= card.y + card.height - 1, 'YAML sits below the lesson card');
   } finally {
     await browser.close();
   }

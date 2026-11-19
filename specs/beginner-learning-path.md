@@ -103,6 +103,89 @@ Notes from the official EKS docs, checked on 2026-11-18:
 
 **Level 3 — Going further** (existing, unchanged behaviour, tested on K3s): ApplicationSet, custom scrape job, alert rule, and Install the tool.
 
+### 4a. The full class curriculum
+
+On 2026-11-19 Charan shared the manifests used in the Aviz Academy EKS class (`awar10-dailynotes/EKS/manifests`, 51 YAML files and 4 diagrams) and asked for the app to cover them all, from easy to hard. The goal: a learner who finishes can **write** a manifest, **understand** one, and **read any** Kubernetes manifest, including tools they have never seen.
+
+Charan approved this curriculum on 2026-11-19. It replaces the 12-lesson Level 1 above with ten levels, and all 12 approved lessons keep their place inside them. Charan chose to leave out IRSA, Fargate, Argo Rollouts, Istio, and the VerticalPodAutoscaler, so `20-irsa.yaml`, `22-vpa.yaml`, `24-peerauth.yaml`, `25-fargate.yaml`, and `argo-rollout/*` are not covered. Explain my code stays on the roadmap.
+
+**Three skills in every lesson**
+
+- **Build it.** Add one block at a time, as in section 2.
+- **Read it.** Show a finished file from the class material and ask two or three questions: what does this field do, and what happens if it changes.
+- **Fix it.** Show a broken copy of the file and ask the learner to find the mistake. Mistakes come from real class issues (listed below) and common errors: wrong indentation, a selector that matches nothing, a missing image.
+
+**Levels.** Class files are relative to the class folder. New lessons are marked ✚.
+
+| Level | # | Lesson | Objects and fields | Class file | Runs on |
+| --- | --- | --- | --- | --- | --- |
+| 0 Read YAML | 0.1 | YAML basics | keys, nesting, lists | — | Anywhere |
+| | 0.2 ✚ | Parts of every manifest | `apiVersion`, `kind`, `metadata`, `spec`, `status`, `kubectl explain` | `01-pod.yaml` | Anywhere |
+| 1 Run an app | 1 | Run one container | Pod | `01-pod.yaml` | Anywhere |
+| | 2 ✚ | Keep copies running | ReplicaSet, and why Deployments manage it for you | `02-replicaset.yaml` | Anywhere |
+| | 3 | Keep your app running | Deployment | `03-deployment.yaml` | Anywhere |
+| | 4 ✚ | CPU and memory | container `resources.requests` and `limits` | `04-limit-lab.yaml` | Anywhere |
+| | 5 | Group your work | Namespace | `09-namespace.yaml`, `10-namespace-2.yaml` | Anywhere |
+| | 6 | Settings outside the image | ConfigMap as env and as files | `18-configmap.yaml` | Anywhere |
+| | 7 | Passwords and keys | Secret as env and as files | `19-secrets.yaml` | Anywhere |
+| | 8 | Run a task to the end | Job, CronJob | none in class | Anywhere |
+| 2 Connect apps | 9 | An address inside the cluster | Service `ClusterIP` | `05-ClusterIP.yaml` | Anywhere |
+| | 10 ✚ | Find a Service by name | cluster DNS names | `23-dns.yaml` | Anywhere |
+| | 11 ✚ | A port on every node | Service `NodePort` | `06-NodePort.yaml` | Anywhere |
+| | 12 ✚ | Point to an outside name | Service `ExternalName` | `08-ExternalName.yaml` | Anywhere |
+| | 13 | Open your app to the internet | Service `LoadBalancer` with the Auto Mode NLB class | `07-LoadBalancer.yaml` | EKS only |
+| | 14 | Route web traffic | IngressClass, Ingress with an ALB, paths and hosts | `Ingress/*` | EKS only |
+| 3 Data and special workloads | 15 | Keep data after restarts | StorageClass, PersistentVolumeClaim on EBS | `14-storageclass.yaml` | EKS only |
+| | 16 ✚ | A name for every Pod | headless Service | `15-headless.yaml` | Anywhere |
+| | 17 ✚ | Databases with their own disks | StatefulSet, `volumeClaimTemplates` | `16-stateful-with-headless.yaml` | EKS only |
+| | 18 ✚ | Share files between Pods | EFS StorageClass, `ReadWriteMany` claim | `efs/*` | EKS only, needs the EFS CSI add-on |
+| | 19 ✚ | One Pod on every node | DaemonSet | `13-daemonsets.yaml` | Anywhere |
+| 4 Run safely | 20 ✚ | Default sizes for a namespace | LimitRange | `11-limitrange.yaml`, `11.1`, `11.2` | Anywhere |
+| | 21 ✚ | A budget for a namespace | ResourceQuota | `12-ResourceQuota.yaml` | Anywhere |
+| | 22 ✚ | Is the app healthy? | liveness, readiness, and startup probes | `Deployment-controls/06-probes.yml` | Anywhere |
+| | 23 ✚ | Start and stop timing | `minReadySeconds`, `progressDeadlineSeconds`, `terminationGracePeriodSeconds` | `Deployment-controls/timings.yml` | Anywhere |
+| | 24 ✚ | Survive node maintenance | PodDisruptionBudget | `Deployment-controls/05-pdb.yml` | Anywhere |
+| 5 Choose where Pods run | 25 ✚ | Pick nodes by label | node affinity | `Deployment-controls/01-node-affinity.yml` | Anywhere |
+| | 26 ✚ | Spread copies apart | Pod anti-affinity | `Deployment-controls/02-anti-affinity.yml` | Anywhere |
+| | 27 ✚ | Keep Pods off some nodes | taints and tolerations | `Deployment-controls/03`, `04` | Anywhere |
+| | 28 ✚ | Choose your machines | Auto Mode NodePool, `nodeSelector` | `auto/NodePool.yaml`, `26-automode.yaml` | EKS only |
+| 6 Release new versions | 29 ✚ | Rolling update | `maxSurge`, `maxUnavailable` | `deployments/01-rolling-update.yaml` | Anywhere |
+| | 30 ✚ | Stop, then start | `Recreate` | `deployments/02-recreate.yaml` | Anywhere |
+| | 31 ✚ | Blue-green | two Deployments, switch the Service selector | `deployments/03-blue-green.yaml` | Anywhere |
+| | 32 ✚ | Canary | replica ratio behind one Service | `deployments/04-canary.yaml` | Anywhere |
+| 7 Scale | 33 | Scale with load | HorizontalPodAutoscaler, written as YAML | `21-hpa.yaml` | Anywhere, needs metrics-server |
+| 8 AWS access | 34 | Let a Pod call AWS safely | ServiceAccount with Pod Identity | none in class | EKS only |
+| 9 Read any manifest | 35 ✚ | Meet an unknown kind | API group → CustomResourceDefinition → official docs, `kubectl get crd`, `kubectl explain`, using `NodePool` and `IngressClassParams` from earlier lessons | — | Anywhere |
+| | 36 | GitOps and monitoring | Argo CD and Prometheus custom resources (existing Levels 2 and 3) | — | Tested on K3s |
+| | 37 ✚ | Final challenge | read a mixed file of many kinds and explain each part | all levels | — |
+
+**Notes from official docs, checked on 2026-11-19**
+
+- EKS Auto Mode includes block storage (EBS) but not EFS. Lesson 18 shows how to install the `aws-efs-csi-driver` add-on and create an EFS file system. [EKS add-ons](https://docs.aws.amazon.com/eks/latest/userguide/workloads-add-ons-available-eks.html) · [Auto Mode considerations](https://docs.aws.amazon.com/eks/latest/userguide/eks-add-ons.html)
+- `NodePool` from `karpenter.sh/v1` is how Auto Mode chooses machines. The built-in `system` and `general-purpose` pools can only be turned on or off. [Create a node pool](https://docs.aws.amazon.com/eks/latest/userguide/create-node-pool.html)
+- Pod-level `spec.resources` is still Beta in Kubernetes 1.37. Lessons teach container-level resources. [Pod-level resources](https://kubernetes.io/blog/2025/09/22/kubernetes-v1-34-pod-level-resources/)
+- All 11 container images in the class files exist on Docker Hub (checked on 2026-11-19). Lab images still follow the pinning and approval rule in section 5.
+
+**What the app changes from the class files.** Lessons use corrected copies. Where an issue teaches something, it becomes a **Fix it** exercise. On 2026-11-19 Charan asked for the same fixes in the class folder itself, with dummy values in place of real account details. Two class files differ from the app on purpose: `14-storageclass.yaml` keeps `ebs.csi.aws.com` with a comment, because the class also uses clusters with the EBS CSI add-on, and the Ingress files keep the AWS Load Balancer Controller’s `alb` IngressClass, because the class installs that controller.
+
+| Class file | Issue | In the app |
+| --- | --- | --- |
+| `11.1`, `11.2` | Pods have no namespace, while the LimitRange and ResourceQuota are in `myapp`. The LimitRange has no `max`, so `11.2` fails only because of the quota. | Put the Pods in `myapp`. Add `max` to show the LimitRange rejecting a Pod, and keep the quota case separate. |
+| `19-secrets.yaml` | `secret-test-pod3` runs `busybox` with no command, so the container exits at once and restarts. (Corrected on 2026-11-19: an earlier review said the image was missing.) | Add a command that keeps it running. Fix it exercise. |
+| `16`, `Deployment-controls/03` | `MYSQL_ROOT_PASSWORD` is written in plain text. | Read it from a Secret with `secretKeyRef`. |
+| `14-storageclass.yaml` | Uses `ebs.csi.aws.com`, the self-managed driver. | Use `ebs.csi.eks.amazonaws.com` for Auto Mode. |
+| `26-automode.yaml` | `resources` sits at Pod level, the Beta field. | Put `resources` on each container. |
+| `efs/17-efs-storageclass.yaml`, `Ingress/ingress-*.yaml` | Real EFS file system ID, ACM certificate ARN with an AWS account ID, and real domain names. | Use placeholders such as `fs-0123456789abcdef0`, `111122223333`, and `example.com`, and explain where to find the real values. |
+| `Ingress/ingress-*.yaml` | Uses the old `kubernetes.io/ingress.class` annotation. | Use `spec.ingressClassName`. Fix it exercise. |
+| `deployments/04-canary.yaml` | Comments say 9 stable to 1 canary, but stable has 0 replicas and canary 10. | Use 9 and 1. Fix it exercise. |
+| `Deployment-controls/05-pdb.yml` | Comments describe 5 replicas, the file has 7. | Match the comments to the file. |
+| `13-daemonsets.yaml` | Reuses the `app: myapp` label from other lessons, so Services can select its Pods by accident. | Give it its own label. Read it exercise on selectors. |
+| `21-hpa.yaml` | The HorizontalPodAutoscaler is created with `kubectl autoscale`; the YAML is commented out. | Teach the YAML and show the command as a shortcut. |
+
+**Dependencies.** Lesson 18 needs the EFS CSI add-on and an EFS file system. Lesson 33 needs metrics-server. Each pins an official version and shows the install and cleanup commands.
+
+**Delivery.** Build Phase 4 (block-at-a-time builder) first. Then deliver one level at a time, each with its own approval, tests, and kubeconform checks. Anywhere lessons are verified on fresh K3s. EKS only lessons wait for an approved EKS test account.
+
 ### 5. Labs
 
 **Lab 1 — Hello Kubernetes (free, on your laptop).** Prerequisites: Docker, k3d, and kubectl. No AWS account, Helm, Argo CD, or Prometheus.
@@ -175,8 +258,8 @@ Each phase gets its own spec section approval, small commits, tests, and a Chrom
 2. **Explanation rewrite.** Apply the style rules to the six existing templates and their field help. No layout change. Test that every emitted line has a note and that every note meets the word limit.
 3. **Brand and front doors.** Header, theme, footer, and the two-door home screen.
 4. **Block-at-a-time builder.** Build it with the existing Service template first, since it is the shortest, then the Argo CD Application.
-5. **Level 0 and Level 1 Anywhere lessons (1–8)** with Lab 1, verified on fresh K3s across 1.35, 1.36, and 1.37.
-6. **Level 1 EKS-only lessons (9–12)** with Lab 2, verified on a dedicated EKS Auto Mode test cluster. Create the cluster only after Charan approves the account, Region, and budget, and delete it after each run.
+5. **Anywhere lessons, one level at a time** (section 4a, Levels 0 to 7 and 9), with Lab 1, verified on fresh K3s across 1.35, 1.36, and 1.37.
+6. **EKS only lessons** (13, 14, 15, 17, 18, 28, and 34) with Lab 2, verified on a dedicated EKS Auto Mode test cluster. Create the cluster only after Charan approves the account, Region, and budget, and delete it after each run.
 7. **README and docs restructure.**
 8. **Later:** move Level 2 and Level 3 Argo CD and Prometheus content to EKS.
 
@@ -194,13 +277,24 @@ Each phase gets its own spec section approval, small commits, tests, and a Chrom
 - Existing browser tests now open `#build`, because the home page is the new default.
 - Verified on Node 26.13.1: `npm run lint`, `npm test` (30 passing, including `tests/lessons.test.mjs`), `npm run build`, and `tests/site-shell.browser.mjs` (2 passing in Chrome against the dev server). At 1366 × 900, the builder’s live YAML starts at 637 pixels, inside the layout test’s limit. Checked by eye at 800 × 600, 1366 × 900, and 375 × 812. The existing live-builder, workflow layout, and lab browser tests were not run because Docker and Go were unavailable to start the backend.
 
+**Phase 4, block-at-a-time builder (2026-11-19).**
+
+- Charan asked to start building after approving the class curriculum. The builder starts with the Pod and Deployment lessons, not the Prometheus Service, because they are now the first lessons and the spec already uses the Deployment as its worked example.
+- Each lesson is a data file in `templates/kubernetes/lessons/`. Every block holds the whole file as it stands after that block, so authors can read each step as written. `frontend/src/lesson-builder.ts` works out which block added each line, places one comment above each block, and maps every line to its field path for hover notes. The glossary is `templates/kubernetes/glossary.json`.
+- The Deployment has seven blocks, not the six in the example above: the selector and the Pod template are separate blocks, because together they add seven lines.
+- `#learn/<lesson>` opens a lesson. The card shows the block, what it does, why it is there, what happens if it is removed, the one new word with its glossary definition, and a **Try changing** control (Deployment replicas). Before the file is ready, the card names the block that finishes it. **Back**, **Next block**, **Show whole file**, **Copy**, and **Download** work at every step and export exactly what is shown. **Show explanations** turns the one-comment-per-block lines on or off. Highlights show what the last action added or changed. The **Try it** panel appears once the file is ready to apply. Progress for each lesson survives moving between views.
+- The catalogue in `templates/kubernetes/lessons.json` now follows the ten levels in section 4a. Pod and Deployment show **Start**. Argo CD and Prometheus sit in Level 9, still marked **Tested on K3s**.
+- `backend/download-schemas.py` now pins the Pod schema, with checksums in `backend/schema-checksums.txt`.
+- Verified on Node 26.13.1: `npm run lint`, `npm test` (38 passing, including `tests/lesson-builder.test.mjs`), `npm run build`, `tests/site-shell.browser.mjs` (4 passing in Chrome, including the lesson walk-through and the phone layout), and `tests/lesson-manifests.check.mjs`, which runs strict kubeconform on every finished step and replica choice for 1.35, 1.36, and 1.37. CI runs the kubeconform check after preparing schemas. At 1366 × 900, the lesson buttons and the YAML are both visible on the longest block.
+- **Not verified:** neither lesson has been applied to a cluster, because Docker was not running. The “not finished yet” claims for early blocks rely on API server rules that kubeconform does not check. The existing live-builder, workflow layout, and lab browser tests were not run, because Go and Docker were unavailable to start the backend.
+
 ## Acceptance criteria
 
 - [ ] A first-time visitor sees the two front doors and can start a lesson with one click.
 - [ ] Each lesson step adds one block of at most 6 new YAML lines, highlights it, and shows its card.
-- [ ] Back, Next block, Show whole file, Copy, and Download work at every step and export exactly what is shown.
+- [x] Back, Next block, Show whole file, Copy, and Download work at every step and export exactly what is shown.
 - [ ] Every learner-facing note is at most 20 words and introduces at most one new term, which links to the glossary. A unit test enforces both.
-- [ ] Beginner downloads contain one comment per block and no command header. Build a config downloads are unchanged.
+- [x] Beginner downloads contain one comment per block and no command header. Build a config downloads are unchanged.
 - [ ] Every Level 1 manifest passes kubeconform for all three Kubernetes versions. EKS custom resources such as `IngressClassParams` use pinned schemas from an official AWS source.
 - [ ] Every Anywhere lesson deploys on fresh K3s, and every lesson deploys on the dedicated EKS Auto Mode test cluster.
 - [ ] Lab 1 runs end to end on fresh K3s in under 15 minutes, timed from cluster creation with the environment recorded.
@@ -215,7 +309,7 @@ Charan approved each of these on 2026-11-18.
 
 | Previous rule | Change | Decision |
 | --- | --- | --- |
-| Product Scope covers only Argo CD and Prometheus templates. Instruction 2: build only the Product Scope. | Adds Level 0 and Level 1 core Kubernetes lessons and a new lab. | Approved. |
+| Product Scope covers only Argo CD and Prometheus templates. Instruction 2: build only the Product Scope. | Adds Level 0 and Level 1 core Kubernetes lessons and a new lab. On 2026-11-19, widened to the ten-level class curriculum in section 4a. | Approved. |
 | Instruction 9: main layout changes need Charan’s approval. | Adds a home screen with two doors and a lesson layout. | Approved. |
 | Learning mode explains every usage YAML line inside the file (Decision Log, 2026-11-13). | Beginner downloads use one comment per block; line notes move to hover and cards. Build a config keeps per-line comments. | Approved. |
 | Folder Structure lists `/templates/<tool>`. | Core lessons need a home, for example `/templates/kubernetes/`. | Approved: `/templates/kubernetes`. |
@@ -241,3 +335,9 @@ Charan approved each of these on 2026-11-18.
 | 2026-11-18 | Platform focus | **Amazon EKS is the main focus**, targeting EKS Auto Mode. Lessons are written for EKS. Learners practise the portable lessons free on a local cluster, and an EKS lab covers the AWS-specific parts. |
 | 2026-11-18 | Lesson components | Pod, Deployment, Service, Namespace, ConfigMap, Secret, LoadBalancer Service, Ingress, PersistentVolumeClaim on EBS, HorizontalPodAutoscaler, Job, CronJob, and ServiceAccount with Pod Identity. |
 | 2026-11-18 | Existing K3s content | Keep Argo CD, Prometheus, Install the tool, and the first lab working as Level 2 and 3, labelled **Tested on K3s**, and move them to EKS later. |
+| 2026-11-19 | Class curriculum | Approved the ten levels in section 4a, covering the class manifests from easy to hard, in place of the 12-lesson Level 1. |
+| 2026-11-19 | Reading any manifest | Read it and Fix it practice in every lesson, plus Level 9 on unknown kinds. Explain my code stays on the roadmap. |
+| 2026-11-19 | Argo Rollouts, Istio, VPA | Leave out. |
+| 2026-11-19 | IRSA and Fargate | Leave out. Teach Pod Identity and Auto Mode only. |
+| 2026-11-19 | Class folder | Fix the class manifests in place and replace real account details with dummy values. |
+| 2026-11-19 | Next step | Start building. Phase 4 starts with the Pod and Deployment lessons. |

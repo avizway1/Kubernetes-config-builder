@@ -1,0 +1,103 @@
+{
+  "id": "deployment",
+  "kind": "Deployment",
+  "filename": "deployment.yaml",
+  "finishedAt": 5,
+  "choices": {
+    "replicas": { "label": "Copies (replicas)", "options": ["1", "2", "3", "5"], "default": "2" }
+  },
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "The file starts with the API version and kind. Deployments come from the apps/v1 API.",
+      "why": "A Deployment keeps a set number of identical Pods running and replaces any that fail.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create: a Deployment, from the apps/v1 API",
+      "term": "Deployment",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "The name is how you find the Deployment later, for example with kubectl get deployment web.",
+      "why": "Kubernetes also starts the name of every Pod it creates for this Deployment with web.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A name to find the Deployment",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\n"
+    },
+    {
+      "title": "How many copies?",
+      "what": "Replicas is the number of identical Pods to keep running.",
+      "why": "If a Pod crashes or its node fails, the Deployment starts a new Pod to get back to this number.",
+      "ifRemoved": "Kubernetes uses the default of one replica.",
+      "comment": "How many copies of the Pod to keep running",
+      "term": "replica",
+      "tryChange": "replicas",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: {{replicas}}\n"
+    },
+    {
+      "title": "Which Pods belong to it?",
+      "what": "The selector tells the Deployment which Pods it manages: the ones labelled app: web.",
+      "why": "The Deployment counts and replaces only Pods that match. The next block gives its Pods this label.",
+      "ifRemoved": "Kubernetes rejects the file, because apps/v1 Deployments must have a selector.",
+      "comment": "Manage the Pods that carry this label",
+      "term": "selector",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: {{replicas}}\n  selector:\n    matchLabels:\n      app: web\n"
+    },
+    {
+      "title": "Describe the Pods",
+      "what": "The template is the blueprint for every Pod the Deployment creates. It gives each Pod the label app: web.",
+      "why": "The template labels must match the selector, or Kubernetes rejects the Deployment.",
+      "ifRemoved": "The Deployment would have nothing to create, so Kubernetes rejects it.",
+      "comment": "The blueprint for each Pod, with the label the selector looks for",
+      "term": "Pod template",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: {{replicas}}\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n"
+    },
+    {
+      "title": "What should run?",
+      "what": "Each Pod runs one container from the nginx image, just like in the Pod lesson.",
+      "why": "A Pod template needs at least one container. This block makes the file ready to apply.",
+      "ifRemoved": "Kubernetes rejects the Deployment, because its Pods would have nothing to run.",
+      "comment": "The container each Pod runs",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: {{replicas}}\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n        - name: web\n          image: nginx:1.30.4\n"
+    },
+    {
+      "title": "Which port?",
+      "what": "This records that each container listens on port 80, where nginx serves its web page.",
+      "why": "It tells people and tools which port the app uses. A Service in a later lesson sends traffic here.",
+      "ifRemoved": "nginx still listens on port 80, so the Pods work the same. Readers just lose the hint.",
+      "comment": "The port the app listens on inside each container",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: web\nspec:\n  replicas: {{replicas}}\n  selector:\n    matchLabels:\n      app: web\n  template:\n    metadata:\n      labels:\n        app: web\n    spec:\n      containers:\n        - name: web\n          image: nginx:1.30.4\n          ports:\n            - containerPort: 80\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version that define this kind. Deployments are in apps/v1.",
+    "kind": "The type of object to create. A Deployment keeps identical Pods running.",
+    "metadata": "Details that identify the object, such as its name.",
+    "metadata.name": "The Deployment's name. Its Pods get names that start with it.",
+    "spec": "The desired state of the Deployment.",
+    "spec.replicas": "How many Pods to keep running. The default is 1.",
+    "spec.selector": "Which Pods this Deployment manages. It cannot change after creation.",
+    "spec.selector.matchLabels": "Pods must have all of these labels to be managed by this Deployment.",
+    "spec.selector.matchLabels.app": "Match Pods whose app label is web.",
+    "spec.template": "The Pod template: the blueprint for every Pod this Deployment creates.",
+    "spec.template.metadata": "Details given to every Pod created from the template.",
+    "spec.template.metadata.labels": "Labels given to every Pod. They must match the selector.",
+    "spec.template.metadata.labels.app": "Every Pod gets the label app: web, so the selector finds it.",
+    "spec.template.spec": "What each Pod runs. This is the same spec as in a Pod file.",
+    "spec.template.spec.containers": "The containers in each Pod. Each list item starts with a dash.",
+    "spec.template.spec.containers[].name": "The container's name. It must be unique within the Pod.",
+    "spec.template.spec.containers[].image": "The image to run, with a version tag. A fixed tag runs the same version every time.",
+    "spec.template.spec.containers[].ports": "Ports the container listens on. This list is mostly informational.",
+    "spec.template.spec.containers[].ports[].containerPort": "The port number the app listens on inside the container."
+  },
+  "tryIt": [
+    { "command": "kubectl apply -f deployment.yaml", "result": "Prints deployment.apps/web created." },
+    { "command": "kubectl get pods -l app=web", "result": "One line per replica. Each Pod name starts with web- and shows Running." },
+    { "command": "kubectl delete pod <name of one Pod>", "result": "Run kubectl get pods -l app=web again. A new Pod has already replaced it." },
+    { "command": "kubectl delete -f deployment.yaml", "result": "Removes the Deployment and all of its Pods." }
+  ],
+  "sources": [
+    { "title": "Deployments", "url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/" },
+    { "title": "Labels and selectors", "url": "https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/" }
+  ]
+}

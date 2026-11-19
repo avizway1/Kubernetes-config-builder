@@ -672,3 +672,187 @@ main:has(.builder-comparing) {
   grid-column: 1 / -1;
   margin: 0;
 }
+
+/* Learn Kubernetes: one lesson, built one block at a time. */
+section.lesson-view,
+section.lesson-try-it {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.lesson-breadcrumb {
+  margin: 0 0 0.5rem;
+}
+
+.lesson-breadcrumb a,
+.lesson-done a,
+.lesson-sources a {
+  color: var(--brand-navy);
+}
+
+.lesson-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-block-end: 1rem;
+}
+
+.lesson-heading h1 {
+  margin: 0;
+}
+
+.lesson-start {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--brand-navy);
+  border-radius: 0.4rem;
+  color: var(--brand-navy-dark);
+  background: var(--brand-orange);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.lesson-card {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+}
+
+.lesson-card h2 {
+  font-size: 1.35rem;
+  margin: 0.25rem 0 0;
+}
+
+.lesson-card h3 {
+  margin: 0.5rem 0 0;
+  font-size: 0.95rem;
+  color: var(--brand-navy);
+}
+
+.lesson-card p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.lesson-progress {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.lesson-card progress {
+  width: 100%;
+  height: 0.5rem;
+  accent-color: var(--brand-orange);
+}
+
+.lesson-term {
+  padding: 0.6rem 0.75rem;
+  border-left: 4px solid var(--brand-orange);
+  background: var(--accent-soft);
+}
+
+.lesson-term-label {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.lesson-term dfn {
+  font-style: normal;
+  font-weight: 700;
+}
+
+.lesson-unfinished {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  background: var(--sticky-bg);
+}
+
+.lesson-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block-start: 0.5rem;
+}
+
+.lesson-nav button {
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--brand-navy);
+  border-radius: 0.4rem;
+  color: var(--brand-navy);
+  background: var(--surface);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lesson-nav .lesson-next {
+  color: var(--brand-navy-dark);
+  background: var(--brand-orange);
+}
+
+.lesson-nav button:disabled {
+  border-color: var(--border);
+  color: var(--text-muted);
+  background: var(--sticky-bg);
+  cursor: default;
+}
+
+.lesson-done {
+  font-weight: 600;
+}
+
+.lesson-output-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.lesson-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.lesson-preview {
+  height: 26rem;
+}
+
+.lesson-hint,
+.lesson-sources {
+  margin: 0.5rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.lesson-try-it h3 {
+  margin: 0.75rem 0 0.25rem;
+  font-size: 1rem;
+}
+
+.lesson-try-it p {
+  margin: 0;
+}
+
+.lesson-try-it ol {
+  display: grid;
+  gap: 0.5rem;
+  padding-inline-start: 1.25rem;
+}
+
+.lesson-try-it li span {
+  display: block;
+  color: var(--text-muted);
+}
+
+.lesson-try-it code {
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}

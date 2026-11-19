@@ -1,0 +1,68 @@
+{
+  "id": "pod",
+  "kind": "Pod",
+  "filename": "pod.yaml",
+  "finishedAt": 2,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "Every Kubernetes file starts with two lines: the API version and the kind of object to create.",
+      "why": "Kubernetes reads these lines first, so it knows which rules apply to the rest of the file.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create: a Pod, from the core v1 API",
+      "term": "Pod",
+      "yaml": "apiVersion: v1\nkind: Pod\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "The name is how you find the Pod later, for example with kubectl get pod web. Labels are tags.",
+      "why": "Each Pod in a namespace needs its own name. Other objects find Pods by their labels.",
+      "ifRemoved": "Without a name, Kubernetes rejects the Pod. Without labels, it still runs, but nothing can select it.",
+      "comment": "A name to find the Pod, and a label to group it",
+      "term": "label",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: web\n  labels:\n    app: web\n"
+    },
+    {
+      "title": "What should run?",
+      "what": "The spec says what you want Kubernetes to run. Here it is one container started from the nginx image.",
+      "why": "A Pod needs at least one container. The image is your packaged app, which Kubernetes downloads and starts.",
+      "ifRemoved": "Without containers, Kubernetes rejects the Pod. Without an image, the container cannot start.",
+      "comment": "The container to run and the image it starts from",
+      "term": "image",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: web\n  labels:\n    app: web\nspec:\n  containers:\n    - name: web\n      image: nginx:1.30.4\n"
+    },
+    {
+      "title": "Which port?",
+      "what": "This records that the container listens on port 80, where nginx serves its web page.",
+      "why": "It tells people and tools which port the app uses. The list is mostly informational.",
+      "ifRemoved": "nginx still listens on port 80, so the Pod works the same. Readers just lose the hint.",
+      "comment": "The port the app listens on inside the container",
+      "term": "port",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: web\n  labels:\n    app: web\nspec:\n  containers:\n    - name: web\n      image: nginx:1.30.4\n      ports:\n        - containerPort: 80\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version that define this kind. Pods are in the core v1 API.",
+    "kind": "The type of object to create. A Pod runs one or more containers together.",
+    "metadata": "Details that identify the object, such as its name and labels.",
+    "metadata.name": "The Pod's name. It must be unique among Pods in the same namespace.",
+    "metadata.labels": "Key and value tags. Other objects use them to find this Pod.",
+    "metadata.labels.app": "A label with the key app and the value web. The key app is a common choice.",
+    "spec": "The desired state: what you want Kubernetes to run.",
+    "spec.containers": "The containers in this Pod. Each list item starts with a dash.",
+    "spec.containers[].name": "The container's name. It must be unique within the Pod.",
+    "spec.containers[].image": "The image to run, with a version tag. A fixed tag runs the same version every time.",
+    "spec.containers[].ports": "Ports the container listens on. This list is mostly informational.",
+    "spec.containers[].ports[].containerPort": "The port number the app listens on inside the container."
+  },
+  "tryIt": [
+    { "command": "kubectl apply -f pod.yaml", "result": "Prints pod/web created." },
+    { "command": "kubectl get pod web", "result": "STATUS shows Running after a few seconds." },
+    { "command": "kubectl port-forward pod/web 8090:80", "result": "Open http://localhost:8090 to see the nginx welcome page. Press Ctrl+C to stop." },
+    { "command": "kubectl delete -f pod.yaml", "result": "Removes the Pod. Nothing brings it back." }
+  ],
+  "sources": [
+    { "title": "Pods", "url": "https://kubernetes.io/docs/concepts/workloads/pods/" },
+    { "title": "Labels and selectors", "url": "https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/" }
+  ]
+}

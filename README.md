@@ -83,6 +83,7 @@ For Prometheus, run `kubectl apply --server-side -f prometheus-manifests.yaml`. 
 
 - Run `npm test` and `npm run build` from `frontend`.
 - Run `go test ./...` from `backend` after downloading the charts.
+- Run `node --test tests/lesson-manifests.check.mjs` from the project root, after preparing the schemas, to check every finished lesson step with strict kubeconform.
 - Run `./tests/check-argo-usage.sh <dedicated-test-kubeconfig>` with the pinned Argo CD chart and its ApplicationSet controller running on a fresh local K3s 1.37 test cluster.
 - Run `./tests/check-prometheus-usage.sh <dedicated-test-kubeconfig>` with a dedicated local K3s 1.37 Prometheus test cluster.
 - Run `bash tests/check-first-k3s-lab.sh` to download the actual files in Chromium and time the complete lab on a disposable K3s cluster. Add `--applicationset` for the separate Full preset check. See the [lab guide](docs/first-k3s-lab.md) for prerequisites.

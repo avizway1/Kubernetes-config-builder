@@ -47,6 +47,8 @@ jobs:
           npm run build
       - name: Prepare offline schemas
         run: python3 backend/download-schemas.py
+      - name: Validate lesson manifests with kubeconform
+        run: node --test tests/lesson-manifests.check.mjs
       - name: Test Go renderer and validator
         working-directory: backend
         run: go test ./...

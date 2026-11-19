@@ -11,12 +11,19 @@
           "objects": "key: value, nesting, lists",
           "runsOn": "anywhere",
           "summary": "Learn the three rules of YAML and spot the most common indentation mistake."
+        },
+        {
+          "id": "manifest-parts",
+          "title": "Parts of every manifest",
+          "objects": "apiVersion, kind, metadata, spec",
+          "runsOn": "anywhere",
+          "summary": "Learn the four parts every Kubernetes file shares, and how kubectl explain describes any field."
         }
       ]
     },
     {
       "id": "level-1",
-      "title": "Level 1 · Kubernetes basics",
+      "title": "Level 1 · Run an app",
       "summary": "Build each file one block at a time. Practise Anywhere lessons free on your laptop.",
       "lessons": [
         {
@@ -27,6 +34,13 @@
           "summary": "A Pod runs one or more containers together. It is the smallest thing Kubernetes runs."
         },
         {
+          "id": "replicaset",
+          "title": "Keep copies running",
+          "objects": "ReplicaSet",
+          "runsOn": "anywhere",
+          "summary": "A ReplicaSet keeps copies of a Pod running. Deployments create one for you."
+        },
+        {
           "id": "deployment",
           "title": "Keep your app running",
           "objects": "Deployment",
@@ -34,18 +48,18 @@
           "summary": "A Deployment keeps the number of Pods you ask for running and replaces any that fail."
         },
         {
+          "id": "resources",
+          "title": "CPU and memory",
+          "objects": "Container requests and limits",
+          "runsOn": "anywhere",
+          "summary": "Tell Kubernetes how much CPU and memory each container needs and may use."
+        },
+        {
           "id": "namespace",
           "title": "Group your work",
           "objects": "Namespace",
           "runsOn": "anywhere",
           "summary": "A Namespace keeps related objects together and apart from everything else in the cluster."
-        },
-        {
-          "id": "service",
-          "title": "Give your app an address",
-          "objects": "Service",
-          "runsOn": "anywhere",
-          "summary": "A Service gives a group of Pods one stable name and address inside the cluster."
         },
         {
           "id": "configmap",
@@ -67,13 +81,41 @@
           "objects": "Job, CronJob",
           "runsOn": "anywhere",
           "summary": "A Job runs a task until it finishes. A CronJob runs a Job on a schedule."
+        }
+      ]
+    },
+    {
+      "id": "level-2",
+      "title": "Level 2 · Connect apps",
+      "summary": "Give your Pods stable addresses inside the cluster and open them to the internet.",
+      "lessons": [
+        {
+          "id": "service",
+          "title": "Give your app an address",
+          "objects": "Service type ClusterIP",
+          "runsOn": "anywhere",
+          "summary": "A Service gives a group of Pods one stable name and address inside the cluster."
         },
         {
-          "id": "autoscaling",
-          "title": "Scale with load",
-          "objects": "HorizontalPodAutoscaler",
+          "id": "dns",
+          "title": "Find a Service by name",
+          "objects": "Cluster DNS",
           "runsOn": "anywhere",
-          "summary": "Add or remove Pods as CPU use goes up or down. Needs metrics-server installed."
+          "summary": "Every Service gets a DNS name, so apps can reach each other by name."
+        },
+        {
+          "id": "node-port",
+          "title": "A port on every node",
+          "objects": "Service type NodePort",
+          "runsOn": "anywhere",
+          "summary": "A NodePort Service opens the same port on every node in the cluster."
+        },
+        {
+          "id": "external-name",
+          "title": "Point to an outside name",
+          "objects": "Service type ExternalName",
+          "runsOn": "anywhere",
+          "summary": "An ExternalName Service gives an outside address a name inside the cluster."
         },
         {
           "id": "load-balancer",
@@ -88,7 +130,14 @@
           "objects": "IngressClass, Ingress",
           "runsOn": "eks",
           "summary": "EKS Auto Mode creates an AWS Application Load Balancer that routes web requests to your app."
-        },
+        }
+      ]
+    },
+    {
+      "id": "level-3",
+      "title": "Level 3 · Data and special workloads",
+      "summary": "Keep data after restarts and run workloads that need stable names or one Pod per node.",
+      "lessons": [
         {
           "id": "storage",
           "title": "Keep data after restarts",
@@ -96,6 +145,167 @@
           "runsOn": "eks",
           "summary": "EKS Auto Mode creates an Amazon EBS volume, so your data survives when a Pod restarts."
         },
+        {
+          "id": "headless-service",
+          "title": "A name for every Pod",
+          "objects": "Headless Service",
+          "runsOn": "anywhere",
+          "summary": "A headless Service gives each Pod its own DNS name instead of one shared address."
+        },
+        {
+          "id": "statefulset",
+          "title": "Databases with their own disks",
+          "objects": "StatefulSet",
+          "runsOn": "eks",
+          "summary": "A StatefulSet gives each Pod a stable name and its own EBS volume."
+        },
+        {
+          "id": "efs",
+          "title": "Share files between Pods",
+          "objects": "StorageClass, PersistentVolumeClaim on EFS",
+          "runsOn": "eks",
+          "summary": "Mount one Amazon EFS file system in many Pods at once. Needs the EFS CSI add-on."
+        },
+        {
+          "id": "daemonset",
+          "title": "One Pod on every node",
+          "objects": "DaemonSet",
+          "runsOn": "anywhere",
+          "summary": "A DaemonSet runs one copy of a Pod on each node, for example a log collector."
+        }
+      ]
+    },
+    {
+      "id": "level-4",
+      "title": "Level 4 · Run safely",
+      "summary": "Share a cluster fairly, check that apps are healthy, and survive maintenance.",
+      "lessons": [
+        {
+          "id": "limit-range",
+          "title": "Default sizes for a namespace",
+          "objects": "LimitRange",
+          "runsOn": "anywhere",
+          "summary": "Set default and maximum CPU and memory for every container in a namespace."
+        },
+        {
+          "id": "resource-quota",
+          "title": "A budget for a namespace",
+          "objects": "ResourceQuota",
+          "runsOn": "anywhere",
+          "summary": "Cap the total CPU and memory that all Pods in a namespace can ask for."
+        },
+        {
+          "id": "probes",
+          "title": "Is the app healthy?",
+          "objects": "Liveness, readiness, and startup probes",
+          "runsOn": "anywhere",
+          "summary": "Let Kubernetes restart stuck containers and send traffic only to ready ones."
+        },
+        {
+          "id": "timing",
+          "title": "Start and stop timing",
+          "objects": "minReadySeconds, progressDeadlineSeconds, terminationGracePeriodSeconds",
+          "runsOn": "anywhere",
+          "summary": "Control how long Kubernetes waits when Pods start, roll out, and shut down."
+        },
+        {
+          "id": "pod-disruption-budget",
+          "title": "Survive node maintenance",
+          "objects": "PodDisruptionBudget",
+          "runsOn": "anywhere",
+          "summary": "Keep enough Pods running while nodes are drained for upgrades or repairs."
+        }
+      ]
+    },
+    {
+      "id": "level-5",
+      "title": "Level 5 · Choose where Pods run",
+      "summary": "Steer Pods onto the right nodes and spread copies apart.",
+      "lessons": [
+        {
+          "id": "node-affinity",
+          "title": "Pick nodes by label",
+          "objects": "Node affinity",
+          "runsOn": "anywhere",
+          "summary": "Run Pods only on nodes with the labels you choose."
+        },
+        {
+          "id": "pod-anti-affinity",
+          "title": "Spread copies apart",
+          "objects": "Pod anti-affinity",
+          "runsOn": "anywhere",
+          "summary": "Keep copies of an app on different nodes, so one failure doesn't stop them all."
+        },
+        {
+          "id": "taints",
+          "title": "Keep Pods off some nodes",
+          "objects": "Taints and tolerations",
+          "runsOn": "anywhere",
+          "summary": "Reserve nodes for special work. Only Pods that tolerate the taint can run there."
+        },
+        {
+          "id": "node-pool",
+          "title": "Choose your machines",
+          "objects": "Auto Mode NodePool, nodeSelector",
+          "runsOn": "eks",
+          "summary": "Tell EKS Auto Mode which instance types, sizes, and zones to launch for your Pods."
+        }
+      ]
+    },
+    {
+      "id": "level-6",
+      "title": "Level 6 · Release new versions",
+      "summary": "Update apps safely with four common release strategies.",
+      "lessons": [
+        {
+          "id": "rolling-update",
+          "title": "Rolling update",
+          "objects": "maxSurge, maxUnavailable",
+          "runsOn": "anywhere",
+          "summary": "Replace Pods a few at a time, so the app stays up during an update."
+        },
+        {
+          "id": "recreate",
+          "title": "Stop, then start",
+          "objects": "Recreate strategy",
+          "runsOn": "anywhere",
+          "summary": "Stop every old Pod before starting new ones, for apps that cannot run two versions."
+        },
+        {
+          "id": "blue-green",
+          "title": "Blue-green",
+          "objects": "Two Deployments, one Service selector",
+          "runsOn": "anywhere",
+          "summary": "Run the new version beside the old one, then switch all traffic at once."
+        },
+        {
+          "id": "canary",
+          "title": "Canary",
+          "objects": "Replica ratio behind one Service",
+          "runsOn": "anywhere",
+          "summary": "Send a small share of traffic to the new version before moving everyone."
+        }
+      ]
+    },
+    {
+      "id": "level-7",
+      "title": "Level 7 · Scale",
+      "summary": "Add and remove Pods automatically as load changes.",
+      "lessons": [
+        {
+          "id": "autoscaling",
+          "title": "Scale with load",
+          "objects": "HorizontalPodAutoscaler",
+          "runsOn": "anywhere",
+          "summary": "Add or remove Pods as CPU use goes up or down. Needs metrics-server installed."
+        }
+      ]
+    },
+    {
+      "id": "level-8",
+      "title": "Level 8 · AWS access",
+      "summary": "Let Pods use AWS services without storing access keys.",
+      "lessons": [
         {
           "id": "pod-identity",
           "title": "Let a Pod call AWS safely",
@@ -106,17 +316,27 @@
       ]
     },
     {
-      "id": "level-2",
-      "title": "Level 2 · Tools",
-      "summary": "Short, explained files for Argo CD and Prometheus. Open them in the builder.",
+      "id": "level-9",
+      "title": "Level 9 · Read any manifest",
+      "summary": "Read files for tools you have never seen. Argo CD and Prometheus are tested on K3s for now.",
       "lessons": [
+        {
+          "id": "unknown-kinds",
+          "title": "Meet an unknown kind",
+          "objects": "API groups, CustomResourceDefinitions, kubectl explain",
+          "runsOn": "anywhere",
+          "summary": "Find out what any kind does from its API group, its definition, and the official docs."
+        },
         {
           "id": "argo-application",
           "title": "Deploy an app from Git",
           "objects": "Argo CD Application",
           "runsOn": "k3s",
           "summary": "Argo CD reads your files from Git and keeps the cluster matching them.",
-          "open": { "tool": "argo-cd", "template": "application" }
+          "open": {
+            "tool": "argo-cd",
+            "template": "application"
+          }
         },
         {
           "id": "argo-project",
@@ -124,7 +344,10 @@
           "objects": "Argo CD AppProject",
           "runsOn": "k3s",
           "summary": "Choose which Git repositories and namespaces your Argo CD apps may use.",
-          "open": { "tool": "argo-cd", "template": "app-project" }
+          "open": {
+            "tool": "argo-cd",
+            "template": "app-project"
+          }
         },
         {
           "id": "prometheus-service",
@@ -132,22 +355,21 @@
           "objects": "Service with Prometheus notes",
           "runsOn": "k3s",
           "summary": "Let Prometheus find your app and collect its metrics.",
-          "open": { "tool": "prometheus", "template": "service-scrape" }
-        }
-      ]
-    },
-    {
-      "id": "level-3",
-      "title": "Level 3 · Going further",
-      "summary": "More advanced templates and tool installation.",
-      "lessons": [
+          "open": {
+            "tool": "prometheus",
+            "template": "service-scrape"
+          }
+        },
         {
           "id": "argo-application-set",
           "title": "One app per environment",
           "objects": "Argo CD ApplicationSet",
           "runsOn": "k3s",
           "summary": "Create one Application for each environment, such as dev and staging, from one template.",
-          "open": { "tool": "argo-cd", "template": "application-set" }
+          "open": {
+            "tool": "argo-cd",
+            "template": "application-set"
+          }
         },
         {
           "id": "prometheus-scrape-job",
@@ -155,7 +377,10 @@
           "objects": "Prometheus Helm values",
           "runsOn": "k3s",
           "summary": "Tell Prometheus to collect metrics from one fixed address.",
-          "open": { "tool": "prometheus", "template": "scrape-job" }
+          "open": {
+            "tool": "prometheus",
+            "template": "scrape-job"
+          }
         },
         {
           "id": "prometheus-alert-rule",
@@ -163,7 +388,10 @@
           "objects": "Prometheus Helm values",
           "runsOn": "k3s",
           "summary": "Get an alert when a problem lasts longer than the time you choose.",
-          "open": { "tool": "prometheus", "template": "alert-rule" }
+          "open": {
+            "tool": "prometheus",
+            "template": "alert-rule"
+          }
         },
         {
           "id": "install-tool",
@@ -171,7 +399,17 @@
           "objects": "Helm chart or YAML",
           "runsOn": "k3s",
           "summary": "Install a tool on your cluster with tested, explained settings.",
-          "open": { "tool": "argo-cd", "mode": "install" }
+          "open": {
+            "tool": "argo-cd",
+            "mode": "install"
+          }
+        },
+        {
+          "id": "final-challenge",
+          "title": "Final challenge",
+          "objects": "A file that mixes many kinds",
+          "runsOn": "anywhere",
+          "summary": "Read a file with many kinds and explain what each part does."
         }
       ]
     }

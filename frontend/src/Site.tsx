@@ -1,3 +1,4 @@
+import { lessonContent } from './lesson-builder';
 import { labs, levels, runsOnLabels, type OpenTarget, type RunsOn } from './lessons';
 
 export type View = 'home' | 'learn' | 'build';
@@ -82,7 +83,9 @@ export function Learn({ onOpen }: { onOpen: (target: OpenTarget) => void }) {
                 </div>
                 <div className="lesson-meta">
                   <Badge runsOn={lesson.runsOn} />
-                  {lesson.open
+                  {lessonContent[lesson.id]
+                    ? <a className="lesson-start" href={`#learn/${lesson.id}`}>Start<span className="visually-hidden"> {lesson.title}</span></a>
+                    : lesson.open
                     ? <button type="button" onClick={() => onOpen(lesson.open!)}>Open<span className="visually-hidden"> {lesson.title}</span></button>
                     : <span className="coming-soon">Coming soon</span>}
                 </div>
