@@ -26,11 +26,14 @@ test('every finished lesson step passes strict kubeconform', () => {
   const folder = mkdtempSync(join(tmpdir(), 'lesson-manifests-'));
   try {
     const files = [];
+    let objects = 0;
     for (const lesson of Object.values(lessonContent)) {
       for (const [set, values] of valueSets(lesson).entries()) {
         for (let step = lesson.finishedAt; step < lesson.blocks.length; step++) {
           const file = join(folder, `${lesson.id}-${set}-${step + 1}.yaml`);
-          writeFileSync(file, lessonText(renderLesson(lesson, step, values, true)));
+          const text = lessonText(renderLesson(lesson, step, values, true));
+          objects += text.split('\n').filter(line => line.startsWith('kind:')).length;
+          writeFileSync(file, text);
           files.push(file);
         }
       }
@@ -41,7 +44,7 @@ test('every finished lesson step passes strict kubeconform', () => {
         '-schema-location', `${schemas}/{{ .NormalizedKubernetesVersion }}-standalone{{ .StrictSuffix }}/{{ .ResourceKind }}{{ .KindSuffix }}.json`,
         ...files,
       ], { encoding: 'utf8' });
-      ok(output.includes(`Valid: ${files.length}, Invalid: 0, Errors: 0, Skipped: 0`), `${version}: ${output}`);
+      ok(output.includes(`${objects} resources found in ${files.length} files - Valid: ${objects}, Invalid: 0, Errors: 0, Skipped: 0`), `${version}: ${output}`);
     }
   } finally {
     rmSync(folder, { recursive: true, force: true });

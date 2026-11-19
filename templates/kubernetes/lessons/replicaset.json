@@ -1,0 +1,116 @@
+{
+  "id": "replicaset",
+  "kind": "ReplicaSet",
+  "filename": "replicaset.yaml",
+  "finishedAt": 5,
+  "choices": {
+    "replicas": {
+      "label": "Copies (replicas)",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "5"
+      ],
+      "default": "3"
+    }
+  },
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "A ReplicaSet keeps a set number of identical Pods running. It comes from the apps/v1 API.",
+      "why": "Deployments create ReplicaSets for you and add safe updates. Learn it here, then write Deployments in real projects.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create: a ReplicaSet, from the apps/v1 API",
+      "term": "ReplicaSet",
+      "yaml": "apiVersion: apps/v1\nkind: ReplicaSet\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "The name is how you find the ReplicaSet later, for example with kubectl get replicaset web-copies.",
+      "why": "Kubernetes starts the name of every Pod it creates for this ReplicaSet with web-copies.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A name to find the ReplicaSet",
+      "yaml": "apiVersion: apps/v1\nkind: ReplicaSet\nmetadata:\n  name: web-copies\n"
+    },
+    {
+      "title": "How many copies?",
+      "what": "Replicas is the number of identical Pods to keep running.",
+      "why": "If a Pod is deleted or fails, the ReplicaSet starts a new one to get back to this number.",
+      "ifRemoved": "Kubernetes uses the default of one replica.",
+      "comment": "How many copies of the Pod to keep running",
+      "term": "replica",
+      "tryChange": "replicas",
+      "yaml": "apiVersion: apps/v1\nkind: ReplicaSet\nmetadata:\n  name: web-copies\nspec:\n  replicas: {{replicas}}\n"
+    },
+    {
+      "title": "Which Pods belong to it?",
+      "what": "The selector picks the Pods this ReplicaSet counts: the ones labelled app: web-copies.",
+      "why": "The label is different from the Deployment lesson, so the two never fight over the same Pods.",
+      "ifRemoved": "Kubernetes rejects the file, because apps/v1 ReplicaSets must have a selector.",
+      "comment": "Count the Pods that carry this label",
+      "term": "selector",
+      "yaml": "apiVersion: apps/v1\nkind: ReplicaSet\nmetadata:\n  name: web-copies\nspec:\n  replicas: {{replicas}}\n  selector:\n    matchLabels:\n      app: web-copies\n"
+    },
+    {
+      "title": "Describe the Pods",
+      "what": "The template is the blueprint for every Pod the ReplicaSet creates. It gives each Pod the label app: web-copies.",
+      "why": "The template labels must match the selector, or Kubernetes rejects the ReplicaSet.",
+      "ifRemoved": "The ReplicaSet would have nothing to create, so Kubernetes rejects it.",
+      "comment": "The blueprint for each Pod, with the label the selector looks for",
+      "term": "Pod template",
+      "yaml": "apiVersion: apps/v1\nkind: ReplicaSet\nmetadata:\n  name: web-copies\nspec:\n  replicas: {{replicas}}\n  selector:\n    matchLabels:\n      app: web-copies\n  template:\n    metadata:\n      labels:\n        app: web-copies\n"
+    },
+    {
+      "title": "What should run?",
+      "what": "Each Pod runs one container from the nginx image.",
+      "why": "A Pod template needs at least one container. This block makes the file ready to apply.",
+      "ifRemoved": "Kubernetes rejects the ReplicaSet, because its Pods would have nothing to run.",
+      "comment": "The container each Pod runs",
+      "yaml": "apiVersion: apps/v1\nkind: ReplicaSet\nmetadata:\n  name: web-copies\nspec:\n  replicas: {{replicas}}\n  selector:\n    matchLabels:\n      app: web-copies\n  template:\n    metadata:\n      labels:\n        app: web-copies\n    spec:\n      containers:\n        - name: web\n          image: nginx:1.30.4\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version that define this kind. ReplicaSets are in apps/v1.",
+    "kind": "The type of object to create. A ReplicaSet keeps identical Pods running.",
+    "metadata": "Details that identify the object, such as its name.",
+    "metadata.name": "The ReplicaSet's name. Its Pods get names that start with it.",
+    "spec": "The desired state of the ReplicaSet.",
+    "spec.replicas": "How many Pods to keep running. The default is 1.",
+    "spec.selector": "Which Pods this ReplicaSet counts and replaces.",
+    "spec.selector.matchLabels": "Pods must have all of these labels to be counted.",
+    "spec.selector.matchLabels.app": "Match Pods whose app label is web-copies.",
+    "spec.template": "The Pod template: the blueprint for every Pod this ReplicaSet creates.",
+    "spec.template.metadata": "Details given to every Pod created from the template.",
+    "spec.template.metadata.labels": "Labels given to every Pod. They must match the selector.",
+    "spec.template.metadata.labels.app": "Every Pod gets the label app: web-copies, so the selector finds it.",
+    "spec.template.spec": "What each Pod runs. This is the same spec as in a Pod file.",
+    "spec.template.spec.containers": "The containers in each Pod. Each list item starts with a dash.",
+    "spec.template.spec.containers[].name": "The container's name. It must be unique within the Pod.",
+    "spec.template.spec.containers[].image": "The image to run, with a version tag. A fixed tag runs the same version every time."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f replicaset.yaml",
+      "result": "Prints replicaset.apps/web-copies created."
+    },
+    {
+      "command": "kubectl get replicaset web-copies",
+      "result": "DESIRED, CURRENT, and READY all match your replica count."
+    },
+    {
+      "command": "kubectl delete pod <name of one web-copies Pod>",
+      "result": "Run kubectl get pods -l app=web-copies again. A new Pod has replaced it."
+    },
+    {
+      "command": "kubectl delete -f replicaset.yaml",
+      "result": "Removes the ReplicaSet and its Pods."
+    }
+  ],
+  "sources": [
+    {
+      "title": "ReplicaSet",
+      "url": "https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/"
+    }
+  ]
+}

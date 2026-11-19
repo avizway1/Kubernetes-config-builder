@@ -1,0 +1,130 @@
+{
+  "id": "configmap",
+  "kind": "ConfigMap",
+  "filename": "configmap.yaml",
+  "finishedAt": 4,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "A ConfigMap stores settings as keys and values. It comes from the core v1 API.",
+      "why": "Keeping settings outside the image means you can change them without rebuilding the app.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create: a ConfigMap",
+      "term": "ConfigMap",
+      "yaml": "apiVersion: v1\nkind: ConfigMap\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "This ConfigMap is called app-settings.",
+      "why": "Pods find the ConfigMap by this name.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "The name Pods use to find these settings",
+      "yaml": "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: app-settings\n"
+    },
+    {
+      "title": "The settings",
+      "what": "Each line under data is one setting: a key and a text value.",
+      "why": "Settings stay readable and easy to change. ConfigMaps are for normal settings, not passwords.",
+      "ifRemoved": "The ConfigMap is created empty, so the app gets no settings.",
+      "comment": "The settings: one key and value per line",
+      "yaml": "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: app-settings\ndata:\n  GREETING: \"Hello from a ConfigMap\"\n  COLOR: blue\n"
+    },
+    {
+      "title": "A Pod to read them",
+      "what": "Three dashes start a second object: a Pod called settings-demo.",
+      "why": "The Pod shows how an app reads the settings.",
+      "ifRemoved": "The file only stores settings. Nothing uses them yet.",
+      "comment": "A Pod that reads the settings",
+      "yaml": "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: app-settings\ndata:\n  GREETING: \"Hello from a ConfigMap\"\n  COLOR: blue\n---\napiVersion: v1\nkind: Pod\nmetadata:\n  name: settings-demo\n"
+    },
+    {
+      "title": "What should run?",
+      "what": "A small busybox container prints the greeting, then waits.",
+      "why": "The greeting stays empty until the next block passes in the settings.",
+      "ifRemoved": "Without containers, Kubernetes rejects the Pod.",
+      "comment": "A container that prints the greeting",
+      "yaml": "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: app-settings\ndata:\n  GREETING: \"Hello from a ConfigMap\"\n  COLOR: blue\n---\napiVersion: v1\nkind: Pod\nmetadata:\n  name: settings-demo\nspec:\n  containers:\n    - name: app\n      image: busybox:1.37.0\n      command: [\"sh\", \"-c\", \"echo $GREETING && sleep 3600\"]\n"
+    },
+    {
+      "title": "Settings as variables",
+      "what": "envFrom turns every key in the ConfigMap into an environment variable in the container.",
+      "why": "Apps commonly read settings from environment variables, so no code change is needed.",
+      "ifRemoved": "The container starts without the settings, and the greeting is empty.",
+      "comment": "Turn every setting into an environment variable",
+      "term": "environment variable",
+      "yaml": "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: app-settings\ndata:\n  GREETING: \"Hello from a ConfigMap\"\n  COLOR: blue\n---\napiVersion: v1\nkind: Pod\nmetadata:\n  name: settings-demo\nspec:\n  containers:\n    - name: app\n      image: busybox:1.37.0\n      command: [\"sh\", \"-c\", \"echo $GREETING && sleep 3600\"]\n      envFrom:\n        - configMapRef:\n            name: app-settings\n"
+    },
+    {
+      "title": "Settings as files: the volume",
+      "what": "A volume makes the ConfigMap available to the Pod as files, one file per key.",
+      "why": "Some apps read settings from files instead of variables.",
+      "ifRemoved": "Nothing changes in the container yet. The next block mounts the files.",
+      "comment": "Make the settings available as files",
+      "term": "volume",
+      "yaml": "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: app-settings\ndata:\n  GREETING: \"Hello from a ConfigMap\"\n  COLOR: blue\n---\napiVersion: v1\nkind: Pod\nmetadata:\n  name: settings-demo\nspec:\n  containers:\n    - name: app\n      image: busybox:1.37.0\n      command: [\"sh\", \"-c\", \"echo $GREETING && sleep 3600\"]\n      envFrom:\n        - configMapRef:\n            name: app-settings\n  volumes:\n    - name: settings\n      configMap:\n        name: app-settings\n"
+    },
+    {
+      "title": "Settings as files: the mount",
+      "what": "The mount puts the files in the folder /etc/settings inside the container.",
+      "why": "Mounted files update when the ConfigMap changes. Environment variables only change when the Pod restarts.",
+      "ifRemoved": "The volume exists, but the container cannot see the files.",
+      "comment": "Show the setting files in /etc/settings",
+      "yaml": "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: app-settings\ndata:\n  GREETING: \"Hello from a ConfigMap\"\n  COLOR: blue\n---\napiVersion: v1\nkind: Pod\nmetadata:\n  name: settings-demo\nspec:\n  containers:\n    - name: app\n      image: busybox:1.37.0\n      command: [\"sh\", \"-c\", \"echo $GREETING && sleep 3600\"]\n      envFrom:\n        - configMapRef:\n            name: app-settings\n      volumeMounts:\n        - name: settings\n          mountPath: /etc/settings\n  volumes:\n    - name: settings\n      configMap:\n        name: app-settings\n"
+    }
+  ],
+  "notes": {
+    "---": "Three dashes separate objects. One file can hold several objects.",
+    "apiVersion": "The API version for this object. ConfigMaps and Pods are both in the core v1 API.",
+    "ConfigMap:kind": "The type of object to create. A ConfigMap stores settings as text.",
+    "Pod:kind": "The type of object to create. A Pod runs one or more containers together.",
+    "metadata": "Details that identify the object, such as its name.",
+    "ConfigMap:metadata.name": "The ConfigMap's name. Pods refer to it by this name.",
+    "Pod:metadata.name": "The Pod's name. It must be unique among Pods in the same namespace.",
+    "data": "The settings. Each key becomes a variable name or a file name.",
+    "data.GREETING": "A setting with spaces in its value, so the value is in quotes.",
+    "data.COLOR": "A one-word setting. Quotes are optional for simple text.",
+    "spec": "The desired state: what you want Kubernetes to run.",
+    "spec.containers": "The containers in this Pod. Each list item starts with a dash.",
+    "spec.containers[].name": "The container's name. It must be unique within the Pod.",
+    "spec.containers[].image": "A tiny image with basic shell tools, pinned to a version.",
+    "spec.containers[].command": "The command to run. It prints the greeting, then sleeps so you can look around.",
+    "spec.containers[].envFrom": "Load environment variables from another object.",
+    "spec.containers[].envFrom[].configMapRef": "Use every key in a ConfigMap as an environment variable.",
+    "spec.containers[].envFrom[].configMapRef.name": "The ConfigMap to read: app-settings.",
+    "spec.containers[].volumeMounts": "Where volumes appear inside this container.",
+    "spec.containers[].volumeMounts[].name": "The volume to mount. It matches a name under volumes.",
+    "spec.containers[].volumeMounts[].mountPath": "The folder inside the container where the files appear.",
+    "spec.volumes": "Storage the Pod's containers can mount.",
+    "spec.volumes[].name": "The volume's name. Mounts refer to this name.",
+    "spec.volumes[].configMap": "Fill this volume from a ConfigMap, one file per key.",
+    "spec.volumes[].configMap.name": "The ConfigMap to read: app-settings."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f configmap.yaml",
+      "result": "Prints configmap/app-settings created and pod/settings-demo created."
+    },
+    {
+      "command": "kubectl logs settings-demo",
+      "result": "Prints Hello from a ConfigMap."
+    },
+    {
+      "command": "kubectl exec settings-demo -- cat /etc/settings/COLOR",
+      "result": "Prints blue, read from the mounted file."
+    },
+    {
+      "command": "kubectl delete -f configmap.yaml",
+      "result": "Removes the ConfigMap and the Pod."
+    }
+  ],
+  "sources": [
+    {
+      "title": "ConfigMaps",
+      "url": "https://kubernetes.io/docs/concepts/configuration/configmap/"
+    },
+    {
+      "title": "Configure a Pod to use a ConfigMap",
+      "url": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/"
+    }
+  ]
+}

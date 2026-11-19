@@ -1,0 +1,95 @@
+{
+  "id": "resources",
+  "kind": "Pod",
+  "filename": "resources.yaml",
+  "finishedAt": 1,
+  "choices": {
+    "cpu": {
+      "label": "CPU request",
+      "options": [
+        "100m",
+        "250m",
+        "500m"
+      ],
+      "default": "250m"
+    }
+  },
+  "blocks": [
+    {
+      "title": "Start with a Pod",
+      "what": "This is the Pod from the first lesson, named sized-web.",
+      "why": "CPU and memory settings belong to each container, so you need a Pod to put them in.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "A Pod, as in the first lesson",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: sized-web\n"
+    },
+    {
+      "title": "What should run?",
+      "what": "One container from the nginx image.",
+      "why": "Requests and limits are set on each container, inside this list.",
+      "ifRemoved": "Without containers, Kubernetes rejects the Pod.",
+      "comment": "The container to run",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: sized-web\nspec:\n  containers:\n    - name: web\n      image: nginx:1.30.4\n"
+    },
+    {
+      "title": "What it needs: requests",
+      "what": "Requests say how much CPU and memory the container needs. 1000m is one CPU, and Mi means mebibytes.",
+      "why": "The scheduler only places the Pod on a node with this much CPU and memory still free.",
+      "ifRemoved": "The Pod still runs, but the scheduler cannot plan for it, so busy nodes may get too full.",
+      "comment": "The CPU and memory this container needs",
+      "term": "request",
+      "tryChange": "cpu",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: sized-web\nspec:\n  containers:\n    - name: web\n      image: nginx:1.30.4\n      resources:\n        requests:\n          cpu: {{cpu}}\n          memory: 64Mi\n"
+    },
+    {
+      "title": "Its ceiling: limits",
+      "what": "Limits are the most the container may use. CPU above the limit is slowed down.",
+      "why": "Limits stop one container from starving others. A container that uses more memory than its limit is stopped.",
+      "ifRemoved": "The container can use any spare CPU and memory on the node.",
+      "comment": "The most CPU and memory this container may use",
+      "term": "limit",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: sized-web\nspec:\n  containers:\n    - name: web\n      image: nginx:1.30.4\n      resources:\n        requests:\n          cpu: {{cpu}}\n          memory: 64Mi\n        limits:\n          cpu: 500m\n          memory: 128Mi\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version that define this kind. Pods are in the core v1 API.",
+    "kind": "The type of object to create. A Pod runs one or more containers together.",
+    "metadata": "Details that identify the object, such as its name.",
+    "metadata.name": "The Pod's name. It must be unique among Pods in the same namespace.",
+    "spec": "The desired state: what you want Kubernetes to run.",
+    "spec.containers": "The containers in this Pod. Each list item starts with a dash.",
+    "spec.containers[].name": "The container's name. It must be unique within the Pod.",
+    "spec.containers[].image": "The image to run, with a version tag. A fixed tag runs the same version every time.",
+    "spec.containers[].resources": "CPU and memory settings for this container.",
+    "spec.containers[].resources.requests": "What the container needs. The scheduler uses these numbers to choose a node.",
+    "spec.containers[].resources.requests.cpu": "CPU the container needs. 1000m equals one CPU, so 250m is a quarter.",
+    "spec.containers[].resources.requests.memory": "Memory the container needs. Mi means mebibytes.",
+    "spec.containers[].resources.limits": "The most the container may use.",
+    "spec.containers[].resources.limits.cpu": "The CPU ceiling. Above it, the container is slowed down, not stopped.",
+    "spec.containers[].resources.limits.memory": "The memory ceiling. Above it, the container is stopped and may be restarted."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f resources.yaml",
+      "result": "Prints pod/sized-web created."
+    },
+    {
+      "command": "kubectl describe pod sized-web",
+      "result": "The Requests and Limits sections show your values."
+    },
+    {
+      "command": "kubectl describe nodes",
+      "result": "Allocated resources shows how much of each node is already requested."
+    },
+    {
+      "command": "kubectl delete -f resources.yaml",
+      "result": "Removes the Pod."
+    }
+  ],
+  "sources": [
+    {
+      "title": "Resource management for Pods and containers",
+      "url": "https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/"
+    }
+  ]
+}

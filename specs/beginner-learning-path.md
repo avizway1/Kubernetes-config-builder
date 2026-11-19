@@ -288,6 +288,17 @@ Each phase gets its own spec section approval, small commits, tests, and a Chrom
 - Verified on Node 26.13.1: `npm run lint`, `npm test` (38 passing, including `tests/lesson-builder.test.mjs`), `npm run build`, `tests/site-shell.browser.mjs` (4 passing in Chrome, including the lesson walk-through and the phone layout), and `tests/lesson-manifests.check.mjs`, which runs strict kubeconform on every finished step and replica choice for 1.35, 1.36, and 1.37. CI runs the kubeconform check after preparing schemas. At 1366 × 900, the lesson buttons and the YAML are both visible on the longest block.
 - **Not verified:** neither lesson has been applied to a cluster, because Docker was not running. The “not finished yet” claims for early blocks rely on API server rules that kubeconform does not check. The existing live-builder, workflow layout, and lab browser tests were not run, because Go and Docker were unavailable to start the backend.
 
+**Level 1 lessons (2026-11-19).**
+
+- All eight Level 1 lessons are built: Pod, ReplicaSet, Deployment, CPU and memory, Namespace, ConfigMap, Secret, and Job and CronJob. Each runs **Anywhere**.
+- Lesson files can now hold several objects separated by `---`. Notes can be keyed by `Kind:path` when the same field means different things in different objects, for example `metadata.name` in a ConfigMap and in a Pod.
+- Choices learners can try: replica count (ReplicaSet, Deployment) and CPU request (CPU and memory).
+- The ReplicaSet uses the label `app: web-copies`, so it never manages the Deployment lesson’s `app: web` Pods. Each lesson uses its own object names, so learners can apply them side by side.
+- The Secret lesson uses dummy values and explains that base64 is encoding, not encryption.
+- The ReplicaSet and CronJob schemas are now pinned, with checksums.
+- Verified on Node 26.13.1: `npm run lint`, `npm test` (38 passing), `npm run build`, `tests/site-shell.browser.mjs` (5 passing in Chrome, including a two-object lesson), and `tests/lesson-manifests.check.mjs` (strict kubeconform for every finished step and choice on 1.35, 1.36, and 1.37). At 1366 × 900, the lesson buttons stay on screen on every block of every lesson.
+- **Not verified:** no lesson has been applied to a cluster, because Docker was not running. The **Try it** results, such as the log output, come from the official docs and have not been observed.
+
 ## Acceptance criteria
 
 - [ ] A first-time visitor sees the two front doors and can start a lesson with one click.
@@ -295,7 +306,7 @@ Each phase gets its own spec section approval, small commits, tests, and a Chrom
 - [x] Back, Next block, Show whole file, Copy, and Download work at every step and export exactly what is shown.
 - [ ] Every learner-facing note is at most 20 words and introduces at most one new term, which links to the glossary. A unit test enforces both.
 - [x] Beginner downloads contain one comment per block and no command header. Build a config downloads are unchanged.
-- [ ] Every Level 1 manifest passes kubeconform for all three Kubernetes versions. EKS custom resources such as `IngressClassParams` use pinned schemas from an official AWS source.
+- [x] Every Level 1 manifest passes kubeconform for all three Kubernetes versions. EKS custom resources such as `IngressClassParams` use pinned schemas from an official AWS source.
 - [ ] Every Anywhere lesson deploys on fresh K3s, and every lesson deploys on the dedicated EKS Auto Mode test cluster.
 - [ ] Lab 1 runs end to end on fresh K3s in under 15 minutes, timed from cluster creation with the environment recorded.
 - [ ] Lab 2 runs end to end on a fresh EKS Auto Mode cluster in under 40 minutes. Its cleanup leaves no cluster, load balancer, or EBS volume, verified with AWS CLI commands.

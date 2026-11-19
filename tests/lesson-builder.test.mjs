@@ -1,7 +1,7 @@
 import { deepEqual, equal, ok } from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  blockLines, defaultLessonValues, glossary, lessonContent, lessonText, lineNote, matchLines, renderLesson, yamlPaths,
+  blockLines, defaultLessonValues, glossary, lessonContent, lessonText, lineNote, matchLines, noteKey, renderLesson, yamlPaths,
 } from '../frontend/src/lesson-builder.ts';
 import { levels } from '../frontend/src/lessons.ts';
 
@@ -26,6 +26,7 @@ test('field paths follow indentation and list items', () => {
     'apiVersion', 'metadata', 'metadata.name', undefined, 'spec', 'spec.containers', 'spec.containers[].name',
     'spec.containers[].image', 'spec.containers[].ports', 'spec.containers[].ports[].containerPort', 'spec.containers[].name',
   ]);
+  deepEqual(yamlPaths(['kind: ConfigMap', 'data:', '  A: b', '---', 'kind: Pod', 'spec:']), ['kind', 'data', 'data.A', '---', 'kind', 'spec']);
 });
 
 test('line matching keeps earlier lines and reports new ones', () => {
@@ -54,7 +55,7 @@ test('downloads have one comment per block when explanations are on, and none wh
     for (let step = 0; step < lesson.blocks.length; step++) {
       const on = renderLesson(lesson, step, values, true);
       const off = renderLesson(lesson, step, values, false);
-      deepEqual(on.filter(line => line.comment).map(line => line.block), [...Array(step + 1).keys()], `${lesson.id} step ${step + 1}`);
+      deepEqual(on.filter(line => line.comment).map(line => line.block).sort((a, b) => a - b), [...Array(step + 1).keys()], `${lesson.id} step ${step + 1}`);
       equal(off.filter(line => line.comment).length, 0);
       deepEqual(lessonText(off).trimEnd().split('\n'), blockLines(lesson, step, values));
       ok(!lessonText(on).startsWith('# kubectl'), 'no command header');
@@ -70,7 +71,7 @@ test('every line a learner can see has a plain-English note, and no note is unus
         for (const line of renderLesson(lesson, step, values, true)) {
           const note = lineNote(lesson, line);
           ok(note, `${lesson.id} step ${step + 1}: no note for ${line.text}`);
-          if (line.path) used.add(line.path);
+          if (noteKey(lesson, line)) used.add(noteKey(lesson, line));
         }
       }
     }
@@ -112,6 +113,7 @@ test('built lessons appear in the catalogue and run anywhere', () => {
   for (const lesson of lessons) {
     ok(catalogue.has(lesson.id), lesson.id);
     equal(catalogue.get(lesson.id).runsOn, 'anywhere', lesson.id);
-    equal(catalogue.get(lesson.id).objects, lesson.kind, lesson.id);
+    const lines = blockLines(lesson, lesson.blocks.length - 1, defaultLessonValues(lesson));
+    ok(lines.includes(`kind: ${lesson.kind}`), `${lesson.id} builds a ${lesson.kind}`);
   }
 });

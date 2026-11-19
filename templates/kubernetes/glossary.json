@@ -6,5 +6,15 @@
   "Deployment": "An object that keeps a set number of identical Pods running and rolls out changes to them.",
   "replica": "One copy of a Pod. Several replicas share the work and keep the app up if one fails.",
   "selector": "A rule that picks objects by their labels, such as every Pod labelled app: web.",
-  "Pod template": "The part of a Deployment that describes each Pod it creates."
+  "Pod template": "The part of a Deployment that describes each Pod it creates.",
+  "ReplicaSet": "An object that keeps a set number of identical Pods running. Deployments manage ReplicaSets for you.",
+  "request": "The CPU or memory a container needs. Kubernetes uses it to choose a node with enough room.",
+  "limit": "The most CPU or memory a container may use.",
+  "namespace": "A named group inside a cluster. Names only need to be unique within one namespace.",
+  "ConfigMap": "An object that stores settings as text, so you can change them without rebuilding the image.",
+  "environment variable": "A named value a program reads when it starts, such as DB_USER=app-user.",
+  "volume": "Storage that containers in a Pod can mount as a folder.",
+  "Secret": "An object for small private values, such as passwords. Stored base64-encoded, which is not encryption.",
+  "Job": "An object that runs Pods until a task finishes successfully.",
+  "CronJob": "An object that creates a Job on a repeating schedule, written in cron format."
 }

@@ -1,0 +1,87 @@
+{
+  "id": "namespace",
+  "kind": "Namespace",
+  "filename": "namespace.yaml",
+  "finishedAt": 4,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "A Namespace is a named group inside the cluster. It comes from the core v1 API.",
+      "why": "Namespaces keep each team or app's objects apart, so names can repeat in different namespaces.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create: a Namespace",
+      "term": "namespace",
+      "yaml": "apiVersion: v1\nkind: Namespace\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "This Namespace is called shop.",
+      "why": "You use the name with -n shop in kubectl commands, and inside other files.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "The Namespace's name",
+      "yaml": "apiVersion: v1\nkind: Namespace\nmetadata:\n  name: shop\n"
+    },
+    {
+      "title": "Add a second object",
+      "what": "Three dashes start a new object in the same file. This one is a Pod.",
+      "why": "Keeping the Namespace and the things inside it in one file means one command creates both.",
+      "ifRemoved": "Without the dashes, both objects run together into one invalid object.",
+      "comment": "A second object in the same file: a Pod",
+      "yaml": "apiVersion: v1\nkind: Namespace\nmetadata:\n  name: shop\n---\napiVersion: v1\nkind: Pod\n"
+    },
+    {
+      "title": "Put the Pod in the Namespace",
+      "what": "The Pod is called web and lives in the shop Namespace.",
+      "why": "Without a namespace field, kubectl puts the Pod in your current namespace, usually default.",
+      "ifRemoved": "The Pod lands in the default namespace instead of shop.",
+      "comment": "The Pod's name and the Namespace it lives in",
+      "yaml": "apiVersion: v1\nkind: Namespace\nmetadata:\n  name: shop\n---\napiVersion: v1\nkind: Pod\nmetadata:\n  name: web\n  namespace: shop\n"
+    },
+    {
+      "title": "What should run?",
+      "what": "One container from the nginx image, as in the first lesson.",
+      "why": "A Pod needs at least one container. This block makes the file ready to apply.",
+      "ifRemoved": "Without containers, Kubernetes rejects the Pod.",
+      "comment": "The container to run",
+      "yaml": "apiVersion: v1\nkind: Namespace\nmetadata:\n  name: shop\n---\napiVersion: v1\nkind: Pod\nmetadata:\n  name: web\n  namespace: shop\nspec:\n  containers:\n    - name: web\n      image: nginx:1.30.4\n"
+    }
+  ],
+  "notes": {
+    "---": "Three dashes separate objects. One file can hold several objects.",
+    "apiVersion": "The API version for this object. Namespaces and Pods are both in the core v1 API.",
+    "Namespace:kind": "The type of object to create. A Namespace groups objects inside the cluster.",
+    "Pod:kind": "The type of object to create. A Pod runs one or more containers together.",
+    "metadata": "Details that identify the object, such as its name.",
+    "Namespace:metadata.name": "The Namespace's name. It must be unique in the cluster.",
+    "Pod:metadata.name": "The Pod's name. It only needs to be unique within its namespace.",
+    "metadata.namespace": "The namespace this object lives in. It must already exist, or come earlier in the file.",
+    "spec": "The desired state: what you want Kubernetes to run.",
+    "spec.containers": "The containers in this Pod. Each list item starts with a dash.",
+    "spec.containers[].name": "The container's name. It must be unique within the Pod.",
+    "spec.containers[].image": "The image to run, with a version tag. A fixed tag runs the same version every time."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f namespace.yaml",
+      "result": "Prints namespace/shop created and pod/web created."
+    },
+    {
+      "command": "kubectl get pods -n shop",
+      "result": "Shows the web Pod."
+    },
+    {
+      "command": "kubectl get namespaces",
+      "result": "Lists shop beside default and the system namespaces."
+    },
+    {
+      "command": "kubectl delete -f namespace.yaml",
+      "result": "Deleting a Namespace also deletes everything inside it."
+    }
+  ],
+  "sources": [
+    {
+      "title": "Namespaces",
+      "url": "https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/"
+    }
+  ]
+}

@@ -1,5 +1,11 @@
 import podLesson from '../../templates/kubernetes/lessons/pod.json' with { type: 'json' };
+import replicaSetLesson from '../../templates/kubernetes/lessons/replicaset.json' with { type: 'json' };
 import deploymentLesson from '../../templates/kubernetes/lessons/deployment.json' with { type: 'json' };
+import resourcesLesson from '../../templates/kubernetes/lessons/resources.json' with { type: 'json' };
+import namespaceLesson from '../../templates/kubernetes/lessons/namespace.json' with { type: 'json' };
+import configMapLesson from '../../templates/kubernetes/lessons/configmap.json' with { type: 'json' };
+import secretLesson from '../../templates/kubernetes/lessons/secret.json' with { type: 'json' };
+import jobsLesson from '../../templates/kubernetes/lessons/jobs.json' with { type: 'json' };
 import glossaryData from '../../templates/kubernetes/glossary.json' with { type: 'json' };
 
 export type LessonChoice = { label: string; options: string[]; default: string };
@@ -30,11 +36,17 @@ export type LessonContent = {
 
 export type LessonValues = Record<string, string>;
 
-export type LessonLine = { text: string; block: number; path?: string; comment?: boolean };
+export type LessonLine = { text: string; block: number; path?: string; kind?: string; comment?: boolean };
 
 export const lessonContent: Record<string, LessonContent> = {
   pod: podLesson as LessonContent,
+  replicaset: replicaSetLesson as LessonContent,
   deployment: deploymentLesson as LessonContent,
+  resources: resourcesLesson as LessonContent,
+  namespace: namespaceLesson as LessonContent,
+  configmap: configMapLesson as LessonContent,
+  secret: secretLesson as LessonContent,
+  jobs: jobsLesson as LessonContent,
 };
 
 export const glossary: Record<string, string> = glossaryData;
@@ -71,10 +83,15 @@ export function matchLines(before: string[], after: string[]): number[] {
 }
 
 // Dotted field path for each YAML line, with [] for list items: spec.containers[].image.
+// A --- line starts a new object and gets the path ---.
 export function yamlPaths(lines: string[]): (string | undefined)[] {
   const stack: { indent: number; path: string }[] = [];
   return lines.map(line => {
     const trimmed = line.trim();
+    if (trimmed === '---') {
+      stack.length = 0;
+      return '---';
+    }
     if (!trimmed || trimmed.startsWith('#')) return undefined;
     let indent = line.length - line.trimStart().length;
     let content = trimmed;
@@ -106,6 +123,7 @@ export function renderLesson(lesson: LessonContent, step: number, values: Lesson
     lines = next;
   }
   const paths = yamlPaths(lines);
+  const kinds = documentKinds(lines);
   const commented = new Set<number>();
   const output: LessonLine[] = [];
   lines.forEach((text, index) => {
@@ -115,7 +133,7 @@ export function renderLesson(lesson: LessonContent, step: number, values: Lesson
       const indent = text.slice(0, text.length - text.trimStart().length);
       output.push({ text: `${indent}# ${lesson.blocks[block].comment}`, block, comment: true });
     }
-    output.push({ text, block, path: paths[index] });
+    output.push({ text, block, path: paths[index], kind: kinds[index] });
   });
   return output;
 }
@@ -124,6 +142,29 @@ export function lessonText(lines: LessonLine[]) {
   return `${lines.map(line => line.text).join('\n')}\n`;
 }
 
+// The kind of the object each line belongs to, so files with several objects can explain the same field differently.
+function documentKinds(lines: string[]) {
+  const kinds: (string | undefined)[] = [];
+  let start = 0;
+  for (let end = 0; end <= lines.length; end++) {
+    if (end < lines.length && lines[end].trim() !== '---') continue;
+    const kind = lines.slice(start, end).find(line => line.startsWith('kind:'))?.slice(5).trim();
+    for (let index = start; index < end; index++) kinds[index] = kind;
+    if (end < lines.length) kinds[end] = undefined;
+    start = end + 1;
+  }
+  return kinds;
+}
+
+// Notes are keyed by field path, or by Kind:path when a file explains a field differently for each object.
+export function noteKey(lesson: LessonContent, line: LessonLine) {
+  if (line.comment || !line.path) return undefined;
+  const specific = `${line.kind}:${line.path}`;
+  return line.kind && specific in lesson.notes ? specific : line.path;
+}
+
 export function lineNote(lesson: LessonContent, line: LessonLine) {
-  return line.comment ? lesson.blocks[line.block].what : line.path && lesson.notes[line.path];
+  if (line.comment) return lesson.blocks[line.block].what;
+  const key = noteKey(lesson, line);
+  return key && lesson.notes[key];
 }

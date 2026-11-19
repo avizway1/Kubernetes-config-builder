@@ -82,7 +82,7 @@ export function LessonView({ lesson, content, progress, onProgress, next }: {
           </div>
           {step === last && (
             <p className="lesson-done">
-              You built a complete {content.kind}.{' '}
+              You built the whole file.{' '}
               {next ? <a href={`#learn/${next.id}`}>Next lesson: {next.title}</a> : <a href="#learn">Back to all lessons</a>}
             </p>
           )}

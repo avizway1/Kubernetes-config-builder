@@ -1,0 +1,130 @@
+{
+  "id": "jobs",
+  "kind": "CronJob",
+  "filename": "jobs.yaml",
+  "finishedAt": 7,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "A Job runs a task until it finishes, instead of keeping it running. It comes from the batch/v1 API.",
+      "why": "Use a Job for one-off work, such as a database migration or a report.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create: a Job, from the batch/v1 API",
+      "term": "Job",
+      "yaml": "apiVersion: batch/v1\nkind: Job\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "This Job is called hello-once.",
+      "why": "You use the name to check the Job and read its output.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A name to find the Job",
+      "yaml": "apiVersion: batch/v1\nkind: Job\nmetadata:\n  name: hello-once\n"
+    },
+    {
+      "title": "Don't restart when done",
+      "what": "The Pod template sets restartPolicy to Never, so a finished container is not started again.",
+      "why": "Jobs only allow Never or OnFailure. The usual Pod default, Always, would restart the task forever.",
+      "ifRemoved": "Kubernetes rejects the Job, because its Pods would restart after finishing.",
+      "comment": "Run each Pod once. The Job decides about retries.",
+      "yaml": "apiVersion: batch/v1\nkind: Job\nmetadata:\n  name: hello-once\nspec:\n  template:\n    spec:\n      restartPolicy: Never\n"
+    },
+    {
+      "title": "What should run?",
+      "what": "A busybox container prints a message and exits.",
+      "why": "When the container exits successfully, the Job is marked Complete.",
+      "ifRemoved": "Kubernetes rejects the Job, because its Pods would have nothing to run.",
+      "comment": "The task: print a message and exit",
+      "yaml": "apiVersion: batch/v1\nkind: Job\nmetadata:\n  name: hello-once\nspec:\n  template:\n    spec:\n      restartPolicy: Never\n      containers:\n        - name: hello\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"echo Hello from a Job\"]\n"
+    },
+    {
+      "title": "How many retries?",
+      "what": "backoffLimit is how many times the Job retries a failed Pod before giving up.",
+      "why": "Retries help with short failures. A low number stops a broken task from retrying for long.",
+      "ifRemoved": "Kubernetes uses the default of six retries.",
+      "comment": "Give up after two failed retries",
+      "yaml": "apiVersion: batch/v1\nkind: Job\nmetadata:\n  name: hello-once\nspec:\n  backoffLimit: 2\n  template:\n    spec:\n      restartPolicy: Never\n      containers:\n        - name: hello\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"echo Hello from a Job\"]\n"
+    },
+    {
+      "title": "Run it on a schedule",
+      "what": "Three dashes start a second object: a CronJob, which creates a Job on a schedule.",
+      "why": "Use a CronJob for repeating work, such as nightly backups.",
+      "ifRemoved": "The file has only the one-off Job.",
+      "comment": "A second object: a CronJob that runs a Job on a schedule",
+      "term": "CronJob",
+      "yaml": "apiVersion: batch/v1\nkind: Job\nmetadata:\n  name: hello-once\nspec:\n  backoffLimit: 2\n  template:\n    spec:\n      restartPolicy: Never\n      containers:\n        - name: hello\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"echo Hello from a Job\"]\n---\napiVersion: batch/v1\nkind: CronJob\nmetadata:\n  name: hello-every-minute\n"
+    },
+    {
+      "title": "When and what",
+      "what": "The schedule uses cron format. Five stars mean every minute.",
+      "why": "jobTemplate is the Job to create each time. It has the same spec as the Job above.",
+      "ifRemoved": "Kubernetes rejects the CronJob, because it needs a schedule and a jobTemplate.",
+      "comment": "Every minute, create a Job from this template",
+      "yaml": "apiVersion: batch/v1\nkind: Job\nmetadata:\n  name: hello-once\nspec:\n  backoffLimit: 2\n  template:\n    spec:\n      restartPolicy: Never\n      containers:\n        - name: hello\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"echo Hello from a Job\"]\n---\napiVersion: batch/v1\nkind: CronJob\nmetadata:\n  name: hello-every-minute\nspec:\n  schedule: \"* * * * *\"\n  jobTemplate:\n    spec:\n      template:\n"
+    },
+    {
+      "title": "The scheduled task",
+      "what": "Each run starts a busybox container that prints the time and exits.",
+      "why": "OnFailure restarts a failed container in place. This block makes the file ready to apply.",
+      "ifRemoved": "Kubernetes rejects the CronJob, because its Jobs would have nothing to run.",
+      "comment": "The task each scheduled Job runs",
+      "yaml": "apiVersion: batch/v1\nkind: Job\nmetadata:\n  name: hello-once\nspec:\n  backoffLimit: 2\n  template:\n    spec:\n      restartPolicy: Never\n      containers:\n        - name: hello\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"echo Hello from a Job\"]\n---\napiVersion: batch/v1\nkind: CronJob\nmetadata:\n  name: hello-every-minute\nspec:\n  schedule: \"* * * * *\"\n  jobTemplate:\n    spec:\n      template:\n        spec:\n          restartPolicy: OnFailure\n          containers:\n            - name: hello\n              image: busybox:1.37.0\n              command: [\"sh\", \"-c\", \"date && echo Hello from a CronJob\"]\n"
+    }
+  ],
+  "notes": {
+    "---": "Three dashes separate objects. One file can hold several objects.",
+    "apiVersion": "The API group and version. Jobs and CronJobs are in batch/v1.",
+    "Job:kind": "The type of object to create. A Job runs a task until it finishes.",
+    "CronJob:kind": "The type of object to create. A CronJob creates Jobs on a schedule.",
+    "metadata": "Details that identify the object, such as its name.",
+    "Job:metadata.name": "The Job's name. Its Pods get names that start with it.",
+    "CronJob:metadata.name": "The CronJob's name. Each Job it creates gets this name plus a number.",
+    "spec": "The desired state of this object.",
+    "spec.backoffLimit": "How many failed retries are allowed before the Job gives up. The default is 6.",
+    "spec.template": "The Pod template: the blueprint for the Pods this Job runs.",
+    "spec.template.spec": "What each Pod runs.",
+    "spec.template.spec.restartPolicy": "Never: a finished or failed container is not restarted in the same Pod.",
+    "spec.template.spec.containers": "The containers in each Pod. Each list item starts with a dash.",
+    "spec.template.spec.containers[].name": "The container's name. It must be unique within the Pod.",
+    "spec.template.spec.containers[].image": "A tiny image with basic shell tools, pinned to a version.",
+    "spec.template.spec.containers[].command": "The task: print a message, then exit so the Job completes.",
+    "spec.schedule": "When to run, in cron format: minute, hour, day of month, month, day of week.",
+    "spec.jobTemplate": "The Job to create on each run.",
+    "spec.jobTemplate.spec": "The Job's spec, the same as in a Job file.",
+    "spec.jobTemplate.spec.template": "The Pod template for each scheduled Job.",
+    "spec.jobTemplate.spec.template.spec": "What each scheduled Pod runs.",
+    "spec.jobTemplate.spec.template.spec.restartPolicy": "OnFailure: restart a failed container in the same Pod.",
+    "spec.jobTemplate.spec.template.spec.containers": "The containers in each Pod. Each list item starts with a dash.",
+    "spec.jobTemplate.spec.template.spec.containers[].name": "The container's name. It must be unique within the Pod.",
+    "spec.jobTemplate.spec.template.spec.containers[].image": "A tiny image with basic shell tools, pinned to a version.",
+    "spec.jobTemplate.spec.template.spec.containers[].command": "The task: print the time and a message, then exit."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f jobs.yaml",
+      "result": "Prints job.batch/hello-once created and cronjob.batch/hello-every-minute created."
+    },
+    {
+      "command": "kubectl get jobs",
+      "result": "hello-once shows Complete. A new hello-every-minute Job appears each minute."
+    },
+    {
+      "command": "kubectl logs job/hello-once",
+      "result": "Prints Hello from a Job."
+    },
+    {
+      "command": "kubectl delete -f jobs.yaml",
+      "result": "Removes both, including the Jobs the CronJob created."
+    }
+  ],
+  "sources": [
+    {
+      "title": "Jobs",
+      "url": "https://kubernetes.io/docs/concepts/workloads/controllers/job/"
+    },
+    {
+      "title": "CronJob",
+      "url": "https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/"
+    }
+  ]
+}

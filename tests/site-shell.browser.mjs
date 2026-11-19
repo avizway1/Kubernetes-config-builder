@@ -30,8 +30,8 @@ test('first visit offers two starting options and the lesson overview opens exis
     assert.equal(await page.locator('section.level').count(), 11);
     const basics = page.locator('section[aria-labelledby="level-1-title"] .lesson');
     assert.equal(await basics.count(), 8);
-    assert.equal(await basics.locator('.lesson-start').count(), 2);
-    assert.equal(await basics.getByText('Coming soon').count(), 6);
+    assert.equal(await basics.locator('.lesson-start').count(), 8);
+    assert.equal(await basics.getByText('Coming soon').count(), 0);
     assert.equal(await page.locator('section.level:not([aria-labelledby="labs-title"]) .badge-eks').count(), 7);
 
     await page.getByRole('button', { name: 'Open Deploy an app from Git' }).click();
@@ -121,8 +121,10 @@ test('a lesson builds the file one block at a time and exports exactly what is s
     await page.getByLabel('Show explanations').uncheck();
     assert.equal((await download()).text, lessonText(renderLesson(pod, 3, {}, false)));
 
-    // The next lesson keeps its own progress and lets the learner try a different replica count.
-    await page.getByRole('link', { name: 'Next lesson: Keep your app running' }).click();
+    // The next lesson follows the catalogue. Each lesson keeps its own progress.
+    await page.getByRole('link', { name: 'Next lesson: Keep copies running' }).click();
+    await page.getByRole('heading', { name: 'Keep copies running', level: 1 }).waitFor();
+    await page.goto(`${appUrl}#learn/deployment`);
     await page.getByRole('heading', { name: 'Keep your app running', level: 1 }).waitFor();
     await page.getByRole('button', { name: 'Next block' }).click();
     await page.getByRole('button', { name: 'Next block' }).click();
@@ -155,6 +157,30 @@ test('a lesson stacks on a phone with jump links and no sideways scrolling', { t
     const card = await page.locator('.lesson-card').boundingBox();
     const output = await page.locator('.lesson-output').boundingBox();
     assert.ok(output.y >= card.y + card.height - 1, 'YAML sits below the lesson card');
+  } finally {
+    await browser.close();
+  }
+});
+
+test('a file with two objects explains each one and exports both', { timeout: 30000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
+    page.setDefaultTimeout(8000);
+    const yaml = page.getByTestId('lesson-yaml');
+    await page.goto(`${appUrl}#learn/configmap`);
+    await page.getByRole('heading', { name: 'Settings outside the image', level: 1 }).waitFor();
+    for (let step = 1; step < 4; step++) await page.getByRole('button', { name: 'Next block' }).click();
+    await yaml.locator('.view-line').filter({ hasText: /^---$/ }).waitFor();
+    await yaml.locator('.view-line span').filter({ hasText: /^kind$/ }).last().hover();
+    await page.locator('.monaco-hover').getByText(/A Pod runs one or more containers/).waitFor();
+    await page.getByRole('button', { name: 'Show whole file' }).click();
+    const pending = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Download' }).click();
+    const file = await pending;
+    assert.equal(file.suggestedFilename(), 'configmap.yaml');
+    const content = lessonContent.configmap;
+    assert.equal(readFileSync(await file.path(), 'utf8'), lessonText(renderLesson(content, content.blocks.length - 1, {}, true)));
   } finally {
     await browser.close();
   }
