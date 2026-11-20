@@ -1,6 +1,7 @@
 // Apply every Anywhere lesson to a dedicated K3s cluster and confirm each Try it result with its check.
 // Needs kubectl and curl. tests/check-lessons-k3s.sh creates the cluster, runs this file, and deletes the cluster.
 // Run from the project root with KCB_LESSON_KUBECONFIG and KCB_LESSON_VERSION set (1.35, 1.36, or 1.37).
+// KCB_LESSON_NODES is the cluster's node count. Each run checks only the lessons written for that many nodes.
 import { equal, fail, match, ok } from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -12,6 +13,7 @@ import { brokenFile, defaultLessonValues, lessonContent, lessonText, practiceFil
 
 const kubeconfig = process.env.KCB_LESSON_KUBECONFIG;
 const version = process.env.KCB_LESSON_VERSION;
+const nodes = Number(process.env.KCB_LESSON_NODES ?? 1);
 const retrySeconds = Number(process.env.KCB_LESSON_RETRY_SECONDS ?? 180);
 
 function shell(command, cwd) {
@@ -50,14 +52,16 @@ test('the cluster is a dedicated loopback K3s test cluster', () => {
   match(shell("kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}'").stdout, /^https:\/\/127\.0\.0\.1:\d+$/);
   const server = JSON.parse(shell('kubectl get --raw /version').stdout).gitVersion;
   ok(server.startsWith(`v${version}.`) && server.includes('+k3s'), `Expected K3s ${version}, got ${server}`);
+  equal(shell('kubectl get nodes -o name').stdout.trim().split('\n').length, nodes, `Expected ${nodes} nodes`);
 });
 
 const download = lesson => lessonText(renderLesson(lesson, lesson.blocks.length - 1, defaultLessonValues(lesson), true));
 const files = lesson => [lesson, ...(lesson.uses ?? []).map(id => lessonContent[id])].map(used => `-f ${used.filename}`).join(' ');
 
 const anywhere = new Set(catalogue.levels.flatMap(level => level.lessons).filter(lesson => lesson.runsOn === 'anywhere').map(lesson => lesson.id));
+const checked = Object.values(lessonContent).filter(lesson => lesson.kind && anywhere.has(lesson.id) && (lesson.nodes ?? 1) === nodes);
 
-for (const lesson of Object.values(lessonContent).filter(lesson => lesson.kind && anywhere.has(lesson.id))) {
+for (const lesson of checked) {
   test(`${lesson.id}: every Try it result happens on K3s ${version}`, () => {
     const folder = mkdtempSync(join(tmpdir(), `lesson-${lesson.id}-`));
     const values = defaultLessonValues(lesson);
@@ -80,7 +84,7 @@ for (const lesson of Object.values(lessonContent).filter(lesson => lesson.kind &
 
 // Fix it shows what Kubernetes says about each broken copy. Apply the copy under the lesson's filename, as learners
 // would, then remove whatever it created using the working file.
-for (const lesson of Object.values(lessonContent).filter(lesson => lesson.kind && anywhere.has(lesson.id) && lesson.practice)) {
+for (const lesson of checked.filter(lesson => lesson.practice)) {
   test(`${lesson.id}: the Fix it message is what K3s ${version} shows`, () => {
     const { fix } = lesson.practice;
     const folder = mkdtempSync(join(tmpdir(), `lesson-fix-${lesson.id}-`));

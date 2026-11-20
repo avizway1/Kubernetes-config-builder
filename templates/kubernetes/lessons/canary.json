@@ -1,0 +1,233 @@
+{
+  "id": "canary",
+  "kind": "Deployment",
+  "filename": "canary.yaml",
+  "finishedAt": 10,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "The first object is the stable Deployment, the version most users get. It comes from apps/v1.",
+      "why": "A canary sends a small share of traffic to a new version first. If it fails, few users notice.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create first: the stable Deployment",
+      "term": "canary",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\n"
+    },
+    {
+      "title": "Name the stable copy",
+      "what": "This Deployment is called store-stable.",
+      "why": "Each version gets its own Deployment, so you can size them separately.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "The Deployment for the stable version",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: store-stable\n"
+    },
+    {
+      "title": "Nine stable Pods",
+      "what": "Keep nine stable Pods, labelled app: store and track: stable.",
+      "why": "With one canary Pod beside them, the canary gets about one request in ten.",
+      "ifRemoved": "Kubernetes rejects the file, because apps/v1 Deployments must have a selector.",
+      "comment": "Nine copies of the stable version",
+      "term": "replica",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: store-stable\nspec:\n  replicas: 9\n  selector:\n    matchLabels:\n      app: store\n      track: stable\n"
+    },
+    {
+      "title": "Describe the stable Pods",
+      "what": "Each Pod gets app: store and track: stable.",
+      "why": "The Service selects only app: store, so it reaches both tracks.",
+      "ifRemoved": "The Deployment would have nothing to create, so Kubernetes rejects it.",
+      "comment": "Label each Pod as store and stable",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: store-stable\nspec:\n  replicas: 9\n  selector:\n    matchLabels:\n      app: store\n      track: stable\n  template:\n    metadata:\n      labels:\n        app: store\n        track: stable\n"
+    },
+    {
+      "title": "A page that says stable",
+      "what": "busybox writes a page saying stable, then serves it on port 80.",
+      "why": "Counting the answers shows how traffic is shared.",
+      "ifRemoved": "Kubernetes rejects the Deployment, because its Pods would have nothing to run.",
+      "comment": "A small web server that answers stable",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: store-stable\nspec:\n  replicas: 9\n  selector:\n    matchLabels:\n      app: store\n      track: stable\n  template:\n    metadata:\n      labels:\n        app: store\n        track: stable\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo stable > /www/index.html && exec httpd -f -p 80 -h /www\"]\n"
+    },
+    {
+      "title": "Add the Service",
+      "what": "Three dashes start a second object: a Service called store.",
+      "why": "Clients use the name store and never choose a version themselves.",
+      "ifRemoved": "Clients would have to find the Pods themselves.",
+      "comment": "A second object: the Service clients use",
+      "term": "Service",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: store-stable\nspec:\n  replicas: 9\n  selector:\n    matchLabels:\n      app: store\n      track: stable\n  template:\n    metadata:\n      labels:\n        app: store\n        track: stable\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo stable > /www/index.html && exec httpd -f -p 80 -h /www\"]\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: store\n"
+    },
+    {
+      "title": "Send traffic to every store Pod",
+      "what": "The selector names only app: store, not the track.",
+      "why": "Each request goes to one matching Pod, so traffic splits by Pod count.",
+      "ifRemoved": "Kubernetes rejects the Service, because it must say which port to listen on.",
+      "comment": "Traffic goes to every store Pod, stable or canary",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: store-stable\nspec:\n  replicas: 9\n  selector:\n    matchLabels:\n      app: store\n      track: stable\n  template:\n    metadata:\n      labels:\n        app: store\n        track: stable\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo stable > /www/index.html && exec httpd -f -p 80 -h /www\"]\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: store\nspec:\n  selector:\n    app: store\n  ports:\n    - port: 80\n"
+    },
+    {
+      "title": "Add the canary",
+      "what": "Three dashes start a third object: the Deployment for the canary, the new version.",
+      "why": "It runs beside stable behind the same Service.",
+      "ifRemoved": "Every request goes to stable.",
+      "comment": "A third object: the canary Deployment",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: store-stable\nspec:\n  replicas: 9\n  selector:\n    matchLabels:\n      app: store\n      track: stable\n  template:\n    metadata:\n      labels:\n        app: store\n        track: stable\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo stable > /www/index.html && exec httpd -f -p 80 -h /www\"]\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: store\nspec:\n  selector:\n    app: store\n  ports:\n    - port: 80\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: store-canary\n"
+    },
+    {
+      "title": "One canary Pod",
+      "what": "Keep one canary Pod, labelled app: store and track: canary.",
+      "why": "One Pod out of ten gets about 10% of requests. Raise it as confidence grows.",
+      "ifRemoved": "Kubernetes rejects the file, because apps/v1 Deployments must have a selector.",
+      "comment": "One copy of the canary version",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: store-stable\nspec:\n  replicas: 9\n  selector:\n    matchLabels:\n      app: store\n      track: stable\n  template:\n    metadata:\n      labels:\n        app: store\n        track: stable\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo stable > /www/index.html && exec httpd -f -p 80 -h /www\"]\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: store\nspec:\n  selector:\n    app: store\n  ports:\n    - port: 80\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: store-canary\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: store\n      track: canary\n"
+    },
+    {
+      "title": "Describe the canary Pod",
+      "what": "The canary Pod gets app: store, so the Service includes it, and track: canary.",
+      "why": "track keeps the two Deployments from managing each other’s Pods.",
+      "ifRemoved": "The Deployment would have nothing to create, so Kubernetes rejects it.",
+      "comment": "Label the Pod as store and canary",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: store-stable\nspec:\n  replicas: 9\n  selector:\n    matchLabels:\n      app: store\n      track: stable\n  template:\n    metadata:\n      labels:\n        app: store\n        track: stable\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo stable > /www/index.html && exec httpd -f -p 80 -h /www\"]\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: store\nspec:\n  selector:\n    app: store\n  ports:\n    - port: 80\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: store-canary\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: store\n      track: canary\n  template:\n    metadata:\n      labels:\n        app: store\n        track: canary\n"
+    },
+    {
+      "title": "A page that says canary",
+      "what": "busybox writes a page saying canary. This block makes the file ready.",
+      "why": "Counting canary answers shows the share of traffic it gets.",
+      "ifRemoved": "Kubernetes rejects the Deployment, because its Pods would have nothing to run.",
+      "comment": "A small web server that answers canary",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: store-stable\nspec:\n  replicas: 9\n  selector:\n    matchLabels:\n      app: store\n      track: stable\n  template:\n    metadata:\n      labels:\n        app: store\n        track: stable\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo stable > /www/index.html && exec httpd -f -p 80 -h /www\"]\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: store\nspec:\n  selector:\n    app: store\n  ports:\n    - port: 80\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: store-canary\nspec:\n  replicas: 1\n  selector:\n    matchLabels:\n      app: store\n      track: canary\n  template:\n    metadata:\n      labels:\n        app: store\n        track: canary\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo canary > /www/index.html && exec httpd -f -p 80 -h /www\"]\n"
+    }
+  ],
+  "notes": {
+    "---": "Three dashes separate objects. One file can hold several objects.",
+    "apiVersion": "The API version. Deployments are in apps/v1. Services are in the core v1 API.",
+    "Deployment:kind": "The type of object to create. A Deployment keeps identical Pods running.",
+    "Service:kind": "The type of object to create. A Service sends traffic to Pods with chosen labels.",
+    "metadata": "Details that identify the object, such as its name.",
+    "Deployment:metadata.name": "The Deployment’s name. Its Pods get names that start with it.",
+    "Service:metadata.name": "The Service name. Clients inside the cluster use http://store.",
+    "Deployment:spec": "The desired state of this Deployment.",
+    "Service:spec": "The desired state: which Pods get traffic, on which port.",
+    "spec.selector": "Which Pods this Deployment manages. It cannot change after creation.",
+    "Service:spec.selector": "Pods must have all of these labels to receive traffic.",
+    "spec.selector.matchLabels": "Pods must have all of these labels to be managed by this Deployment.",
+    "spec.selector.matchLabels.app": "The app label shared by both versions: store.",
+    "spec.selector.matchLabels.track": "Which track this Deployment manages.",
+    "spec.template": "The Pod template: the blueprint for every Pod this Deployment creates.",
+    "spec.template.metadata": "Details given to every Pod created from the template.",
+    "spec.template.metadata.labels": "Labels given to every Pod. They must match the selector.",
+    "spec.template.metadata.labels.app": "Every Pod of both versions gets app: store.",
+    "spec.template.metadata.labels.track": "Which track this Pod runs.",
+    "spec.template.spec": "What each Pod runs. This is the same spec as in a Pod file.",
+    "spec.template.spec.containers": "The containers in each Pod. Each list item starts with a dash.",
+    "spec.template.spec.containers[].name": "The container’s name. It must be unique within the Pod.",
+    "spec.template.spec.containers[].image": "A tiny image with basic shell tools, pinned to a version.",
+    "spec.template.spec.containers[].command": "Write a page naming the version, then serve it on port 80 with busybox’s web server.",
+    "spec.selector.app": "Send traffic to Pods labelled app: store.",
+    "spec.ports": "The ports the Service listens on. Each list item is one port.",
+    "spec.ports[].port": "Listen on port 80 and forward to port 80 on the Pods.",
+    "spec.replicas": "How many Pods of this version to run. The ratio sets the traffic share."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f canary.yaml",
+      "result": "Creates store-stable, the store Service, and store-canary.",
+      "check": {
+        "expect": [
+          "deployment.apps/store-stable created",
+          "service/store created",
+          "deployment.apps/store-canary created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get deployments store-stable store-canary",
+      "result": "READY shows 9/9 for stable and 1/1 for the canary.",
+      "check": {
+        "pattern": "store-stable\\s+9/9[\\s\\S]*store-canary\\s+1/1"
+      }
+    },
+    {
+      "command": "kubectl run client --rm -i --restart=Never --image=busybox:1.37.0 -- sh -c 'for i in $(seq 100); do wget -qO- http://store; done | sort | uniq -c'",
+      "result": "Counts 100 answers. Roughly 10 say canary and 90 say stable. The split varies a little each time.",
+      "check": {
+        "pattern": "\\d+ canary\\s+\\d+ stable"
+      }
+    },
+    {
+      "command": "kubectl scale deployment store-canary --replicas=3",
+      "result": "Promotes the canary a step: 3 of 12 Pods, about a quarter of requests.",
+      "check": {
+        "expect": [
+          "deployment.apps/store-canary scaled"
+        ]
+      }
+    },
+    {
+      "command": "kubectl delete -f canary.yaml",
+      "result": "Removes both Deployments and the Service.",
+      "check": {
+        "expect": [
+          "deployment.apps \"store-stable\" deleted",
+          "service \"store\" deleted",
+          "deployment.apps \"store-canary\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "Why does the Service selector leave out track?",
+        "answers": [
+          "So it sends traffic to both stable and canary Pods",
+          "Services cannot use two labels",
+          "To keep the canary hidden"
+        ],
+        "correct": 0,
+        "explain": "A Service reaches every Pod with all its selector labels. Leaving out track includes both versions.",
+        "line": 28
+      },
+      {
+        "question": "About what share of requests reaches the canary?",
+        "answers": [
+          "1 in 2",
+          "1 in 10",
+          "None"
+        ],
+        "correct": 1,
+        "explain": "One canary Pod beside nine stable ones gets about one request in ten.",
+        "line": 37
+      },
+      {
+        "question": "The canary looks good. What is the next step?",
+        "answers": [
+          "Delete stable at once",
+          "Raise canary replicas and lower stable, step by step",
+          "Rename the canary"
+        ],
+        "correct": 1,
+        "explain": "Shifting Pods a few at a time moves traffic gradually until the new version takes over.",
+        "line": 37
+      }
+    ],
+    "fix": {
+      "line": 6,
+      "text": "  replicas: 0",
+      "source": "command",
+      "command": "kubectl get deployments store-stable store-canary",
+      "expect": "store-stable\\s+0/0[\\s\\S]*store-canary\\s+1/1",
+      "message": "0/0 under READY for store-stable, and 1/1 for store-canary",
+      "explain": "With no stable Pods, every request goes to the untested canary. The class file had this mistake.",
+      "fix": "Keep nine stable Pods: replicas: 9."
+    }
+  },
+  "sources": [
+    {
+      "title": "Canary deployments",
+      "url": "https://kubernetes.io/docs/concepts/workloads/management/"
+    },
+    {
+      "title": "Labels and Selectors",
+      "url": "https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/"
+    }
+  ]
+}

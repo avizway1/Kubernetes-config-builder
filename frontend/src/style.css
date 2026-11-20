@@ -1011,3 +1011,9 @@ section.lesson-try-it {
   overflow-wrap: anywhere;
   font-weight: 600;
 }
+
+/* The command that adds worker nodes is long, so it gets its own line below the sentence. */
+.lesson-nodes code {
+  display: block;
+  margin-top: 0.25rem;
+}

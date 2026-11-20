@@ -1,0 +1,244 @@
+{
+  "id": "rolling-update",
+  "kind": "Deployment",
+  "filename": "rolling-update.yaml",
+  "finishedAt": 5,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "A Deployment keeps identical Pods running. It comes from the apps/v1 API.",
+      "why": "When its Pod template changes, the Deployment replaces the Pods. This lesson controls how.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create: a Deployment, from the apps/v1 API",
+      "term": "Deployment",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "This Deployment is called rolling-web.",
+      "why": "You use the name with kubectl rollout to watch and undo updates.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A name to find the Deployment",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: rolling-web\n"
+    },
+    {
+      "title": "Four copies and their label",
+      "what": "Keep four Pods running, and manage the Pods labelled app: rolling-web.",
+      "why": "Four copies make it easy to watch Pods being replaced a few at a time.",
+      "ifRemoved": "Kubernetes rejects the file, because apps/v1 Deployments must have a selector.",
+      "comment": "Four copies of the Pods that carry this label",
+      "term": "replica",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: rolling-web\nspec:\n  replicas: 4\n  selector:\n    matchLabels:\n      app: rolling-web\n"
+    },
+    {
+      "title": "Describe the Pods",
+      "what": "The template is the blueprint for each Pod. Changing it starts an update.",
+      "why": "Any change under template, such as an image or a variable, makes new Pods.",
+      "ifRemoved": "The Deployment would have nothing to create, so Kubernetes rejects it.",
+      "comment": "The blueprint for each Pod, with the label the selector looks for",
+      "term": "Pod template",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: rolling-web\nspec:\n  replicas: 4\n  selector:\n    matchLabels:\n      app: rolling-web\n  template:\n    metadata:\n      labels:\n        app: rolling-web\n"
+    },
+    {
+      "title": "A page that shows its version",
+      "what": "busybox writes a page saying version, then serves it on port 80.",
+      "why": "Reading the page shows which version a Pod runs.",
+      "ifRemoved": "Kubernetes rejects the Deployment, because its Pods would have nothing to run.",
+      "comment": "A small web server that shows its version",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: rolling-web\nspec:\n  replicas: 4\n  selector:\n    matchLabels:\n      app: rolling-web\n  template:\n    metadata:\n      labels:\n        app: rolling-web\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo version $VERSION > /www/index.html && exec httpd -f -p 80 -h /www\"]\n"
+    },
+    {
+      "title": "The version number",
+      "what": "VERSION is 1, and the command writes it into the page. This block makes the file ready.",
+      "why": "Changing VERSION changes the template, so it starts a rolling update.",
+      "ifRemoved": "The page says just version, with no number.",
+      "comment": "Version 1 of the app",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: rolling-web\nspec:\n  replicas: 4\n  selector:\n    matchLabels:\n      app: rolling-web\n  template:\n    metadata:\n      labels:\n        app: rolling-web\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo version $VERSION > /www/index.html && exec httpd -f -p 80 -h /www\"]\n          env:\n            - name: VERSION\n              value: \"1\"\n"
+    },
+    {
+      "title": "Ready before traffic",
+      "what": "A readiness probe asks each Pod for its page, as in the probes lesson.",
+      "why": "A rolling update waits for each new Pod to be ready before removing an old one.",
+      "ifRemoved": "New Pods count as ready the moment they start, even if the server is not yet answering.",
+      "comment": "Count a Pod as ready once its page answers",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: rolling-web\nspec:\n  replicas: 4\n  selector:\n    matchLabels:\n      app: rolling-web\n  template:\n    metadata:\n      labels:\n        app: rolling-web\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo version $VERSION > /www/index.html && exec httpd -f -p 80 -h /www\"]\n          env:\n            - name: VERSION\n              value: \"1\"\n          readinessProbe:\n            httpGet:\n              path: /\n              port: 80\n"
+    },
+    {
+      "title": "Replace a few at a time",
+      "what": "RollingUpdate swaps Pods gradually. maxSurge allows one extra Pod; maxUnavailable: 0 keeps all four serving.",
+      "why": "The app never drops below four ready Pods during an update.",
+      "ifRemoved": "Kubernetes uses the defaults: a rolling update with 25% surge and 25% unavailable.",
+      "comment": "Add one new Pod at a time, and never drop below four ready",
+      "term": "rolling update",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: rolling-web\nspec:\n  replicas: 4\n  strategy:\n    type: RollingUpdate\n    rollingUpdate:\n      maxSurge: 1\n      maxUnavailable: 0\n  selector:\n    matchLabels:\n      app: rolling-web\n  template:\n    metadata:\n      labels:\n        app: rolling-web\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo version $VERSION > /www/index.html && exec httpd -f -p 80 -h /www\"]\n          env:\n            - name: VERSION\n              value: \"1\"\n          readinessProbe:\n            httpGet:\n              path: /\n              port: 80\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version that define this kind. Deployments are in apps/v1.",
+    "kind": "The type of object to create. A Deployment keeps identical Pods running.",
+    "metadata": "Details that identify the object, such as its name.",
+    "metadata.name": "The Deployment’s name. Its Pods get names that start with it.",
+    "spec": "The desired state of the Deployment.",
+    "spec.replicas": "How many Pods to keep running: four.",
+    "spec.selector": "Which Pods this Deployment manages. It cannot change after creation.",
+    "spec.selector.matchLabels": "Pods must have all of these labels to be managed by this Deployment.",
+    "spec.selector.matchLabels.app": "Match Pods whose app label is rolling-web.",
+    "spec.template": "The Pod template: the blueprint for every Pod this Deployment creates.",
+    "spec.template.metadata": "Details given to every Pod created from the template.",
+    "spec.template.metadata.labels": "Labels given to every Pod. They must match the selector.",
+    "spec.template.metadata.labels.app": "Every Pod gets the label app: rolling-web, so the selector finds it.",
+    "spec.template.spec": "What each Pod runs. This is the same spec as in a Pod file.",
+    "spec.template.spec.containers": "The containers in each Pod. Each list item starts with a dash.",
+    "spec.template.spec.containers[].name": "The container’s name. It must be unique within the Pod.",
+    "spec.template.spec.containers[].image": "A tiny image with basic shell tools, pinned to a version.",
+    "spec.template.spec.containers[].command": "Write a page saying version and $VERSION, then serve it on port 80.",
+    "spec.strategy": "How the Deployment replaces old Pods with new ones when the template changes.",
+    "spec.template.spec.containers[].env": "Environment variables for the container.",
+    "spec.template.spec.containers[].env[].name": "VERSION, which the command writes into the page.",
+    "spec.template.spec.containers[].env[].value": "Version 1. Quotes keep the number as text, as env values must be.",
+    "spec.strategy.type": "RollingUpdate, the default: replace old Pods a few at a time.",
+    "spec.strategy.rollingUpdate": "Limits on how many Pods change at once.",
+    "spec.strategy.rollingUpdate.maxSurge": "At most one Pod above replicas during an update: five in total.",
+    "spec.strategy.rollingUpdate.maxUnavailable": "Zero: never fewer than four ready Pods during an update.",
+    "spec.template.spec.containers[].readinessProbe": "Checks the Pod can serve its page before it counts as ready.",
+    "spec.template.spec.containers[].readinessProbe.httpGet": "Check by asking for a web page. Any status from 200 to 399 passes.",
+    "spec.template.spec.containers[].readinessProbe.httpGet.path": "The page to ask for: /.",
+    "spec.template.spec.containers[].readinessProbe.httpGet.port": "The port busybox’s web server listens on: 80."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f rolling-update.yaml",
+      "result": "Prints deployment.apps/rolling-web created.",
+      "check": {
+        "expect": [
+          "deployment.apps/rolling-web created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl rollout status deployment/rolling-web",
+      "result": "Prints successfully rolled out once all four Pods are ready.",
+      "check": {
+        "expect": [
+          "deployment \"rolling-web\" successfully rolled out"
+        ]
+      }
+    },
+    {
+      "command": "kubectl exec deployment/rolling-web -- cat /www/index.html",
+      "result": "Prints version 1.",
+      "check": {
+        "expect": [
+          "version 1"
+        ]
+      }
+    },
+    {
+      "command": "kubectl set env deployment/rolling-web VERSION=2",
+      "result": "Changes the template, which starts the update. In real work, edit the file and apply it instead.",
+      "check": {
+        "expect": [
+          "deployment.apps/rolling-web env updated"
+        ]
+      }
+    },
+    {
+      "command": "kubectl rollout status deployment/rolling-web",
+      "result": "Counts the new Pods: 1, 2, 3 out of 4 new replicas updated, then successfully rolled out.",
+      "check": {
+        "expect": [
+          "deployment \"rolling-web\" successfully rolled out"
+        ]
+      }
+    },
+    {
+      "command": "kubectl exec deployment/rolling-web -- cat /www/index.html",
+      "result": "Prints version 2.",
+      "check": {
+        "expect": [
+          "version 2"
+        ]
+      }
+    },
+    {
+      "command": "kubectl describe deployment rolling-web",
+      "result": "Events show the new set growing by one while the old set shrinks by one, in turns.",
+      "check": {
+        "pattern": "Scaled up replica set rolling-web-\\S+ from 0 to 1[\\s\\S]*Scaled down replica set rolling-web-\\S+ from 4 to 3"
+      }
+    },
+    {
+      "command": "kubectl rollout undo deployment/rolling-web",
+      "result": "Rolls back to version 1, again a few Pods at a time. kubectl warns that your file no longer matches.",
+      "check": {
+        "expect": [
+          "deployment.apps/rolling-web rolled back"
+        ]
+      }
+    },
+    {
+      "command": "kubectl delete -f rolling-update.yaml",
+      "result": "Removes the Deployment and its Pods.",
+      "check": {
+        "expect": [
+          "deployment.apps \"rolling-web\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "During an update, what is the most Pods that can exist at once?",
+        "answers": [
+          "Four",
+          "Five",
+          "Eight"
+        ],
+        "correct": 1,
+        "explain": "replicas is 4 and maxSurge allows one extra, so five at most.",
+        "line": 10
+      },
+      {
+        "question": "Why does maxUnavailable: 0 matter?",
+        "answers": [
+          "The update never drops below four ready Pods",
+          "Old Pods are never removed",
+          "The update happens all at once"
+        ],
+        "correct": 0,
+        "explain": "An old Pod is removed only after a new one is ready, so capacity never dips.",
+        "line": 11
+      },
+      {
+        "question": "Which change starts a rolling update?",
+        "answers": [
+          "Changing replicas to 5",
+          "Changing VERSION under the template",
+          "Changing the Deployment’s name"
+        ],
+        "correct": 1,
+        "explain": "Only template changes make new Pods. Changing replicas just adds or removes Pods.",
+        "line": 26
+      }
+    ],
+    "fix": {
+      "line": 10,
+      "text": "      maxSurge: 0",
+      "source": "apply",
+      "message": "The Deployment \"rolling-web\" is invalid: spec.strategy.rollingUpdate.maxUnavailable: Invalid value: 0: may not be 0 when `maxSurge` is 0",
+      "explain": "With no extra Pods and none allowed down, the update could never replace a single Pod.",
+      "fix": "Allow at least one: maxSurge: 1."
+    }
+  },
+  "sources": [
+    {
+      "title": "Deployments: updating a Deployment",
+      "url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/"
+    },
+    {
+      "title": "kubectl rollout",
+      "url": "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_rollout/"
+    }
+  ]
+}

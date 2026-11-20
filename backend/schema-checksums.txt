@@ -5,6 +5,7 @@
 008fe81f26eb30bd2efd1f970a5a4b918c05feb709e70fe268e852d95398eff2  v1.35.0-standalone-strict/customresourcedefinition-apiextensions-v1.json
 327c0ba4c3ff08c49cf3cb0bc3d9dc7476547ffae2c04862b02da4cf7ea24345  v1.35.0-standalone-strict/daemonset-apps-v1.json
 c79edd116874e49025538be375caa2ddc285476d2a1d9f7a31922ab9ff774390  v1.35.0-standalone-strict/deployment-apps-v1.json
+245843f05839999488c6cacf53c45b25522c7980f6db7146fc26cf5e519a7776  v1.35.0-standalone-strict/horizontalpodautoscaler-autoscaling-v2.json
 ab8e088a1acd07d4e27797d23743df96f5a059abe58e35745ffed8ff064298da  v1.35.0-standalone-strict/job-batch-v1.json
 082dc0be584c1c7175d8a3458dc5546a0fb45cf56b495e4aa1ec6fb9b90fa9dc  v1.35.0-standalone-strict/limitrange-v1.json
 f2e647b4dfb300f76ee892b7327fe27366d48aa72351abd2a2fa26a24d52fa3f  v1.35.0-standalone-strict/namespace-v1.json
@@ -27,6 +28,7 @@ e8391dbe9b3b48a1dc8509ea9213c21ef52de2a430c47c5365192e48563e194e  v1.35.0-standa
 008fe81f26eb30bd2efd1f970a5a4b918c05feb709e70fe268e852d95398eff2  v1.36.0-standalone-strict/customresourcedefinition-apiextensions-v1.json
 9690d468cac7ed3391b7217bafb30160672a42c458fb00cb84dc48566c2411aa  v1.36.0-standalone-strict/daemonset-apps-v1.json
 f5d75e8017a40f949e1a37eb3bf7e5dd0c76eab414375414e211a5670a83fac9  v1.36.0-standalone-strict/deployment-apps-v1.json
+963db648e0dfd2c129d8bcfc0be02c14860e00e4bb24c83493ded1ca89922e25  v1.36.0-standalone-strict/horizontalpodautoscaler-autoscaling-v2.json
 75e01a3e6e27e061ff2b2680df7f2a29f623c320587420a4d22df5a760693dc3  v1.36.0-standalone-strict/job-batch-v1.json
 082dc0be584c1c7175d8a3458dc5546a0fb45cf56b495e4aa1ec6fb9b90fa9dc  v1.36.0-standalone-strict/limitrange-v1.json
 f2e647b4dfb300f76ee892b7327fe27366d48aa72351abd2a2fa26a24d52fa3f  v1.36.0-standalone-strict/namespace-v1.json
@@ -49,6 +51,7 @@ a12a2094828a5003ec96e82a366558edc60a6db82fd832a7ae850506a9811baf  v1.37.0-standa
 008fe81f26eb30bd2efd1f970a5a4b918c05feb709e70fe268e852d95398eff2  v1.37.0-standalone-strict/customresourcedefinition-apiextensions-v1.json
 bf058ca798600317b7e123cd329fc8348a64274d21a1064835a05a5da501a5d1  v1.37.0-standalone-strict/daemonset-apps-v1.json
 d55fb502d4f6a137cf1c282619892b8a2eef145d3a4fad78d1bab85a2cce046c  v1.37.0-standalone-strict/deployment-apps-v1.json
+7b9e5d29dcd32fd419e50f74dfbb8a7db12a3283414c655afd3a3bc508539a53  v1.37.0-standalone-strict/horizontalpodautoscaler-autoscaling-v2.json
 74ecab80b9ee85a199e0d62249bd788685e9391b6e38773c03f4875e4e262361  v1.37.0-standalone-strict/job-batch-v1.json
 082dc0be584c1c7175d8a3458dc5546a0fb45cf56b495e4aa1ec6fb9b90fa9dc  v1.37.0-standalone-strict/limitrange-v1.json
 f2e647b4dfb300f76ee892b7327fe27366d48aa72351abd2a2fa26a24d52fa3f  v1.37.0-standalone-strict/namespace-v1.json

@@ -1,0 +1,231 @@
+{
+  "id": "node-affinity",
+  "kind": "Deployment",
+  "filename": "node-affinity.yaml",
+  "nodes": 3,
+  "finishedAt": 6,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "A Deployment keeps identical Pods running. It comes from the apps/v1 API.",
+      "why": "This one also says which nodes its Pods may run on.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create: a Deployment, from the apps/v1 API",
+      "term": "Deployment",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "This Deployment is called ssd-web.",
+      "why": "Imagine an app that needs fast SSD disks, so it must run on SSD nodes.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A name to find the Deployment",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: ssd-web\n"
+    },
+    {
+      "title": "Two copies and their label",
+      "what": "Keep two Pods running, and manage the Pods labelled app: ssd-web.",
+      "why": "Two copies show that every Pod follows the same node rule.",
+      "ifRemoved": "Kubernetes rejects the file, because apps/v1 Deployments must have a selector.",
+      "comment": "Two copies of the Pods that carry this label",
+      "term": "replica",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: ssd-web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: ssd-web\n"
+    },
+    {
+      "title": "Describe the Pods",
+      "what": "The template is the blueprint for each Pod. It gives each Pod the selector’s label.",
+      "why": "The template labels must match the selector, as in every Deployment.",
+      "ifRemoved": "The Deployment would have nothing to create, so Kubernetes rejects it.",
+      "comment": "The blueprint for each Pod, with the label the selector looks for",
+      "term": "Pod template",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: ssd-web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: ssd-web\n  template:\n    metadata:\n      labels:\n        app: ssd-web\n"
+    },
+    {
+      "title": "Rules for choosing a node",
+      "what": "nodeAffinity lists rules about node labels. required… means the scheduler must follow them.",
+      "why": "IgnoredDuringExecution means Pods already running stay put if a node’s labels change later.",
+      "ifRemoved": "The Pods can run on any node.",
+      "comment": "The scheduler must follow these node rules when placing a Pod",
+      "term": "node affinity",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: ssd-web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: ssd-web\n  template:\n    metadata:\n      labels:\n        app: ssd-web\n    spec:\n      affinity:\n        nodeAffinity:\n          requiredDuringSchedulingIgnoredDuringExecution:\n            nodeSelectorTerms:\n"
+    },
+    {
+      "title": "Only SSD nodes",
+      "what": "The rule matches nodes whose disktype label is In the list: ssd.",
+      "why": "Labels describe nodes, such as disk type or zone. The rule picks nodes by them.",
+      "ifRemoved": "Kubernetes rejects the Deployment, because the rule list cannot be empty.",
+      "comment": "Only nodes labelled disktype=ssd",
+      "term": "label",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: ssd-web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: ssd-web\n  template:\n    metadata:\n      labels:\n        app: ssd-web\n    spec:\n      affinity:\n        nodeAffinity:\n          requiredDuringSchedulingIgnoredDuringExecution:\n            nodeSelectorTerms:\n              - matchExpressions:\n                  - key: disktype\n                    operator: In\n                    values:\n                      - ssd\n"
+    },
+    {
+      "title": "What should run?",
+      "what": "Each Pod runs one nginx container. This block makes the file ready.",
+      "why": "Until a node has the label, the Pods wait in Pending.",
+      "ifRemoved": "Kubernetes rejects the Deployment, because its Pods would have nothing to run.",
+      "comment": "The container each Pod runs",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: ssd-web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: ssd-web\n  template:\n    metadata:\n      labels:\n        app: ssd-web\n    spec:\n      affinity:\n        nodeAffinity:\n          requiredDuringSchedulingIgnoredDuringExecution:\n            nodeSelectorTerms:\n              - matchExpressions:\n                  - key: disktype\n                    operator: In\n                    values:\n                      - ssd\n      containers:\n        - name: web\n          image: nginx:1.30.4\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version that define this kind. Deployments are in apps/v1.",
+    "kind": "The type of object to create. A Deployment keeps identical Pods running.",
+    "metadata": "Details that identify the object, such as its name.",
+    "metadata.name": "The Deployment’s name. Its Pods get names that start with it.",
+    "spec": "The desired state of the Deployment.",
+    "spec.replicas": "How many Pods to keep running.",
+    "spec.selector": "Which Pods this Deployment manages. It cannot change after creation.",
+    "spec.selector.matchLabels": "Pods must have all of these labels to be managed by this Deployment.",
+    "spec.selector.matchLabels.app": "Match Pods whose app label is ssd-web.",
+    "spec.template": "The Pod template: the blueprint for every Pod this Deployment creates.",
+    "spec.template.metadata": "Details given to every Pod created from the template.",
+    "spec.template.metadata.labels": "Labels given to every Pod. They must match the selector.",
+    "spec.template.metadata.labels.app": "Every Pod gets the label app: ssd-web, so the selector finds it.",
+    "spec.template.spec": "What each Pod runs. This is the same spec as in a Pod file.",
+    "spec.template.spec.containers": "The containers in each Pod. Each list item starts with a dash.",
+    "spec.template.spec.containers[].name": "The container’s name. It must be unique within the Pod.",
+    "spec.template.spec.containers[].image": "The nginx web server, pinned to a version.",
+    "spec.template.spec.affinity": "Rules that attract Pods to nodes, or keep them near or apart from other Pods.",
+    "spec.template.spec.affinity.nodeAffinity": "Rules about which nodes the Pods may run on, based on node labels.",
+    "spec.template.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution": "Hard rules: a Pod waits in Pending until a node matches. Running Pods are never moved.",
+    "spec.template.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms": "A list of choices. A node that matches any one of them is allowed.",
+    "spec.template.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[].matchExpressions": "Conditions a node must meet. A node must match all of them.",
+    "spec.template.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[].matchExpressions[].key": "The node label to look at: disktype.",
+    "spec.template.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[].matchExpressions[].operator": "In: the label’s value must be one of the values below. NotIn and Exists also work.",
+    "spec.template.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[].matchExpressions[].values": "The allowed values for the label.",
+    "spec.template.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[].matchExpressions[].values[]": "ssd: only nodes with disktype=ssd match."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f node-affinity.yaml",
+      "result": "Prints deployment.apps/ssd-web created.",
+      "check": {
+        "expect": [
+          "deployment.apps/ssd-web created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get pods -l app=ssd-web",
+      "result": "Both Pods show Pending. No node has the disktype=ssd label yet.",
+      "check": {
+        "pattern": "ssd-web-\\S+\\s+0/1\\s+Pending[\\s\\S]*ssd-web-\\S+\\s+0/1\\s+Pending"
+      }
+    },
+    {
+      "command": "kubectl get events --field-selector reason=FailedScheduling",
+      "result": "Each Pod’s event says the nodes didn’t match Pod’s node affinity/selector.",
+      "check": {
+        "expect": [
+          "didn't match Pod's node affinity/selector"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get nodes",
+      "result": "Lists the three nodes. Pick one name for the next commands.",
+      "check": {
+        "pattern": "Ready[\\s\\S]*Ready[\\s\\S]*Ready"
+      }
+    },
+    {
+      "command": "kubectl label node <node> disktype=ssd",
+      "result": "Prints node/<node> labeled.",
+      "check": {
+        "run": "kubectl label node $(kubectl get nodes -o jsonpath='{.items[0].metadata.name}') disktype=ssd",
+        "expect": [
+          "labeled"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get pods -l app=ssd-web -o wide",
+      "result": "Both Pods are Running, and the NODE column shows the node you labelled.",
+      "check": {
+        "run": "kubectl get pods -l app=ssd-web --field-selector spec.nodeName=$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}'),status.phase=Running -o name",
+        "lines": 2
+      }
+    },
+    {
+      "command": "kubectl label node <node> disktype-",
+      "result": "The dash removes the label. Prints node/<node> unlabeled.",
+      "check": {
+        "run": "kubectl label node $(kubectl get nodes -o jsonpath='{.items[0].metadata.name}') disktype-",
+        "expect": [
+          "unlabeled"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get pods -l app=ssd-web",
+      "result": "Both Pods keep running. The rule is only checked when a Pod is placed.",
+      "check": {
+        "pattern": "ssd-web-\\S+\\s+1/1\\s+Running[\\s\\S]*ssd-web-\\S+\\s+1/1\\s+Running"
+      }
+    },
+    {
+      "command": "kubectl delete -f node-affinity.yaml",
+      "result": "Removes the Deployment and its Pods.",
+      "check": {
+        "expect": [
+          "deployment.apps \"ssd-web\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "No node has the label disktype=ssd. What happens to the Pods?",
+        "answers": [
+          "They run on any node",
+          "They wait in Pending",
+          "Kubernetes rejects the file"
+        ],
+        "correct": 1,
+        "explain": "A required rule is never relaxed. The Pods wait until a node matches.",
+        "line": 20
+      },
+      {
+        "question": "You remove the label from the node the Pods run on. What happens?",
+        "answers": [
+          "The Pods are stopped at once",
+          "The Pods keep running there",
+          "The Pods move to another node"
+        ],
+        "correct": 1,
+        "explain": "IgnoredDuringExecution: the rule only counts when a Pod is placed.",
+        "line": 17
+      },
+      {
+        "question": "Which operator would keep the Pods off SSD nodes instead?",
+        "answers": [
+          "NotIn",
+          "Exists",
+          "Gt"
+        ],
+        "correct": 0,
+        "explain": "NotIn allows any node whose label is not in the list.",
+        "line": 21
+      }
+    ],
+    "fix": {
+      "line": 21,
+      "text": "                    operator: in",
+      "source": "apply",
+      "message": "The Deployment \"ssd-web\" is invalid: spec.template.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[0].matchExpressions[0].operator: Invalid value: \"in\": not a valid selector operator",
+      "explain": "Operators are case-sensitive. Kubernetes knows In, but not in.",
+      "fix": "Write the operator with a capital I: In."
+    }
+  },
+  "sources": [
+    {
+      "title": "Assigning Pods to Nodes",
+      "url": "https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/"
+    },
+    {
+      "title": "Assign Pods to Nodes using Node Affinity",
+      "url": "https://kubernetes.io/docs/tasks/configure-pod-container/assign-pods-nodes-using-node-affinity/"
+    }
+  ]
+}

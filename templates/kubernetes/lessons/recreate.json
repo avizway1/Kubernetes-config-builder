@@ -1,0 +1,207 @@
+{
+  "id": "recreate",
+  "kind": "Deployment",
+  "filename": "recreate.yaml",
+  "finishedAt": 5,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "A Deployment keeps identical Pods running. It comes from the apps/v1 API.",
+      "why": "This one replaces all its Pods at once when the template changes.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create: a Deployment, from the apps/v1 API",
+      "term": "Deployment",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "This Deployment is called recreate-web.",
+      "why": "You use the name to watch its updates.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A name to find the Deployment",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: recreate-web\n"
+    },
+    {
+      "title": "Four copies and their label",
+      "what": "Keep four Pods running, and manage the Pods labelled app: recreate-web.",
+      "why": "Four copies make it easy to see them all stop together.",
+      "ifRemoved": "Kubernetes rejects the file, because apps/v1 Deployments must have a selector.",
+      "comment": "Four copies of the Pods that carry this label",
+      "term": "replica",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: recreate-web\nspec:\n  replicas: 4\n  selector:\n    matchLabels:\n      app: recreate-web\n"
+    },
+    {
+      "title": "Describe the Pods",
+      "what": "The template is the blueprint for each Pod. Changing it starts an update.",
+      "why": "The update strategy decides how old Pods give way to new ones.",
+      "ifRemoved": "The Deployment would have nothing to create, so Kubernetes rejects it.",
+      "comment": "The blueprint for each Pod, with the label the selector looks for",
+      "term": "Pod template",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: recreate-web\nspec:\n  replicas: 4\n  selector:\n    matchLabels:\n      app: recreate-web\n  template:\n    metadata:\n      labels:\n        app: recreate-web\n"
+    },
+    {
+      "title": "A page that shows its version",
+      "what": "busybox writes a page saying version, then serves it on port 80.",
+      "why": "Reading the page shows which version a Pod runs.",
+      "ifRemoved": "Kubernetes rejects the Deployment, because its Pods would have nothing to run.",
+      "comment": "A small web server that shows its version",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: recreate-web\nspec:\n  replicas: 4\n  selector:\n    matchLabels:\n      app: recreate-web\n  template:\n    metadata:\n      labels:\n        app: recreate-web\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo version $VERSION > /www/index.html && exec httpd -f -p 80 -h /www\"]\n"
+    },
+    {
+      "title": "The version number",
+      "what": "VERSION is 1, and the command writes it into the page. This block makes the file ready.",
+      "why": "Changing VERSION changes the template, so it starts an update.",
+      "ifRemoved": "The page says just version, with no number.",
+      "comment": "Version 1 of the app",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: recreate-web\nspec:\n  replicas: 4\n  selector:\n    matchLabels:\n      app: recreate-web\n  template:\n    metadata:\n      labels:\n        app: recreate-web\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo version $VERSION > /www/index.html && exec httpd -f -p 80 -h /www\"]\n          env:\n            - name: VERSION\n              value: \"1\"\n"
+    },
+    {
+      "title": "Stop, then start",
+      "what": "Recreate stops every old Pod before starting any new one.",
+      "why": "Use it when two versions must never run together, such as an app that changes a database format.",
+      "ifRemoved": "Kubernetes uses a rolling update, so old and new Pods run side by side for a while.",
+      "comment": "Stop all old Pods before starting new ones",
+      "term": "Recreate",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: recreate-web\nspec:\n  replicas: 4\n  strategy:\n    type: Recreate\n  selector:\n    matchLabels:\n      app: recreate-web\n  template:\n    metadata:\n      labels:\n        app: recreate-web\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo version $VERSION > /www/index.html && exec httpd -f -p 80 -h /www\"]\n          env:\n            - name: VERSION\n              value: \"1\"\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version that define this kind. Deployments are in apps/v1.",
+    "kind": "The type of object to create. A Deployment keeps identical Pods running.",
+    "metadata": "Details that identify the object, such as its name.",
+    "metadata.name": "The Deployment’s name. Its Pods get names that start with it.",
+    "spec": "The desired state of the Deployment.",
+    "spec.replicas": "How many Pods to keep running: four.",
+    "spec.selector": "Which Pods this Deployment manages. It cannot change after creation.",
+    "spec.selector.matchLabels": "Pods must have all of these labels to be managed by this Deployment.",
+    "spec.selector.matchLabels.app": "Match Pods whose app label is recreate-web.",
+    "spec.template": "The Pod template: the blueprint for every Pod this Deployment creates.",
+    "spec.template.metadata": "Details given to every Pod created from the template.",
+    "spec.template.metadata.labels": "Labels given to every Pod. They must match the selector.",
+    "spec.template.metadata.labels.app": "Every Pod gets the label app: recreate-web, so the selector finds it.",
+    "spec.template.spec": "What each Pod runs. This is the same spec as in a Pod file.",
+    "spec.template.spec.containers": "The containers in each Pod. Each list item starts with a dash.",
+    "spec.template.spec.containers[].name": "The container’s name. It must be unique within the Pod.",
+    "spec.template.spec.containers[].image": "A tiny image with basic shell tools, pinned to a version.",
+    "spec.template.spec.containers[].command": "Write a page saying version and $VERSION, then serve it on port 80.",
+    "spec.strategy": "How the Deployment replaces old Pods with new ones when the template changes.",
+    "spec.template.spec.containers[].env": "Environment variables for the container.",
+    "spec.template.spec.containers[].env[].name": "VERSION, which the command writes into the page.",
+    "spec.template.spec.containers[].env[].value": "Version 1. Quotes keep the number as text, as env values must be.",
+    "spec.strategy.type": "Recreate: stop all old Pods, then start the new ones. The app is down in between."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f recreate.yaml",
+      "result": "Prints deployment.apps/recreate-web created.",
+      "check": {
+        "expect": [
+          "deployment.apps/recreate-web created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl rollout status deployment/recreate-web",
+      "result": "Prints successfully rolled out once all four Pods are running.",
+      "check": {
+        "expect": [
+          "deployment \"recreate-web\" successfully rolled out"
+        ]
+      }
+    },
+    {
+      "command": "kubectl set env deployment/recreate-web VERSION=2",
+      "result": "Changes the template, which starts the update.",
+      "check": {
+        "expect": [
+          "deployment.apps/recreate-web env updated"
+        ]
+      }
+    },
+    {
+      "command": "kubectl rollout status deployment/recreate-web",
+      "result": "Waits about 30 seconds while the old Pods stop, then the new ones start. No Pod serves meanwhile.",
+      "check": {
+        "expect": [
+          "deployment \"recreate-web\" successfully rolled out"
+        ]
+      }
+    },
+    {
+      "command": "kubectl describe deployment recreate-web",
+      "result": "Events show the old set scaled from 4 to 0, then the new set from 0 to 4.",
+      "check": {
+        "pattern": "Scaled down replica set recreate-web-\\S+ from 4 to 0[\\s\\S]*Scaled up replica set recreate-web-\\S+ from 0 to 4"
+      }
+    },
+    {
+      "command": "kubectl exec deployment/recreate-web -- cat /www/index.html",
+      "result": "Prints version 2.",
+      "check": {
+        "expect": [
+          "version 2"
+        ]
+      }
+    },
+    {
+      "command": "kubectl delete -f recreate.yaml",
+      "result": "Removes the Deployment and its Pods.",
+      "check": {
+        "expect": [
+          "deployment.apps \"recreate-web\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "During an update, how many Pods serve the page?",
+        "answers": [
+          "Always four",
+          "None for a while",
+          "Five"
+        ],
+        "correct": 1,
+        "explain": "All old Pods stop before any new one starts. The app is down in between.",
+        "line": 8
+      },
+      {
+        "question": "When is Recreate the right choice?",
+        "answers": [
+          "When two versions must never run at the same time",
+          "When you want no downtime",
+          "When you have many replicas"
+        ],
+        "correct": 0,
+        "explain": "Recreate trades downtime for never mixing versions.",
+        "line": 8
+      },
+      {
+        "question": "Why did the old Pods take about 30 seconds to stop?",
+        "answers": [
+          "Recreate always waits 30 seconds",
+          "busybox’s web server ignores the stop signal, so the grace period runs out",
+          "The new image was downloading"
+        ],
+        "correct": 1,
+        "explain": "The default grace period is 30 seconds, as the timing lesson showed.",
+        "line": 20
+      }
+    ],
+    "fix": {
+      "line": 8,
+      "text": "    type: recreate",
+      "source": "apply",
+      "message": "The Deployment \"recreate-web\" is invalid: spec.strategy: Unsupported value: {\"Type\":\"recreate\",\"RollingUpdate\":null}: supported values: \"Recreate\", \"RollingUpdate\"",
+      "explain": "Strategy names are case-sensitive. Kubernetes knows Recreate and RollingUpdate only.",
+      "fix": "Write the strategy with a capital R: Recreate."
+    }
+  },
+  "sources": [
+    {
+      "title": "Deployments: strategy",
+      "url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/"
+    }
+  ]
+}

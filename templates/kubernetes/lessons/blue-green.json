@@ -1,0 +1,242 @@
+{
+  "id": "blue-green",
+  "kind": "Deployment",
+  "filename": "blue-green.yaml",
+  "finishedAt": 10,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "The first object is a Deployment for blue, the version running now. It comes from apps/v1.",
+      "why": "Blue-green runs the new version, green, beside blue. Then one change moves all traffic.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create first: the blue Deployment",
+      "term": "blue-green",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\n"
+    },
+    {
+      "title": "Name the blue copy",
+      "what": "This Deployment is called shop-blue.",
+      "why": "Each version gets its own Deployment, so both can run at once.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "The Deployment for the blue version",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: shop-blue\n"
+    },
+    {
+      "title": "Which Pods are blue?",
+      "what": "The selector manages Pods labelled app: shop and version: blue.",
+      "why": "Both versions share app: shop. The version label tells them apart.",
+      "ifRemoved": "Kubernetes rejects the file, because apps/v1 Deployments must have a selector.",
+      "comment": "Manage Pods that are shop and blue",
+      "term": "label",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: shop-blue\nspec:\n  selector:\n    matchLabels:\n      app: shop\n      version: blue\n"
+    },
+    {
+      "title": "Describe the blue Pods",
+      "what": "Each Pod gets both labels: app: shop and version: blue.",
+      "why": "The Service looks for these labels to decide where traffic goes.",
+      "ifRemoved": "The Deployment would have nothing to create, so Kubernetes rejects it.",
+      "comment": "Label each Pod as shop and blue",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: shop-blue\nspec:\n  selector:\n    matchLabels:\n      app: shop\n      version: blue\n  template:\n    metadata:\n      labels:\n        app: shop\n        version: blue\n"
+    },
+    {
+      "title": "A page that says blue",
+      "what": "busybox writes a page saying blue, then serves it on port 80.",
+      "why": "Fetching the page shows which version answered.",
+      "ifRemoved": "Kubernetes rejects the Deployment, because its Pods would have nothing to run.",
+      "comment": "A small web server that answers blue",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: shop-blue\nspec:\n  selector:\n    matchLabels:\n      app: shop\n      version: blue\n  template:\n    metadata:\n      labels:\n        app: shop\n        version: blue\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo blue > /www/index.html && exec httpd -f -p 80 -h /www\"]\n"
+    },
+    {
+      "title": "Add the Service",
+      "what": "Three dashes start a second object: a Service called shop.",
+      "why": "Clients always use the name shop. They never need to know which version answers.",
+      "ifRemoved": "Clients would have to find the blue Pods themselves.",
+      "comment": "A second object: the Service clients use",
+      "term": "Service",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: shop-blue\nspec:\n  selector:\n    matchLabels:\n      app: shop\n      version: blue\n  template:\n    metadata:\n      labels:\n        app: shop\n        version: blue\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo blue > /www/index.html && exec httpd -f -p 80 -h /www\"]\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: shop\n"
+    },
+    {
+      "title": "Send traffic to blue",
+      "what": "The selector sends traffic only to Pods that are shop and blue.",
+      "why": "Changing version here from blue to green is the whole switch.",
+      "ifRemoved": "Kubernetes rejects the Service, because it must say which port to listen on.",
+      "comment": "Traffic goes to blue",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: shop-blue\nspec:\n  selector:\n    matchLabels:\n      app: shop\n      version: blue\n  template:\n    metadata:\n      labels:\n        app: shop\n        version: blue\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo blue > /www/index.html && exec httpd -f -p 80 -h /www\"]\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: shop\nspec:\n  selector:\n    app: shop\n    version: blue\n  ports:\n    - port: 80\n"
+    },
+    {
+      "title": "Add the green copy",
+      "what": "Three dashes start a third object: the Deployment for green, the new version.",
+      "why": "Green starts beside blue and gets no traffic until the switch.",
+      "ifRemoved": "There is no new version to switch to.",
+      "comment": "A third object: the green Deployment",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: shop-blue\nspec:\n  selector:\n    matchLabels:\n      app: shop\n      version: blue\n  template:\n    metadata:\n      labels:\n        app: shop\n        version: blue\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo blue > /www/index.html && exec httpd -f -p 80 -h /www\"]\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: shop\nspec:\n  selector:\n    app: shop\n    version: blue\n  ports:\n    - port: 80\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: shop-green\n"
+    },
+    {
+      "title": "Which Pods are green?",
+      "what": "The selector manages Pods labelled app: shop and version: green.",
+      "why": "Same app, different version. The two Deployments never manage each other’s Pods.",
+      "ifRemoved": "Kubernetes rejects the file, because apps/v1 Deployments must have a selector.",
+      "comment": "Manage Pods that are shop and green",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: shop-blue\nspec:\n  selector:\n    matchLabels:\n      app: shop\n      version: blue\n  template:\n    metadata:\n      labels:\n        app: shop\n        version: blue\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo blue > /www/index.html && exec httpd -f -p 80 -h /www\"]\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: shop\nspec:\n  selector:\n    app: shop\n    version: blue\n  ports:\n    - port: 80\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: shop-green\nspec:\n  selector:\n    matchLabels:\n      app: shop\n      version: green\n"
+    },
+    {
+      "title": "Describe the green Pods",
+      "what": "Each green Pod gets app: shop and version: green.",
+      "why": "The Service still says blue, so green Pods receive no traffic yet.",
+      "ifRemoved": "The Deployment would have nothing to create, so Kubernetes rejects it.",
+      "comment": "Label each Pod as shop and green",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: shop-blue\nspec:\n  selector:\n    matchLabels:\n      app: shop\n      version: blue\n  template:\n    metadata:\n      labels:\n        app: shop\n        version: blue\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo blue > /www/index.html && exec httpd -f -p 80 -h /www\"]\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: shop\nspec:\n  selector:\n    app: shop\n    version: blue\n  ports:\n    - port: 80\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: shop-green\nspec:\n  selector:\n    matchLabels:\n      app: shop\n      version: green\n  template:\n    metadata:\n      labels:\n        app: shop\n        version: green\n"
+    },
+    {
+      "title": "A page that says green",
+      "what": "busybox writes a page saying green. This block makes the file ready.",
+      "why": "Green can be tested before users reach it. If it has a problem, blue keeps serving.",
+      "ifRemoved": "Kubernetes rejects the Deployment, because its Pods would have nothing to run.",
+      "comment": "A small web server that answers green",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: shop-blue\nspec:\n  selector:\n    matchLabels:\n      app: shop\n      version: blue\n  template:\n    metadata:\n      labels:\n        app: shop\n        version: blue\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo blue > /www/index.html && exec httpd -f -p 80 -h /www\"]\n---\napiVersion: v1\nkind: Service\nmetadata:\n  name: shop\nspec:\n  selector:\n    app: shop\n    version: blue\n  ports:\n    - port: 80\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: shop-green\nspec:\n  selector:\n    matchLabels:\n      app: shop\n      version: green\n  template:\n    metadata:\n      labels:\n        app: shop\n        version: green\n    spec:\n      containers:\n        - name: web\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"mkdir -p /www && echo green > /www/index.html && exec httpd -f -p 80 -h /www\"]\n"
+    }
+  ],
+  "notes": {
+    "---": "Three dashes separate objects. One file can hold several objects.",
+    "apiVersion": "The API version. Deployments are in apps/v1. Services are in the core v1 API.",
+    "Deployment:kind": "The type of object to create. A Deployment keeps identical Pods running.",
+    "Service:kind": "The type of object to create. A Service sends traffic to Pods with chosen labels.",
+    "metadata": "Details that identify the object, such as its name.",
+    "Deployment:metadata.name": "The Deployment’s name. Its Pods get names that start with it.",
+    "Service:metadata.name": "The Service name. Clients inside the cluster use http://shop.",
+    "Deployment:spec": "The desired state of this Deployment.",
+    "Service:spec": "The desired state: which Pods get traffic, on which port.",
+    "spec.selector": "Which Pods this Deployment manages. It cannot change after creation.",
+    "Service:spec.selector": "Pods must have all of these labels to receive traffic.",
+    "spec.selector.matchLabels": "Pods must have all of these labels to be managed by this Deployment.",
+    "spec.selector.matchLabels.app": "The app label shared by both versions: shop.",
+    "spec.selector.matchLabels.version": "Which version this Deployment manages.",
+    "spec.template": "The Pod template: the blueprint for every Pod this Deployment creates.",
+    "spec.template.metadata": "Details given to every Pod created from the template.",
+    "spec.template.metadata.labels": "Labels given to every Pod. They must match the selector.",
+    "spec.template.metadata.labels.app": "Every Pod of both versions gets app: shop.",
+    "spec.template.metadata.labels.version": "Which version this Pod runs.",
+    "spec.template.spec": "What each Pod runs. This is the same spec as in a Pod file.",
+    "spec.template.spec.containers": "The containers in each Pod. Each list item starts with a dash.",
+    "spec.template.spec.containers[].name": "The container’s name. It must be unique within the Pod.",
+    "spec.template.spec.containers[].image": "A tiny image with basic shell tools, pinned to a version.",
+    "spec.template.spec.containers[].command": "Write a page naming the version, then serve it on port 80 with busybox’s web server.",
+    "spec.selector.app": "Send traffic to Pods labelled app: shop.",
+    "spec.ports": "The ports the Service listens on. Each list item is one port.",
+    "spec.ports[].port": "Listen on port 80 and forward to port 80 on the Pods.",
+    "spec.selector.version": "Send traffic only to blue Pods. Change it to green to switch."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f blue-green.yaml",
+      "result": "Creates shop-blue, the shop Service, and shop-green.",
+      "check": {
+        "expect": [
+          "deployment.apps/shop-blue created",
+          "service/shop created",
+          "deployment.apps/shop-green created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get deployments shop-blue shop-green",
+      "result": "Both versions show READY 1/1. Both run, but only one gets traffic.",
+      "check": {
+        "pattern": "shop-blue\\s+1/1[\\s\\S]*shop-green\\s+1/1"
+      }
+    },
+    {
+      "command": "kubectl run client --rm -i --restart=Never --image=busybox:1.37.0 -- wget -qO- http://shop",
+      "result": "Prints blue: the Service sends traffic to blue.",
+      "check": {
+        "expect": [
+          "blue"
+        ]
+      }
+    },
+    {
+      "command": "kubectl patch service shop -p '{\"spec\":{\"selector\":{\"version\":\"green\"}}}'",
+      "result": "Changes the Service’s version label to green. In real work, edit the file and apply it.",
+      "check": {
+        "expect": [
+          "service/shop patched"
+        ]
+      }
+    },
+    {
+      "command": "kubectl run client --rm -i --restart=Never --image=busybox:1.37.0 -- wget -qO- http://shop",
+      "result": "Prints green. Every request now goes to green. Patch back to blue to undo.",
+      "check": {
+        "expect": [
+          "green"
+        ]
+      }
+    },
+    {
+      "command": "kubectl delete -f blue-green.yaml",
+      "result": "Removes both Deployments and the Service.",
+      "check": {
+        "expect": [
+          "deployment.apps \"shop-blue\" deleted",
+          "service \"shop\" deleted",
+          "deployment.apps \"shop-green\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "Which line decides whether blue or green gets the traffic?",
+        "answers": [
+          "The Service’s version selector",
+          "The Deployment names",
+          "The container images"
+        ],
+        "correct": 0,
+        "explain": "The Service sends traffic to Pods with all its selector labels. Changing version moves every request.",
+        "line": 28
+      },
+      {
+        "question": "Green has a bug after the switch. What is the fastest way back?",
+        "answers": [
+          "Delete green",
+          "Change the Service selector back to blue",
+          "Scale blue to zero"
+        ],
+        "correct": 1,
+        "explain": "Blue is still running, so switching back is one change and takes effect at once.",
+        "line": 28
+      },
+      {
+        "question": "What is the cost of blue-green?",
+        "answers": [
+          "Two full copies of the app run at the same time",
+          "Some users see errors",
+          "Updates take longer"
+        ],
+        "correct": 0,
+        "explain": "Both versions run side by side, so you need room for both.",
+        "line": 35
+      }
+    ],
+    "fix": {
+      "line": 35,
+      "text": "  name: shop-blue",
+      "source": "apply",
+      "message": "The Deployment \"shop-blue\" is invalid: spec.selector: Invalid value: {\"matchLabels\":{\"app\":\"shop\",\"version\":\"green\"}}: field is immutable",
+      "explain": "The green copy kept blue’s name, a copy-paste slip. Kubernetes tries to turn shop-blue into green, and a selector cannot change.",
+      "fix": "Give the green Deployment its own name: shop-green."
+    }
+  },
+  "sources": [
+    {
+      "title": "Labels and Selectors",
+      "url": "https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/"
+    },
+    {
+      "title": "Service",
+      "url": "https://kubernetes.io/docs/concepts/services-networking/service/"
+    }
+  ]
+}

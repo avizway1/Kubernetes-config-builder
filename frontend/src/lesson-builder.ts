@@ -19,6 +19,14 @@ import resourceQuotaLesson from '../../templates/kubernetes/lessons/resource-quo
 import probesLesson from '../../templates/kubernetes/lessons/probes.json' with { type: 'json' };
 import timingLesson from '../../templates/kubernetes/lessons/timing.json' with { type: 'json' };
 import podDisruptionBudgetLesson from '../../templates/kubernetes/lessons/pod-disruption-budget.json' with { type: 'json' };
+import nodeAffinityLesson from '../../templates/kubernetes/lessons/node-affinity.json' with { type: 'json' };
+import podAntiAffinityLesson from '../../templates/kubernetes/lessons/pod-anti-affinity.json' with { type: 'json' };
+import taintsLesson from '../../templates/kubernetes/lessons/taints.json' with { type: 'json' };
+import rollingUpdateLesson from '../../templates/kubernetes/lessons/rolling-update.json' with { type: 'json' };
+import recreateLesson from '../../templates/kubernetes/lessons/recreate.json' with { type: 'json' };
+import blueGreenLesson from '../../templates/kubernetes/lessons/blue-green.json' with { type: 'json' };
+import canaryLesson from '../../templates/kubernetes/lessons/canary.json' with { type: 'json' };
+import autoscalingLesson from '../../templates/kubernetes/lessons/autoscaling.json' with { type: 'json' };
 import glossaryData from '../../templates/kubernetes/glossary.json' with { type: 'json' };
 
 // A broken copy of a block's file, with the message a YAML reader prints for it. Line numbers count from 1.
@@ -74,6 +82,8 @@ export type LessonContent = {
   filename: string;
   // Earlier lessons whose downloads Try it also applies, such as the Deployment a Service sends traffic to.
   uses?: string[];
+  // How many nodes Try it needs. Scheduling lessons need three, so learners add two worker nodes to the practice cluster.
+  nodes?: number;
   finishedAt: number;
   choices?: Record<string, LessonChoice>;
   blocks: LessonBlock[];
@@ -109,6 +119,14 @@ export const lessonContent: Record<string, LessonContent> = {
   probes: probesLesson as LessonContent,
   timing: timingLesson as LessonContent,
   'pod-disruption-budget': podDisruptionBudgetLesson as LessonContent,
+  'node-affinity': nodeAffinityLesson as LessonContent,
+  'pod-anti-affinity': podAntiAffinityLesson as LessonContent,
+  taints: taintsLesson as LessonContent,
+  'rolling-update': rollingUpdateLesson as LessonContent,
+  recreate: recreateLesson as LessonContent,
+  'blue-green': blueGreenLesson as LessonContent,
+  canary: canaryLesson as LessonContent,
+  autoscaling: autoscalingLesson as LessonContent,
 };
 
 export const glossary: Record<string, string> = glossaryData;

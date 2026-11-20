@@ -413,3 +413,33 @@ test('Level 3 and 4 lessons start from the catalogue, and Fix it says which comm
     await browser.close();
   }
 });
+
+test('Level 5, 6, and 7 lessons start from the catalogue, and scheduling lessons say how to add nodes', { timeout: 30000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
+    page.setDefaultTimeout(8000);
+    await page.goto(`${appUrl}#learn`);
+    for (const title of ['Pick nodes by label', 'Spread copies apart', 'Keep Pods off some nodes', 'Rolling update', 'Stop, then start',
+      'Blue-green', 'Canary', 'Scale with load']) {
+      await page.getByRole('link', { name: `Start ${title}`, exact: true }).waitFor();
+    }
+    // A three-node lesson gives the command that adds two workers to the practice cluster from the start guide.
+    const addNodes = 'k3d node create worker --cluster practice --role agent --replicas 2 --image rancher/k3s:v1.37.2-k3s1 --wait';
+    await page.getByRole('link', { name: 'Start Pick nodes by label', exact: true }).click();
+    await page.getByRole('heading', { name: 'Pick nodes by label', level: 1 }).waitFor();
+    await page.getByRole('button', { name: 'Show whole file' }).click();
+    await page.locator('.lesson-nodes').getByText(addNodes, { exact: true }).waitFor();
+    await page.getByText('kubectl label node <node> disktype=ssd', { exact: true }).waitFor();
+
+    // Blue-green builds its second Deployment over several blocks, so Try it waits for the last one.
+    await page.goto(`${appUrl}#learn/blue-green`);
+    await page.getByRole('heading', { name: 'Blue-green', level: 1 }).waitFor();
+    await page.getByText(/Not finished yet\. Block 11/).waitFor();
+    await page.getByRole('button', { name: 'Show whole file' }).click();
+    await page.getByText('kubectl patch service shop', { exact: false }).first().waitFor();
+    assert.equal(await page.locator('.lesson-nodes').count(), 0, 'one-node lessons say nothing about adding nodes');
+  } finally {
+    await browser.close();
+  }
+});

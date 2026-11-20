@@ -21,6 +21,7 @@ NATIVE_SCHEMAS = (
     "cronjob-batch-v1",
     "daemonset-apps-v1",
     "deployment-apps-v1",
+    "horizontalpodautoscaler-autoscaling-v2",
     "job-batch-v1",
     "limitrange-v1",
     "namespace-v1",

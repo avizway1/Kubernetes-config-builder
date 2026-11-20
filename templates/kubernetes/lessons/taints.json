@@ -1,0 +1,225 @@
+{
+  "id": "taints",
+  "kind": "Pod",
+  "filename": "taints.yaml",
+  "nodes": 3,
+  "finishedAt": 2,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "This file runs a Pod meant for a node reserved for databases. It comes from the core v1 API.",
+      "why": "A taint on a node keeps ordinary Pods off it. Only Pods that tolerate the taint may run there.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create: a Pod, from the core v1 API",
+      "term": "taint",
+      "yaml": "apiVersion: v1\nkind: Pod\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "This Pod is called db-pod.",
+      "why": "You use the name to see which node it landed on.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A name to find the Pod",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: db-pod\n"
+    },
+    {
+      "title": "What should run?",
+      "what": "A busybox container that sleeps stands in for a database. This block makes the file ready.",
+      "why": "A real database image is large. The lesson is about where the Pod runs, not what it runs.",
+      "ifRemoved": "Without containers, Kubernetes rejects the Pod.",
+      "comment": "A stand-in for a database: a container that sleeps",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: db-pod\nspec:\n  containers:\n    - name: db\n      image: busybox:1.37.0\n      command: [\"sh\", \"-c\", \"sleep 3600\"]\n"
+    },
+    {
+      "title": "Go to database nodes",
+      "what": "nodeSelector sends the Pod only to nodes labelled role=db.",
+      "why": "A toleration only lets a Pod onto a tainted node. The label is what draws it there.",
+      "ifRemoved": "The Pod can land on any node it tolerates, including ordinary ones.",
+      "comment": "Run only on nodes labelled role=db",
+      "term": "label",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: db-pod\nspec:\n  nodeSelector:\n    role: db\n  containers:\n    - name: db\n      image: busybox:1.37.0\n      command: [\"sh\", \"-c\", \"sleep 3600\"]\n"
+    },
+    {
+      "title": "Tolerate the taint",
+      "what": "The toleration matches the taint role=db with effect NoSchedule.",
+      "why": "Without it, the taint would keep this Pod off the database node too.",
+      "ifRemoved": "The Pod waits in Pending: the only role=db node has a taint it does not tolerate.",
+      "comment": "Allowed onto nodes tainted role=db:NoSchedule",
+      "term": "toleration",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: db-pod\nspec:\n  nodeSelector:\n    role: db\n  tolerations:\n    - key: role\n      operator: Equal\n      value: db\n      effect: NoSchedule\n  containers:\n    - name: db\n      image: busybox:1.37.0\n      command: [\"sh\", \"-c\", \"sleep 3600\"]\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version that define this kind. Pods are in the core v1 API.",
+    "kind": "The type of object to create. A Pod runs one or more containers together.",
+    "metadata": "Details that identify the object, such as its name.",
+    "metadata.name": "The Pod’s name. kubectl get pod db-pod -o wide shows its node.",
+    "spec": "The desired state: what to run, and where.",
+    "spec.nodeSelector": "Node labels the Pod requires. A simpler form of node affinity.",
+    "spec.nodeSelector.role": "Only nodes labelled role=db.",
+    "spec.tolerations": "Taints this Pod accepts. Each list item matches one taint.",
+    "spec.tolerations[].key": "The taint’s key: role.",
+    "spec.tolerations[].operator": "Equal: the taint’s value must match value below. Exists matches any value.",
+    "spec.tolerations[].value": "The taint’s value: db.",
+    "spec.tolerations[].effect": "NoSchedule: the taint blocks new Pods that do not tolerate it.",
+    "spec.containers": "The containers in this Pod. Each list item starts with a dash.",
+    "spec.containers[].name": "The container’s name. It must be unique within the Pod.",
+    "spec.containers[].image": "A tiny image with basic shell tools, pinned to a version.",
+    "spec.containers[].command": "Sleep for an hour, standing in for a database."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl get nodes",
+      "result": "Lists the three nodes. Pick one name to reserve for databases.",
+      "check": {
+        "pattern": "Ready[\\s\\S]*Ready[\\s\\S]*Ready"
+      }
+    },
+    {
+      "command": "kubectl label node <node> role=db",
+      "result": "Labels the node, so the Pod’s nodeSelector can find it.",
+      "check": {
+        "run": "kubectl label node $(kubectl get nodes -o jsonpath='{.items[0].metadata.name}') role=db",
+        "expect": [
+          "labeled"
+        ]
+      }
+    },
+    {
+      "command": "kubectl taint node <node> role=db:NoSchedule",
+      "result": "Prints node/<node> tainted. New Pods without a matching toleration now avoid it.",
+      "check": {
+        "run": "kubectl taint node $(kubectl get nodes -o jsonpath='{.items[0].metadata.name}') role=db:NoSchedule",
+        "expect": [
+          "tainted"
+        ]
+      }
+    },
+    {
+      "command": "kubectl apply -f taints.yaml",
+      "result": "Prints pod/db-pod created.",
+      "check": {
+        "expect": [
+          "pod/db-pod created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get pod db-pod -o wide",
+      "result": "db-pod is Running on the node you tainted.",
+      "check": {
+        "pattern": "db-pod\\s+1/1\\s+Running"
+      }
+    },
+    {
+      "command": "kubectl create deployment others --image=nginx:1.30.4 --replicas=4",
+      "result": "Starts four ordinary Pods, with no toleration.",
+      "check": {
+        "expect": [
+          "deployment.apps/others created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get pods -l app=others -o wide",
+      "result": "None of the four Pods is on the tainted node.",
+      "check": {
+        "run": "kubectl wait --for=condition=Available deployment/others --timeout=90s >/dev/null && kubectl get pods -l app=others --field-selector spec.nodeName=$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}') -o name",
+        "lines": 0
+      }
+    },
+    {
+      "command": "kubectl delete deployment others",
+      "result": "Removes the four ordinary Pods.",
+      "check": {
+        "expect": [
+          "deployment.apps \"others\" deleted"
+        ]
+      }
+    },
+    {
+      "command": "kubectl delete -f taints.yaml",
+      "result": "Removes db-pod. It takes up to 30 seconds, because sleep ignores the stop signal.",
+      "check": {
+        "expect": [
+          "pod \"db-pod\" deleted"
+        ]
+      }
+    },
+    {
+      "command": "kubectl taint node <node> role=db:NoSchedule-",
+      "result": "The dash removes the taint. Prints node/<node> untainted.",
+      "check": {
+        "run": "kubectl taint node $(kubectl get nodes -o jsonpath='{.items[0].metadata.name}') role=db:NoSchedule-",
+        "expect": [
+          "untainted"
+        ]
+      }
+    },
+    {
+      "command": "kubectl label node <node> role-",
+      "result": "Removes the label. Prints node/<node> unlabeled.",
+      "check": {
+        "run": "kubectl label node $(kubectl get nodes -o jsonpath='{.items[0].metadata.name}') role-",
+        "expect": [
+          "unlabeled"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "Does the toleration on its own send db-pod to the database node?",
+        "answers": [
+          "Yes, a toleration attracts the Pod",
+          "No, it only allows it. nodeSelector sends it there.",
+          "Only if the node has no label"
+        ],
+        "correct": 1,
+        "explain": "A toleration removes a barrier. The nodeSelector is what points the Pod at the node.",
+        "line": 8
+      },
+      {
+        "question": "An ordinary Pod without this toleration is created. Where can it run?",
+        "answers": [
+          "Only on the tainted node",
+          "On any node except the tainted one",
+          "Nowhere"
+        ],
+        "correct": 1,
+        "explain": "NoSchedule keeps new Pods off the tainted node unless they tolerate it.",
+        "line": 12
+      },
+      {
+        "question": "Which effect would also remove Pods already running on the node?",
+        "answers": [
+          "NoSchedule",
+          "PreferNoSchedule",
+          "NoExecute"
+        ],
+        "correct": 2,
+        "explain": "NoExecute evicts running Pods that do not tolerate it. NoSchedule only affects new Pods.",
+        "line": 12
+      }
+    ],
+    "fix": {
+      "line": 12,
+      "text": "      effect: NoSchedul",
+      "source": "apply",
+      "message": "The Pod \"db-pod\" is invalid: spec.tolerations[0].effect: Unsupported value: \"NoSchedul\": supported values: \"NoSchedule\", \"PreferNoSchedule\", \"NoExecute\"",
+      "explain": "Kubernetes knows three effects. NoSchedul is a typo, so the toleration means nothing.",
+      "fix": "Spell the effect in full: NoSchedule."
+    }
+  },
+  "sources": [
+    {
+      "title": "Taints and Tolerations",
+      "url": "https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/"
+    },
+    {
+      "title": "nodeSelector",
+      "url": "https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector"
+    }
+  ]
+}

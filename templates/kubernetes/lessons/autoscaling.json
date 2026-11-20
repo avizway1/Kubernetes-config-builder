@@ -1,0 +1,251 @@
+{
+  "id": "autoscaling",
+  "kind": "HorizontalPodAutoscaler",
+  "filename": "autoscaling.yaml",
+  "finishedAt": 10,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "The first object is a Deployment, the app to scale. It comes from the apps/v1 API.",
+      "why": "A HorizontalPodAutoscaler, added later in the file, changes how many Pods it runs.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create first: the Deployment to scale",
+      "term": "Deployment",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "This Deployment is called busy-app.",
+      "why": "The autoscaler finds the Deployment by this name.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "The name the autoscaler looks for",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: busy-app\n"
+    },
+    {
+      "title": "No replicas field",
+      "what": "The selector manages Pods labelled app: busy-app. There is no replicas line.",
+      "why": "The autoscaler sets replicas. Leaving it out stops kubectl apply from undoing its changes.",
+      "ifRemoved": "Kubernetes rejects the file, because apps/v1 Deployments must have a selector.",
+      "comment": "Manage Pods labelled app: busy-app. The autoscaler sets the count.",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: busy-app\nspec:\n  selector:\n    matchLabels:\n      app: busy-app\n"
+    },
+    {
+      "title": "Describe the Pods",
+      "what": "The template is the blueprint for each Pod. It gives each Pod the selector’s label.",
+      "why": "New Pods the autoscaler adds come from this blueprint.",
+      "ifRemoved": "The Deployment would have nothing to create, so Kubernetes rejects it.",
+      "comment": "The blueprint for each Pod, with the label the selector looks for",
+      "term": "Pod template",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: busy-app\nspec:\n  selector:\n    matchLabels:\n      app: busy-app\n  template:\n    metadata:\n      labels:\n        app: busy-app\n"
+    },
+    {
+      "title": "An app you can make busy",
+      "what": "The container idles until a file called /tmp/busy exists. Then it uses all the CPU it may.",
+      "why": "It stands in for an app under heavy load, without needing real traffic.",
+      "ifRemoved": "Kubernetes rejects the Deployment, because its Pods would have nothing to run.",
+      "comment": "Idle, until /tmp/busy exists. Then use as much CPU as allowed.",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: busy-app\nspec:\n  selector:\n    matchLabels:\n      app: busy-app\n  template:\n    metadata:\n      labels:\n        app: busy-app\n    spec:\n      containers:\n        - name: app\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"while true; do if [ -f /tmp/busy ]; then :; else sleep 1; fi; done\"]\n"
+    },
+    {
+      "title": "Requests make scaling possible",
+      "what": "Each container requests 50m CPU and may use up to 100m.",
+      "why": "The autoscaler measures CPU as a percentage of the request. Without a request, it cannot compute one.",
+      "ifRemoved": "The autoscaler reports unknown CPU use and never scales.",
+      "comment": "Request 50m CPU. The autoscaler compares use with this.",
+      "term": "request",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: busy-app\nspec:\n  selector:\n    matchLabels:\n      app: busy-app\n  template:\n    metadata:\n      labels:\n        app: busy-app\n    spec:\n      containers:\n        - name: app\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"while true; do if [ -f /tmp/busy ]; then :; else sleep 1; fi; done\"]\n          resources:\n            requests:\n              cpu: 50m\n            limits:\n              cpu: 100m\n"
+    },
+    {
+      "title": "Add the autoscaler",
+      "what": "Three dashes start a second object: a HorizontalPodAutoscaler, from autoscaling/v2.",
+      "why": "kubectl autoscale deployment busy-app --cpu=50% --min=1 --max=3 is a shortcut that creates the same object.",
+      "ifRemoved": "The Deployment always runs one Pod.",
+      "comment": "A second object: the autoscaler",
+      "term": "HorizontalPodAutoscaler",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: busy-app\nspec:\n  selector:\n    matchLabels:\n      app: busy-app\n  template:\n    metadata:\n      labels:\n        app: busy-app\n    spec:\n      containers:\n        - name: app\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"while true; do if [ -f /tmp/busy ]; then :; else sleep 1; fi; done\"]\n          resources:\n            requests:\n              cpu: 50m\n            limits:\n              cpu: 100m\n---\napiVersion: autoscaling/v2\nkind: HorizontalPodAutoscaler\nmetadata:\n  name: busy-app\n"
+    },
+    {
+      "title": "What to scale",
+      "what": "scaleTargetRef names the Deployment to scale: busy-app, from apps/v1.",
+      "why": "One autoscaler controls one target.",
+      "ifRemoved": "Kubernetes rejects the autoscaler, because it must say what to scale.",
+      "comment": "Scale the busy-app Deployment",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: busy-app\nspec:\n  selector:\n    matchLabels:\n      app: busy-app\n  template:\n    metadata:\n      labels:\n        app: busy-app\n    spec:\n      containers:\n        - name: app\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"while true; do if [ -f /tmp/busy ]; then :; else sleep 1; fi; done\"]\n          resources:\n            requests:\n              cpu: 50m\n            limits:\n              cpu: 100m\n---\napiVersion: autoscaling/v2\nkind: HorizontalPodAutoscaler\nmetadata:\n  name: busy-app\nspec:\n  scaleTargetRef:\n    apiVersion: apps/v1\n    kind: Deployment\n    name: busy-app\n"
+    },
+    {
+      "title": "Measure CPU",
+      "what": "The autoscaler watches the cpu of the Pods, a Resource metric.",
+      "why": "metrics-server collects these numbers. K3s includes it; EKS needs the metrics-server add-on.",
+      "ifRemoved": "Kubernetes uses the default: CPU, aiming for 80% of the request.",
+      "comment": "Watch the Pods’ CPU use",
+      "term": "metrics-server",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: busy-app\nspec:\n  selector:\n    matchLabels:\n      app: busy-app\n  template:\n    metadata:\n      labels:\n        app: busy-app\n    spec:\n      containers:\n        - name: app\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"while true; do if [ -f /tmp/busy ]; then :; else sleep 1; fi; done\"]\n          resources:\n            requests:\n              cpu: 50m\n            limits:\n              cpu: 100m\n---\napiVersion: autoscaling/v2\nkind: HorizontalPodAutoscaler\nmetadata:\n  name: busy-app\nspec:\n  scaleTargetRef:\n    apiVersion: apps/v1\n    kind: Deployment\n    name: busy-app\n  metrics:\n    - type: Resource\n      resource:\n        name: cpu\n"
+    },
+    {
+      "title": "The target",
+      "what": "Aim for 50% average use: 25m of each Pod’s 50m request.",
+      "why": "Above the target, the autoscaler adds Pods. Below it, the autoscaler removes Pods.",
+      "ifRemoved": "Kubernetes rejects the autoscaler, because a utilization target needs a number.",
+      "comment": "Keep average CPU near 50% of the request",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: busy-app\nspec:\n  selector:\n    matchLabels:\n      app: busy-app\n  template:\n    metadata:\n      labels:\n        app: busy-app\n    spec:\n      containers:\n        - name: app\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"while true; do if [ -f /tmp/busy ]; then :; else sleep 1; fi; done\"]\n          resources:\n            requests:\n              cpu: 50m\n            limits:\n              cpu: 100m\n---\napiVersion: autoscaling/v2\nkind: HorizontalPodAutoscaler\nmetadata:\n  name: busy-app\nspec:\n  scaleTargetRef:\n    apiVersion: apps/v1\n    kind: Deployment\n    name: busy-app\n  metrics:\n    - type: Resource\n      resource:\n        name: cpu\n        target:\n          type: Utilization\n          averageUtilization: 50\n"
+    },
+    {
+      "title": "The limits",
+      "what": "Run at least 1 Pod and at most 3. This block makes the file ready.",
+      "why": "A maximum stops a runaway app from filling the cluster.",
+      "ifRemoved": "Kubernetes rejects the autoscaler, because maxReplicas is required.",
+      "comment": "Between 1 and 3 Pods",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: busy-app\nspec:\n  selector:\n    matchLabels:\n      app: busy-app\n  template:\n    metadata:\n      labels:\n        app: busy-app\n    spec:\n      containers:\n        - name: app\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"while true; do if [ -f /tmp/busy ]; then :; else sleep 1; fi; done\"]\n          resources:\n            requests:\n              cpu: 50m\n            limits:\n              cpu: 100m\n---\napiVersion: autoscaling/v2\nkind: HorizontalPodAutoscaler\nmetadata:\n  name: busy-app\nspec:\n  scaleTargetRef:\n    apiVersion: apps/v1\n    kind: Deployment\n    name: busy-app\n  minReplicas: 1\n  maxReplicas: 3\n  metrics:\n    - type: Resource\n      resource:\n        name: cpu\n        target:\n          type: Utilization\n          averageUtilization: 50\n"
+    }
+  ],
+  "notes": {
+    "---": "Three dashes separate objects. One file can hold several objects.",
+    "apiVersion": "The API group and version. Deployments are in apps/v1. Autoscalers are in autoscaling/v2.",
+    "Deployment:kind": "The type of object to create. A Deployment keeps identical Pods running.",
+    "HorizontalPodAutoscaler:kind": "The type of object to create. It changes a Deployment’s replicas to match load.",
+    "metadata": "Details that identify the object, such as its name.",
+    "Deployment:metadata.name": "The Deployment’s name. The autoscaler’s scaleTargetRef uses it.",
+    "HorizontalPodAutoscaler:metadata.name": "The autoscaler’s name, used with kubectl get hpa.",
+    "Deployment:spec": "The desired state of the Deployment. There is no replicas line: the autoscaler sets it.",
+    "HorizontalPodAutoscaler:spec": "The desired state: what to scale, between which counts, and on which measure.",
+    "spec.selector": "Which Pods this Deployment manages. It cannot change after creation.",
+    "spec.selector.matchLabels": "Pods must have all of these labels to be managed by this Deployment.",
+    "spec.selector.matchLabels.app": "Match Pods whose app label is busy-app.",
+    "spec.template": "The Pod template: the blueprint for every Pod this Deployment creates.",
+    "spec.template.metadata": "Details given to every Pod created from the template.",
+    "spec.template.metadata.labels": "Labels given to every Pod. They must match the selector.",
+    "spec.template.metadata.labels.app": "Every Pod gets the label app: busy-app, so the selector finds it.",
+    "spec.template.spec": "What each Pod runs. This is the same spec as in a Pod file.",
+    "spec.template.spec.containers": "The containers in each Pod. Each list item starts with a dash.",
+    "spec.template.spec.containers[].name": "The container’s name. It must be unique within the Pod.",
+    "spec.template.spec.containers[].image": "A tiny image with basic shell tools, pinned to a version.",
+    "spec.template.spec.containers[].command": "Sleep in a loop. Once /tmp/busy exists, loop without sleeping, using all allowed CPU.",
+    "spec.template.spec.containers[].resources": "The CPU this container asks for and may use.",
+    "spec.template.spec.containers[].resources.requests": "What the container is guaranteed. The autoscaler measures use against it.",
+    "spec.template.spec.containers[].resources.requests.cpu": "50m: five hundredths of a CPU core.",
+    "spec.template.spec.containers[].resources.limits": "The most the container may use.",
+    "spec.template.spec.containers[].resources.limits.cpu": "100m: twice the request, so a busy Pod shows 200%.",
+    "spec.scaleTargetRef": "The object to scale.",
+    "spec.scaleTargetRef.apiVersion": "The target’s API version: apps/v1.",
+    "spec.scaleTargetRef.kind": "The target’s kind: Deployment.",
+    "spec.scaleTargetRef.name": "The target’s name. It must match the Deployment exactly.",
+    "spec.minReplicas": "Never fewer than 1 Pod.",
+    "spec.maxReplicas": "Never more than 3 Pods, however busy.",
+    "spec.metrics": "What to measure. Each list item is one measure.",
+    "spec.metrics[].type": "Resource: a container resource such as CPU or memory, from metrics-server.",
+    "spec.metrics[].resource": "Which resource, and what to aim for.",
+    "spec.metrics[].resource.name": "cpu: measure CPU use.",
+    "spec.metrics[].resource.target": "The level to aim for.",
+    "spec.metrics[].resource.target.type": "Utilization: a percentage of each Pod’s request.",
+    "spec.metrics[].resource.target.averageUtilization": "Aim for 50% on average across the Pods."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f autoscaling.yaml",
+      "result": "Prints deployment.apps/busy-app created and horizontalpodautoscaler.autoscaling/busy-app created.",
+      "check": {
+        "expect": [
+          "deployment.apps/busy-app created",
+          "horizontalpodautoscaler.autoscaling/busy-app created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get hpa busy-app",
+      "result": "TARGETS shows cpu: <unknown>/50% for about a minute, then a low number such as 6%. REPLICAS is 1.",
+      "check": {
+        "pattern": "busy-app\\s+Deployment/busy-app\\s+cpu: \\d+%/50%\\s+1\\s+3\\s+1\\s"
+      }
+    },
+    {
+      "command": "kubectl exec deployment/busy-app -- touch /tmp/busy",
+      "result": "Prints nothing. The container now uses its full 100m CPU limit.",
+      "check": {
+        "lines": 0
+      }
+    },
+    {
+      "command": "kubectl get hpa busy-app",
+      "result": "Within about a minute, cpu climbs to around 200% and REPLICAS rises to 3, the maximum.",
+      "check": {
+        "pattern": "busy-app\\s+Deployment/busy-app\\s+cpu: \\d+%/50%\\s+1\\s+3\\s+3\\s"
+      }
+    },
+    {
+      "command": "kubectl describe hpa busy-app",
+      "result": "Events show New size: 3, because CPU use was above the target.",
+      "check": {
+        "expect": [
+          "New size: 3; reason: cpu resource utilization (percentage of request) above target"
+        ]
+      }
+    },
+    {
+      "command": "kubectl delete -f autoscaling.yaml",
+      "result": "Removes the Deployment and the autoscaler. Left running, it would wait 5 minutes before scaling down.",
+      "check": {
+        "expect": [
+          "deployment.apps \"busy-app\" deleted",
+          "horizontalpodautoscaler.autoscaling \"busy-app\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "A Pod uses 25m CPU. What utilization does the autoscaler see?",
+        "answers": [
+          "25%",
+          "50%",
+          "100%"
+        ],
+        "correct": 1,
+        "explain": "Utilization is use divided by the request: 25m of 50m is 50%.",
+        "line": 20
+      },
+      {
+        "question": "Why does the Deployment have no replicas line?",
+        "answers": [
+          "The autoscaler sets the count. A replicas line would reset it on every apply.",
+          "Deployments cannot have replicas",
+          "It defaults to three"
+        ],
+        "correct": 0,
+        "explain": "The Kubernetes docs advise leaving replicas out once an autoscaler manages a Deployment.",
+        "line": 5
+      },
+      {
+        "question": "The app stays very busy. How many Pods can run?",
+        "answers": [
+          "1",
+          "3",
+          "As many as the cluster fits"
+        ],
+        "correct": 1,
+        "explain": "maxReplicas caps the count, however high the CPU use climbs.",
+        "line": 34
+      }
+    ],
+    "fix": {
+      "line": 32,
+      "text": "    name: busy-ap",
+      "source": "command",
+      "command": "kubectl describe hpa busy-app",
+      "expect": "deployments\\.apps \"busy-ap\" not found",
+      "message": "the HPA controller was unable to get the target's current scale: deployments.apps \"busy-ap\" not found",
+      "explain": "scaleTargetRef names busy-ap, which does not exist. The autoscaler has nothing to scale.",
+      "fix": "Match the Deployment’s name exactly: busy-app."
+    }
+  },
+  "sources": [
+    {
+      "title": "Horizontal Pod Autoscaling",
+      "url": "https://kubernetes.io/docs/concepts/workloads/autoscaling/horizontal-pod-autoscale/"
+    },
+    {
+      "title": "HorizontalPodAutoscaler Walkthrough",
+      "url": "https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/"
+    }
+  ]
+}

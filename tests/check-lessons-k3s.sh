@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Create a fresh K3s cluster with k3d, apply every Anywhere lesson, check each Try it result, then delete the cluster.
+# Lessons run on one node, as on a new practice cluster. Then two worker nodes join for the lessons that need three.
 # Usage: tests/check-lessons-k3s.sh <1.35|1.36|1.37>   (run from the project root, with Docker running)
 set -euo pipefail
 
@@ -37,5 +38,11 @@ kubectl --kubeconfig "$kubeconfig" wait --for=condition=Ready nodes --all --time
 # The default ServiceAccount appears shortly after the cluster starts. Pods cannot be created without it.
 until kubectl --kubeconfig "$kubeconfig" get serviceaccount default >/dev/null 2>&1; do sleep 2; done
 
-KCB_LESSON_KUBECONFIG=$kubeconfig KCB_LESSON_VERSION=$version node --test --test-concurrency=1 tests/lesson-cluster.check.mjs
+KCB_LESSON_KUBECONFIG=$kubeconfig KCB_LESSON_VERSION=$version KCB_LESSON_NODES=1 \
+  node --test --test-concurrency=1 tests/lesson-cluster.check.mjs
+# The same command the scheduling lessons give learners, with this cluster's name and image.
+k3d node create "$cluster-worker" --cluster "$cluster" --role agent --replicas 2 --image "$image" --wait
+kubectl --kubeconfig "$kubeconfig" wait --for=condition=Ready nodes --all --timeout=120s
+KCB_LESSON_KUBECONFIG=$kubeconfig KCB_LESSON_VERSION=$version KCB_LESSON_NODES=3 \
+  node --test --test-concurrency=1 tests/lesson-cluster.check.mjs
 echo "Lessons passed on K3s $version ($image) in $(( $(date +%s) - started )) seconds, $(uname -m)."

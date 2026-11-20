@@ -1,0 +1,181 @@
+{
+  "id": "pod-anti-affinity",
+  "kind": "Deployment",
+  "filename": "pod-anti-affinity.yaml",
+  "nodes": 3,
+  "finishedAt": 6,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "A Deployment keeps identical Pods running. It comes from the apps/v1 API.",
+      "why": "This one also keeps its Pods away from each other.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create: a Deployment, from the apps/v1 API",
+      "term": "Deployment",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "This Deployment is called spread-web.",
+      "why": "You use the name to watch where its Pods land.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A name to find the Deployment",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: spread-web\n"
+    },
+    {
+      "title": "Three copies and their label",
+      "what": "Keep three Pods running, and manage the Pods labelled app: spread-web.",
+      "why": "If all three ran on one node, losing that node would stop the app.",
+      "ifRemoved": "Kubernetes rejects the file, because apps/v1 Deployments must have a selector.",
+      "comment": "Three copies of the Pods that carry this label",
+      "term": "replica",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: spread-web\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: spread-web\n"
+    },
+    {
+      "title": "Describe the Pods",
+      "what": "The template is the blueprint for each Pod. It gives each Pod the selector’s label.",
+      "why": "The rule in the next block looks for this same label.",
+      "ifRemoved": "The Deployment would have nothing to create, so Kubernetes rejects it.",
+      "comment": "The blueprint for each Pod, with the label the selector looks for",
+      "term": "Pod template",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: spread-web\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: spread-web\n  template:\n    metadata:\n      labels:\n        app: spread-web\n"
+    },
+    {
+      "title": "Keep away from these Pods",
+      "what": "podAntiAffinity keeps a Pod away from other Pods that match labelSelector.",
+      "why": "required… makes it a hard rule. A Pod waits rather than break it.",
+      "ifRemoved": "The scheduler may put several copies on the same node.",
+      "comment": "Hard rule: do not place this Pod near Pods with these labels",
+      "term": "Pod anti-affinity",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: spread-web\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: spread-web\n  template:\n    metadata:\n      labels:\n        app: spread-web\n    spec:\n      affinity:\n        podAntiAffinity:\n          requiredDuringSchedulingIgnoredDuringExecution:\n            - labelSelector:\n                matchLabels:\n"
+    },
+    {
+      "title": "Apart by node",
+      "what": "The rule matches the Deployment’s own label. topologyKey kubernetes.io/hostname means “near” is the same node.",
+      "why": "So no two spread-web Pods share a node. A zone label would spread them across zones instead.",
+      "ifRemoved": "Kubernetes rejects the Deployment, because the rule needs a topologyKey.",
+      "comment": "No two of these Pods on the same node",
+      "term": "topology key",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: spread-web\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: spread-web\n  template:\n    metadata:\n      labels:\n        app: spread-web\n    spec:\n      affinity:\n        podAntiAffinity:\n          requiredDuringSchedulingIgnoredDuringExecution:\n            - labelSelector:\n                matchLabels:\n                  app: spread-web\n              topologyKey: kubernetes.io/hostname\n"
+    },
+    {
+      "title": "What should run?",
+      "what": "Each Pod runs one nginx container. This block makes the file ready.",
+      "why": "With three nodes, each node gets exactly one Pod.",
+      "ifRemoved": "Kubernetes rejects the Deployment, because its Pods would have nothing to run.",
+      "comment": "The container each Pod runs",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: spread-web\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: spread-web\n  template:\n    metadata:\n      labels:\n        app: spread-web\n    spec:\n      affinity:\n        podAntiAffinity:\n          requiredDuringSchedulingIgnoredDuringExecution:\n            - labelSelector:\n                matchLabels:\n                  app: spread-web\n              topologyKey: kubernetes.io/hostname\n      containers:\n        - name: web\n          image: nginx:1.30.4\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version that define this kind. Deployments are in apps/v1.",
+    "kind": "The type of object to create. A Deployment keeps identical Pods running.",
+    "metadata": "Details that identify the object, such as its name.",
+    "metadata.name": "The Deployment’s name. Its Pods get names that start with it.",
+    "spec": "The desired state of the Deployment.",
+    "spec.replicas": "How many Pods to keep running.",
+    "spec.selector": "Which Pods this Deployment manages. It cannot change after creation.",
+    "spec.selector.matchLabels": "Pods must have all of these labels to be managed by this Deployment.",
+    "spec.selector.matchLabels.app": "Match Pods whose app label is spread-web.",
+    "spec.template": "The Pod template: the blueprint for every Pod this Deployment creates.",
+    "spec.template.metadata": "Details given to every Pod created from the template.",
+    "spec.template.metadata.labels": "Labels given to every Pod. They must match the selector.",
+    "spec.template.metadata.labels.app": "Every Pod gets the label app: spread-web, so the selector finds it.",
+    "spec.template.spec": "What each Pod runs. This is the same spec as in a Pod file.",
+    "spec.template.spec.containers": "The containers in each Pod. Each list item starts with a dash.",
+    "spec.template.spec.containers[].name": "The container’s name. It must be unique within the Pod.",
+    "spec.template.spec.containers[].image": "The nginx web server, pinned to a version.",
+    "spec.template.spec.affinity": "Rules that attract Pods to nodes, or keep them near or apart from other Pods.",
+    "spec.template.spec.affinity.podAntiAffinity": "Rules that keep this Pod away from other Pods.",
+    "spec.template.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution": "Hard rules: a Pod waits in Pending rather than break them.",
+    "spec.template.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[].labelSelector": "Which Pods to keep away from.",
+    "spec.template.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[].labelSelector.matchLabels": "Pods with all of these labels count.",
+    "spec.template.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[].labelSelector.matchLabels.app": "Keep away from Pods labelled app: spread-web, the other copies of this app.",
+    "spec.template.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[].topologyKey": "A node label that defines “near”. kubernetes.io/hostname is unique per node, so near means the same node."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f pod-anti-affinity.yaml",
+      "result": "Prints deployment.apps/spread-web created.",
+      "check": {
+        "expect": [
+          "deployment.apps/spread-web created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get pods -l app=spread-web -o wide",
+      "result": "Three Running Pods. The NODE column shows a different node for each.",
+      "check": {
+        "run": "kubectl get pods -l app=spread-web --field-selector status.phase=Running -o jsonpath='{range .items[*]}{.spec.nodeName}{\"\\n\"}{end}' | sort -u",
+        "lines": 3
+      }
+    },
+    {
+      "command": "kubectl delete -f pod-anti-affinity.yaml",
+      "result": "Removes the Deployment and its Pods.",
+      "check": {
+        "expect": [
+          "deployment.apps \"spread-web\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "Which Pods does each spread-web Pod keep away from?",
+        "answers": [
+          "Every Pod on the node",
+          "Other Pods labelled app: spread-web",
+          "Pods in other namespaces"
+        ],
+        "correct": 1,
+        "explain": "The labelSelector picks the Pods to avoid. Here that is the other copies of the same app.",
+        "line": 20
+      },
+      {
+        "question": "What does topologyKey: kubernetes.io/hostname mean here?",
+        "answers": [
+          "Two copies may not share a node",
+          "Two copies may not share a zone",
+          "Pods must have a hostname"
+        ],
+        "correct": 0,
+        "explain": "Every node has its own hostname label. Nodes with the same value count as the same place.",
+        "line": 21
+      },
+      {
+        "question": "How would preferredDuringScheduling… change the rule?",
+        "answers": [
+          "It would reject the file",
+          "Kubernetes would try to spread the Pods, but place them anyway if it cannot",
+          "It would spread Pods across zones"
+        ],
+        "correct": 1,
+        "explain": "A preferred rule is a wish, not a must. The class file uses it so extra copies still run.",
+        "line": 17
+      }
+    ],
+    "fix": {
+      "line": 6,
+      "text": "  replicas: 4",
+      "source": "command",
+      "command": "kubectl get events --field-selector reason=FailedScheduling",
+      "expect": "0/3 nodes are available: 3 node\\(s\\) didn't match pod anti-affinity rules",
+      "message": "0/3 nodes are available: 3 node(s) didn't match pod anti-affinity rules.",
+      "explain": "Four copies cannot each have their own node when the cluster has three. The fourth Pod waits in Pending.",
+      "fix": "Ask for no more copies than nodes, here 3, or make the rule preferred."
+    }
+  },
+  "sources": [
+    {
+      "title": "Inter-pod affinity and anti-affinity",
+      "url": "https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity"
+    },
+    {
+      "title": "Well-known labels: kubernetes.io/hostname",
+      "url": "https://kubernetes.io/docs/reference/labels-annotations-taints/#kubernetesiohostname"
+    }
+  ]
+}

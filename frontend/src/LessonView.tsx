@@ -199,6 +199,12 @@ export function LessonView({ lesson, content, progress, onProgress, next }: {
                   . Download {content.uses.length > 1 ? 'them' : 'it'} there if you no longer have {content.uses.length > 1 ? 'them' : 'it'}.
                 </p>
               )}
+              {content.nodes && (
+                <p className="lesson-nodes">
+                  This lesson needs {content.nodes} nodes. If your practice cluster has only one, add two worker nodes first:{' '}
+                  <code>k3d node create worker --cluster practice --role agent --replicas 2 --image rancher/k3s:v1.37.2-k3s1 --wait</code>
+                </p>
+              )}
               <ol>
                 {/* A command can appear twice, such as checking a Pod before and after a probe fails. */}
                 {content.tryIt.map((item, index) => (

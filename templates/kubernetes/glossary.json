@@ -37,5 +37,16 @@
   "probe": "A regular health check Kubernetes runs on a container, such as asking for a web page.",
   "rollout": "The process of replacing a Deployment’s Pods with new ones, a few at a time.",
   "PodDisruptionBudget": "An object that limits how many of an app’s Pods may be evicted at once.",
-  "drain": "Evicting every Pod from a node, for example before an upgrade. It respects disruption budgets."
+  "drain": "Evicting every Pod from a node, for example before an upgrade. It respects disruption budgets.",
+  "node affinity": "Rules in a Pod that say which nodes it may run on, based on node labels.",
+  "Pod anti-affinity": "Rules that keep a Pod away from other Pods, for example one copy per node.",
+  "topology key": "A node label that groups nodes, such as by hostname or zone, for affinity rules.",
+  "taint": "A mark on a node that keeps Pods off unless they tolerate it.",
+  "toleration": "A setting in a Pod that lets it run on a node with a matching taint.",
+  "rolling update": "Replacing a Deployment’s Pods a few at a time, so the app keeps serving.",
+  "Recreate": "An update strategy that stops every old Pod before starting new ones.",
+  "blue-green": "Running the new version beside the old one, then switching all traffic at once.",
+  "canary": "Sending a small share of traffic to a new version before moving everyone.",
+  "HorizontalPodAutoscaler": "An object that changes how many Pods run, based on measured load such as CPU.",
+  "metrics-server": "A cluster add-on that collects CPU and memory use from every node."
 }

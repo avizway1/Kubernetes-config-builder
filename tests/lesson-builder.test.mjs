@@ -102,12 +102,14 @@ test('lesson text follows the style rules', () => {
     // A file with a kind is applied to a cluster. Level 0's YAML-only file has nothing to run.
     // Try it applies the downloads of any earlier lessons this one uses. Files it needs first, such as the Deployment
     // a Service selects, come before the lesson's own file. Others, such as a Pod tried in a new namespace, may follow.
+    // Setup that applies no file, such as tainting a node, may also come first.
     const uses = (lesson.uses ?? []).map(id => lessonContent[id]);
     const commands = lesson.tryIt.map(item => item.command);
     if (lesson.kind) {
       const own = commands.indexOf(`kubectl apply -f ${lesson.filename}`);
       ok(own >= 0, `${lesson.id}: Try it applies ${lesson.filename}`);
-      deepEqual(commands.slice(0, own), commands.slice(0, own).filter(command => uses.some(used => command === `kubectl apply -f ${used.filename}`)), `${lesson.id}: only used files come first`);
+      const applied = commands.slice(0, own).filter(command => /^kubectl apply\b/.test(command));
+      deepEqual(applied, applied.filter(command => uses.some(used => command === `kubectl apply -f ${used.filename}`)), `${lesson.id}: only used files are applied first`);
       for (const used of uses) ok(commands.some(command => /^kubectl apply\b/.test(command) && command.endsWith(` -f ${used.filename}`)), `${lesson.id}: Try it applies ${used.filename}`);
     } else equal(lesson.tryIt.length, 0, lesson.id);
     const order = levels.flatMap(level => level.lessons).map(item => item.id);

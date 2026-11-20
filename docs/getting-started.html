@@ -403,6 +403,13 @@ kubectl get pod web</code></pre></div></div>
       <p class="expect"><b>You should see</b> <code class="inline">pod/web created</code>, then STATUS <code class="inline">Running</code> after a few seconds. Each lesson's Try it panel lists the next commands.</p>
 
       <div class="cmd">
+        <span class="cmd-label">Level 5 needs three nodes. When you reach it, add two worker nodes</span>
+        <div class="code"><pre><code>k3d node create worker --cluster practice --role agent --replicas 2 --image rancher/k3s:v1.37.2-k3s1 --wait
+kubectl get nodes</code></pre></div>
+      </div>
+      <p class="expect"><b>You should see</b> three nodes with STATUS <code class="inline">Ready</code>. Every other lesson works with one node or three.</p>
+
+      <div class="cmd">
         <span class="cmd-label">When you finish, delete the practice cluster</span>
         <div class="code"><pre><code>k3d cluster delete practice</code></pre></div>
       </div>
