@@ -1,0 +1,177 @@
+{
+  "id": "service",
+  "kind": "Service",
+  "filename": "service.yaml",
+  "uses": [
+    "deployment"
+  ],
+  "finishedAt": 3,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "A Service gives a group of Pods one stable name and address. It comes from the core v1 API.",
+      "why": "Pods come and go and get new addresses. A Service stays put, so other apps can always find yours.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create: a Service, from the core v1 API",
+      "term": "Service",
+      "yaml": "apiVersion: v1\nkind: Service\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "This Service is called web. The name also becomes its address inside the cluster.",
+      "why": "Other apps reach the Pods by asking for web, so pick a name that says what it serves.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "The name apps use to reach the Pods",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: web\n"
+    },
+    {
+      "title": "Which Pods?",
+      "what": "The selector picks every Pod labelled app: web, the Pods from the Deployment lesson.",
+      "why": "This is how a Service finds its Pods. It keeps the list up to date as Pods are replaced.",
+      "ifRemoved": "The Service has no Pods to send traffic to, so requests fail.",
+      "comment": "Send traffic to Pods labelled app: web",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: web\nspec:\n  selector:\n    app: web\n"
+    },
+    {
+      "title": "Which ports?",
+      "what": "The Service listens on port, then forwards each request to targetPort on a Pod.",
+      "why": "The two can differ, so the Service can keep port 80 while the app listens elsewhere.",
+      "ifRemoved": "Kubernetes rejects the Service, because it must say which port to listen on.",
+      "comment": "Listen on port 80 and forward to port 80 on the Pods",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: web\nspec:\n  selector:\n    app: web\n  ports:\n    - protocol: TCP\n      port: 80\n      targetPort: 80\n"
+    },
+    {
+      "title": "Inside the cluster only",
+      "what": "ClusterIP gives the Service an address that works only inside the cluster. It is the default type.",
+      "why": "Most apps only talk to each other, so they need nothing more. Writing it makes the choice clear.",
+      "ifRemoved": "Nothing changes, because ClusterIP is the default.",
+      "comment": "Reachable only from inside the cluster",
+      "term": "ClusterIP",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: web\nspec:\n  selector:\n    app: web\n  ports:\n    - protocol: TCP\n      port: 80\n      targetPort: 80\n  type: ClusterIP\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version that define this kind. Services are in the core v1 API.",
+    "kind": "The type of object to create. A Service gives Pods one stable name and address.",
+    "metadata": "Details that identify the object, such as its name.",
+    "spec": "The desired state: which Pods to send traffic to, and on which ports.",
+    "spec.selector": "The labels a Pod must have to receive traffic from this Service.",
+    "spec.selector.app": "Send traffic to Pods labelled app: web, the Pods from the Deployment lesson.",
+    "spec.ports": "The ports the Service listens on. Each list item is one port.",
+    "spec.ports[].protocol": "The network protocol. TCP is the default and suits web traffic.",
+    "spec.ports[].port": "The port the Service listens on.",
+    "spec.ports[].targetPort": "The port on the Pods where the Service forwards each request. nginx listens on 80.",
+    "metadata.name": "The Service name. Pods in the same namespace can reach it by this name.",
+    "spec.type": "ClusterIP, the default, gives an address that works only inside the cluster."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f deployment.yaml",
+      "result": "Starts the two web Pods from the Keep your app running lesson.",
+      "check": {
+        "expect": [
+          "deployment.apps/web created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl apply -f service.yaml",
+      "result": "Prints service/web created.",
+      "check": {
+        "expect": [
+          "service/web created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get service web",
+      "result": "TYPE shows ClusterIP with a CLUSTER-IP address. EXTERNAL-IP shows <none>.",
+      "check": {
+        "pattern": "web\\s+ClusterIP\\s+\\d+\\.\\d+\\.\\d+\\.\\d+\\s+<none>\\s+80/TCP"
+      }
+    },
+    {
+      "command": "kubectl get endpointslices -l kubernetes.io/service-name=web",
+      "result": "ENDPOINTS lists the addresses of both web Pods. The Service sends traffic there.",
+      "check": {
+        "pattern": "80\\s+\\d+\\.\\d+\\.\\d+\\.\\d+,\\d+\\.\\d+\\.\\d+\\.\\d+\\s"
+      }
+    },
+    {
+      "command": "kubectl run client --rm -i --restart=Never --image=busybox:1.37.0 -- wget -qO- http://web",
+      "result": "Prints the nginx welcome page, fetched by name from a short-lived Pod inside the cluster.",
+      "check": {
+        "expect": [
+          "Welcome to nginx!"
+        ]
+      }
+    },
+    {
+      "command": "kubectl delete -f service.yaml -f deployment.yaml",
+      "result": "Removes the Service and the Deployment.",
+      "check": {
+        "expect": [
+          "service \"web\" deleted",
+          "deployment.apps \"web\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "Which Pods receive traffic from this Service?",
+        "answers": [
+          "Every Pod in the namespace",
+          "Pods labelled app: web",
+          "The Pod named web"
+        ],
+        "correct": 1,
+        "explain": "The selector picks Pods by their labels. Pod names do not matter.",
+        "line": 7
+      },
+      {
+        "question": "What is the difference between port and targetPort?",
+        "answers": [
+          "port is where the Service listens. targetPort is where the Pod listens.",
+          "port is on your laptop. targetPort is in the cluster.",
+          "They are two names for the same thing."
+        ],
+        "correct": 0,
+        "explain": "The Service receives on port and forwards to targetPort. Here both are 80.",
+        "line": 11
+      },
+      {
+        "question": "Can you open the CLUSTER-IP address in your laptop’s browser?",
+        "answers": [
+          "Yes, on port 80",
+          "No, a ClusterIP address works only inside the cluster",
+          "Only after you add a label"
+        ],
+        "correct": 1,
+        "explain": "ClusterIP is for traffic between apps in the cluster. Later lessons open apps to the outside.",
+        "line": 12
+      }
+    ],
+    "fix": {
+      "line": 7,
+      "text": "    app: Web",
+      "source": "command",
+      "command": "kubectl get endpointslices -l kubernetes.io/service-name=web",
+      "expect": "IPv4\\s+<unset>\\s+<unset>",
+      "message": "<unset> under PORTS and ENDPOINTS",
+      "explain": "Labels are case-sensitive. Web does not match the Pods’ label web, so the Service finds no Pods.",
+      "fix": "Match the label exactly: app: web."
+    }
+  },
+  "sources": [
+    {
+      "title": "Service",
+      "url": "https://kubernetes.io/docs/concepts/services-networking/service/"
+    },
+    {
+      "title": "Connecting applications with Services",
+      "url": "https://kubernetes.io/docs/tutorials/services/connect-applications-service/"
+    }
+  ]
+}

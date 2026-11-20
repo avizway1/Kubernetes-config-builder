@@ -1,0 +1,190 @@
+{
+  "id": "pod-disruption-budget",
+  "kind": "PodDisruptionBudget",
+  "filename": "pdb.yaml",
+  "uses": [
+    "deployment"
+  ],
+  "finishedAt": 3,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "A PodDisruptionBudget limits how many Pods may be evicted at once. It comes from the policy/v1 API.",
+      "why": "Node upgrades and repairs evict Pods. A budget keeps enough of them running meanwhile.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create: a PodDisruptionBudget, from the policy/v1 API",
+      "term": "PodDisruptionBudget",
+      "yaml": "apiVersion: policy/v1\nkind: PodDisruptionBudget\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "This budget is called web-pdb.",
+      "why": "You use the name to check how many evictions it allows right now.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A name to find the budget",
+      "yaml": "apiVersion: policy/v1\nkind: PodDisruptionBudget\nmetadata:\n  name: web-pdb\n"
+    },
+    {
+      "title": "Which Pods?",
+      "what": "The selector picks the Pods labelled app: web, the Pods from the Deployment lesson.",
+      "why": "The budget protects only Pods that match. It must use the same label as the Deployment.",
+      "ifRemoved": "The budget protects no Pods, so a drain can evict them all.",
+      "comment": "Protect the Pods labelled app: web",
+      "term": "selector",
+      "yaml": "apiVersion: policy/v1\nkind: PodDisruptionBudget\nmetadata:\n  name: web-pdb\nspec:\n  selector:\n    matchLabels:\n      app: web\n"
+    },
+    {
+      "title": "How many may go?",
+      "what": "maxUnavailable: 1 lets at most one web Pod be evicted at a time.",
+      "why": "With two replicas, one Pod keeps serving while the other moves. This block makes the file ready.",
+      "ifRemoved": "Kubernetes accepts the budget, but it allows no voluntary evictions at all.",
+      "comment": "At most one web Pod may be evicted at a time",
+      "term": "drain",
+      "yaml": "apiVersion: policy/v1\nkind: PodDisruptionBudget\nmetadata:\n  name: web-pdb\nspec:\n  selector:\n    matchLabels:\n      app: web\n  maxUnavailable: 1\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version that define this kind. Budgets are in policy/v1.",
+    "kind": "The type of object to create. A PodDisruptionBudget limits evictions.",
+    "metadata": "Details that identify the object, such as its name.",
+    "metadata.name": "The budget’s name, used with kubectl get pdb.",
+    "spec": "The desired state: which Pods to protect, and how many may go at once.",
+    "spec.selector": "Which Pods this budget protects.",
+    "spec.selector.matchLabels": "Pods must have all of these labels to be protected.",
+    "spec.selector.matchLabels.app": "Protect Pods labelled app: web, the Deployment lesson’s Pods.",
+    "spec.maxUnavailable": "At most one protected Pod may be evicted at a time. minAvailable is the alternative."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f deployment.yaml",
+      "result": "Starts the two web Pods from the Keep your app running lesson.",
+      "check": {
+        "expect": [
+          "deployment.apps/web created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl apply -f pdb.yaml",
+      "result": "Prints poddisruptionbudget.policy/web-pdb created.",
+      "check": {
+        "expect": [
+          "poddisruptionbudget.policy/web-pdb created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get pdb web-pdb",
+      "result": "ALLOWED DISRUPTIONS shows 1 once both web Pods are ready.",
+      "check": {
+        "pattern": "web-pdb\\s+N/A\\s+1\\s+1\\s"
+      }
+    },
+    {
+      "command": "kubectl get pods -l app=web -o wide",
+      "result": "The NODE column shows where each web Pod runs. Note a node with a web Pod.",
+      "check": {
+        "pattern": "web-\\S+\\s+1/1\\s+Running[\\s\\S]*web-\\S+\\s+1/1\\s+Running"
+      }
+    },
+    {
+      "command": "kubectl drain <node> --pod-selector=app=web --timeout=30s",
+      "result": "Evicts one web Pod, then is refused for the next: Cannot evict pod as it would violate the pod’s disruption budget. One node cannot run the replacement, so drain stops after 30 seconds.",
+      "check": {
+        "run": "kubectl drain $(kubectl get nodes -o jsonpath='{.items[0].metadata.name}') --pod-selector=app=web --timeout=20s",
+        "expect": [
+          "Cannot evict pod as it would violate the pod's disruption budget."
+        ],
+        "anyStatus": true
+      }
+    },
+    {
+      "command": "kubectl uncordon <node>",
+      "result": "Lets Pods start on the node again, so the evicted web Pod comes back.",
+      "check": {
+        "run": "kubectl uncordon $(kubectl get nodes -o jsonpath='{.items[0].metadata.name}')",
+        "expect": [
+          "uncordoned"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get pdb web-pdb",
+      "result": "ALLOWED DISRUPTIONS returns to 1 once both Pods are ready again.",
+      "check": {
+        "pattern": "web-pdb\\s+N/A\\s+1\\s+1\\s"
+      }
+    },
+    {
+      "command": "kubectl delete -f pdb.yaml -f deployment.yaml",
+      "result": "Removes the budget and the Deployment.",
+      "check": {
+        "expect": [
+          "poddisruptionbudget.policy \"web-pdb\" deleted",
+          "deployment.apps \"web\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "The Deployment runs two web Pods. How many can a drain evict at the same time?",
+        "answers": [
+          "None",
+          "One",
+          "Both"
+        ],
+        "correct": 1,
+        "explain": "maxUnavailable: 1 allows one eviction at a time. The next waits until a replacement is ready.",
+        "line": 9
+      },
+      {
+        "question": "Does the budget stop kubectl delete pod?",
+        "answers": [
+          "Yes, always",
+          "No, it only limits evictions, such as a drain",
+          "Only for Pods labelled app: web"
+        ],
+        "correct": 1,
+        "explain": "Deleting a Pod directly skips the budget. Drains and node upgrades use evictions, which respect it.",
+        "line": 2
+      },
+      {
+        "question": "With two replicas, which line could replace line 9 and allow the same evictions?",
+        "answers": [
+          "minAvailable: 1",
+          "maxUnavailable: 2",
+          "replicas: 1"
+        ],
+        "correct": 0,
+        "explain": "Keeping at least one of two Pods is the same as letting at most one go.",
+        "line": 9
+      }
+    ],
+    "fix": {
+      "line": 8,
+      "text": "      app: wbe",
+      "source": "command",
+      "command": "kubectl describe pdb web-pdb",
+      "expect": "No matching pods found",
+      "message": "No matching pods found",
+      "explain": "The selector looks for app: wbe, but the Pods are labelled app: web. The budget protects nothing, so a drain could evict every Pod.",
+      "fix": "Match the Deployment’s label exactly: app: web."
+    }
+  },
+  "sources": [
+    {
+      "title": "Disruptions",
+      "url": "https://kubernetes.io/docs/concepts/workloads/pods/disruptions/"
+    },
+    {
+      "title": "Specifying a Disruption Budget for your Application",
+      "url": "https://kubernetes.io/docs/tasks/run-application/configure-pdb/"
+    },
+    {
+      "title": "Safely Drain a Node",
+      "url": "https://kubernetes.io/docs/tasks/administer-cluster/safely-drain-node/"
+    }
+  ]
+}

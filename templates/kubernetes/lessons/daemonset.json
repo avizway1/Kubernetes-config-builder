@@ -1,0 +1,180 @@
+{
+  "id": "daemonset",
+  "kind": "DaemonSet",
+  "filename": "daemonset.yaml",
+  "finishedAt": 4,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "A DaemonSet runs one copy of a Pod on every node. It comes from the apps/v1 API.",
+      "why": "Node helpers, such as log collectors and monitoring agents, need to run everywhere.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create: a DaemonSet, from the apps/v1 API",
+      "term": "DaemonSet",
+      "yaml": "apiVersion: apps/v1\nkind: DaemonSet\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "This DaemonSet is called log-collector. Its Pods get names that start with it.",
+      "why": "You use the name to check how many nodes it covers.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A name to find the DaemonSet",
+      "yaml": "apiVersion: apps/v1\nkind: DaemonSet\nmetadata:\n  name: log-collector\n"
+    },
+    {
+      "title": "Which Pods belong to it?",
+      "what": "The selector picks Pods labelled app: log-collector.",
+      "why": "Its own label keeps it apart from app: web, so no Service sends web traffic here by accident.",
+      "ifRemoved": "Kubernetes rejects the file, because a DaemonSet must have a selector.",
+      "comment": "Manage the Pods that carry this label",
+      "term": "selector",
+      "yaml": "apiVersion: apps/v1\nkind: DaemonSet\nmetadata:\n  name: log-collector\nspec:\n  selector:\n    matchLabels:\n      app: log-collector\n"
+    },
+    {
+      "title": "Describe the Pods",
+      "what": "The template is the blueprint for each Pod. It gives each Pod the selector’s label.",
+      "why": "The template labels must match the selector, as in a Deployment.",
+      "ifRemoved": "The DaemonSet would have nothing to create, so Kubernetes rejects it.",
+      "comment": "The blueprint for each Pod, with the label the selector looks for",
+      "term": "Pod template",
+      "yaml": "apiVersion: apps/v1\nkind: DaemonSet\nmetadata:\n  name: log-collector\nspec:\n  selector:\n    matchLabels:\n      app: log-collector\n  template:\n    metadata:\n      labels:\n        app: log-collector\n"
+    },
+    {
+      "title": "What should run?",
+      "what": "A busybox container prints a message, then sleeps. A real collector would read the node’s log files.",
+      "why": "There is no replicas field. The number of nodes decides how many Pods run.",
+      "ifRemoved": "Kubernetes rejects the DaemonSet, because its Pods would have nothing to run.",
+      "comment": "The container each node runs",
+      "yaml": "apiVersion: apps/v1\nkind: DaemonSet\nmetadata:\n  name: log-collector\nspec:\n  selector:\n    matchLabels:\n      app: log-collector\n  template:\n    metadata:\n      labels:\n        app: log-collector\n    spec:\n      containers:\n        - name: collector\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"echo Collecting logs on $NODE_NAME && sleep 3600\"]\n"
+    },
+    {
+      "title": "Which node am I on?",
+      "what": "NODE_NAME is filled in from the Pod’s own spec.nodeName, the node it was placed on.",
+      "why": "Each copy can label its work with its node. The message proves one Pod runs per node.",
+      "ifRemoved": "The message prints an empty node name. The Pods still run.",
+      "comment": "Tell the container the name of its node",
+      "term": "Downward API",
+      "yaml": "apiVersion: apps/v1\nkind: DaemonSet\nmetadata:\n  name: log-collector\nspec:\n  selector:\n    matchLabels:\n      app: log-collector\n  template:\n    metadata:\n      labels:\n        app: log-collector\n    spec:\n      containers:\n        - name: collector\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"echo Collecting logs on $NODE_NAME && sleep 3600\"]\n          env:\n            - name: NODE_NAME\n              valueFrom:\n                fieldRef:\n                  fieldPath: spec.nodeName\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version that define this kind. DaemonSets are in apps/v1.",
+    "kind": "The type of object to create. A DaemonSet runs one Pod on every node.",
+    "metadata": "Details that identify the object, such as its name.",
+    "metadata.name": "The DaemonSet’s name. Its Pods get names that start with it.",
+    "spec": "The desired state of the DaemonSet. There is no replicas field.",
+    "spec.selector": "Which Pods this DaemonSet manages. It cannot change after creation.",
+    "spec.selector.matchLabels": "Pods must have all of these labels to be managed by this DaemonSet.",
+    "spec.selector.matchLabels.app": "Match Pods whose app label is log-collector.",
+    "spec.template": "The Pod template: the blueprint for the Pod on each node.",
+    "spec.template.metadata": "Details given to every Pod created from the template.",
+    "spec.template.metadata.labels": "Labels given to every Pod. They must match the selector.",
+    "spec.template.metadata.labels.app": "Every Pod gets app: log-collector, its own label, so web Services never select it.",
+    "spec.template.spec": "What each Pod runs. This is the same spec as in a Pod file.",
+    "spec.template.spec.containers": "The containers in each Pod. Each list item starts with a dash.",
+    "spec.template.spec.containers[].name": "The container’s name. It must be unique within the Pod.",
+    "spec.template.spec.containers[].image": "A tiny image with basic shell tools, pinned to a version.",
+    "spec.template.spec.containers[].command": "Print which node this Pod runs on, then sleep for an hour.",
+    "spec.template.spec.containers[].env": "Environment variables for the container.",
+    "spec.template.spec.containers[].env[].name": "The variable’s name: NODE_NAME.",
+    "spec.template.spec.containers[].env[].valueFrom": "Take the value from somewhere else instead of writing it here.",
+    "spec.template.spec.containers[].env[].valueFrom.fieldRef": "Take the value from a field of this Pod.",
+    "spec.template.spec.containers[].env[].valueFrom.fieldRef.fieldPath": "spec.nodeName: the node Kubernetes placed this Pod on."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f daemonset.yaml",
+      "result": "Prints daemonset.apps/log-collector created.",
+      "check": {
+        "expect": [
+          "daemonset.apps/log-collector created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get daemonset log-collector",
+      "result": "DESIRED, CURRENT, and READY all equal the number of nodes. A one-node practice cluster shows 1.",
+      "check": {
+        "pattern": "log-collector\\s+(\\d+)\\s+\\1\\s+\\1\\s+\\1\\s+\\1\\s"
+      }
+    },
+    {
+      "command": "kubectl get pods -l app=log-collector -o wide",
+      "result": "One Pod per node. The NODE column names a different node for each.",
+      "check": {
+        "pattern": "log-collector-\\S+\\s+1/1\\s+Running"
+      }
+    },
+    {
+      "command": "kubectl logs -l app=log-collector",
+      "result": "Each Pod prints Collecting logs on, followed by its node’s name.",
+      "check": {
+        "pattern": "Collecting logs on \\S+"
+      }
+    },
+    {
+      "command": "kubectl delete -f daemonset.yaml",
+      "result": "Removes the DaemonSet and its Pods on every node.",
+      "check": {
+        "expect": [
+          "daemonset.apps \"log-collector\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "Why is there no replicas field?",
+        "answers": [
+          "A DaemonSet runs one Pod on each node, so the node count decides",
+          "It defaults to three",
+          "Replicas are set on the command line"
+        ],
+        "correct": 0,
+        "explain": "A DaemonSet follows the nodes. Add a node and it gains a Pod.",
+        "line": 5
+      },
+      {
+        "question": "A new node joins the cluster. What happens?",
+        "answers": [
+          "Nothing until you apply the file again",
+          "The DaemonSet starts a Pod on the new node",
+          "One Pod moves to the new node"
+        ],
+        "correct": 1,
+        "explain": "The DaemonSet watches the nodes and starts a Pod on each new one by itself.",
+        "line": 2
+      },
+      {
+        "question": "Where does $NODE_NAME get its value?",
+        "answers": [
+          "From a ConfigMap",
+          "From the Pod’s own spec.nodeName, through fieldRef",
+          "You type it when you apply"
+        ],
+        "correct": 1,
+        "explain": "fieldRef copies a field of the Pod into the variable. spec.nodeName is the node it runs on.",
+        "line": 22
+      }
+    ],
+    "fix": {
+      "line": 22,
+      "text": "                  fieldPath: spec.nodename",
+      "source": "apply",
+      "message": "The DaemonSet \"log-collector\" is invalid: spec.template.spec.containers[0].env[0].valueFrom.fieldRef.fieldPath: Invalid value: \"spec.nodename\": error converting fieldPath: field label not supported: spec.nodename",
+      "explain": "Field names are case-sensitive. nodename is not a Pod field, so Kubernetes cannot fill in the variable.",
+      "fix": "Write the field exactly: spec.nodeName, with a capital N."
+    }
+  },
+  "sources": [
+    {
+      "title": "DaemonSet",
+      "url": "https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/"
+    },
+    {
+      "title": "Expose Pod information to containers through environment variables",
+      "url": "https://kubernetes.io/docs/tasks/inject-data-application/environment-variable-expose-pod-information/"
+    }
+  ]
+}

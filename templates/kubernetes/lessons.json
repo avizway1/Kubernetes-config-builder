@@ -147,10 +147,10 @@
         },
         {
           "id": "headless-service",
-          "title": "A name for every Pod",
+          "title": "Reach every Pod directly",
           "objects": "Headless Service",
           "runsOn": "anywhere",
-          "summary": "A headless Service gives each Pod its own DNS name instead of one shared address."
+          "summary": "A headless Service has no shared address. Looking up its name returns every Pod’s own address."
         },
         {
           "id": "statefulset",

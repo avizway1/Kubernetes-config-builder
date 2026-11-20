@@ -22,7 +22,7 @@ function shell(command, cwd) {
 const fill = (text, values) => String(text).replace(/\{\{(\w+)\}\}/g, (_, name) => values[name] ?? '');
 
 function problem(check, result, values) {
-  if (result.status !== 0) return `exit status ${result.status}`;
+  if (result.status !== 0 && !check.anyStatus) return `exit status ${result.status}`;
   for (const text of check.expect ?? []) if (!result.output.includes(fill(text, values))) return `missing "${fill(text, values)}"`;
   if (check.pattern && !new RegExp(fill(check.pattern, values)).test(result.output)) return `no match for /${fill(check.pattern, values)}/`;
   if (check.lines !== undefined) {
@@ -52,6 +52,9 @@ test('the cluster is a dedicated loopback K3s test cluster', () => {
   ok(server.startsWith(`v${version}.`) && server.includes('+k3s'), `Expected K3s ${version}, got ${server}`);
 });
 
+const download = lesson => lessonText(renderLesson(lesson, lesson.blocks.length - 1, defaultLessonValues(lesson), true));
+const files = lesson => [lesson, ...(lesson.uses ?? []).map(id => lessonContent[id])].map(used => `-f ${used.filename}`).join(' ');
+
 const anywhere = new Set(catalogue.levels.flatMap(level => level.lessons).filter(lesson => lesson.runsOn === 'anywhere').map(lesson => lesson.id));
 
 for (const lesson of Object.values(lessonContent).filter(lesson => lesson.kind && anywhere.has(lesson.id))) {
@@ -59,8 +62,8 @@ for (const lesson of Object.values(lessonContent).filter(lesson => lesson.kind &
     const folder = mkdtempSync(join(tmpdir(), `lesson-${lesson.id}-`));
     const values = defaultLessonValues(lesson);
     try {
-      // The exact file learners download: the finished lesson with its block explanations.
-      writeFileSync(join(folder, lesson.filename), lessonText(renderLesson(lesson, lesson.blocks.length - 1, values, true)));
+      // The exact files learners download: the finished lesson, and any earlier lessons it uses, with block explanations.
+      for (const used of [...(lesson.uses ?? []).map(id => lessonContent[id]), lesson]) writeFileSync(join(folder, used.filename), download(used));
       for (const [index, item] of lesson.tryIt.entries()) {
         ok(item.check, `${lesson.id} step ${index + 1} has no check`);
         const label = `${lesson.id} step ${index + 1}`;
@@ -68,7 +71,7 @@ for (const lesson of Object.values(lessonContent).filter(lesson => lesson.kind &
         confirm(label, command, item.check, values, folder, /^kubectl (apply|delete)\b/.test(command));
         if (item.check.then) confirm(`${label}, afterwards`, item.check.then.run, item.check.then, values, folder, false);
       }
-      equal(shell(`kubectl get -f ${lesson.filename} --ignore-not-found -o name`, folder).stdout.trim(), '', `${lesson.id} left objects behind`);
+      equal(shell(`kubectl get ${files(lesson)} --ignore-not-found -o name`, folder).stdout.trim(), '', `${lesson.id} left objects behind`);
     } finally {
       rmSync(folder, { recursive: true, force: true });
     }
@@ -83,6 +86,14 @@ for (const lesson of Object.values(lessonContent).filter(lesson => lesson.kind &
     const folder = mkdtempSync(join(tmpdir(), `lesson-fix-${lesson.id}-`));
     const file = join(folder, lesson.filename);
     try {
+      // Write every used file, as learners have them. Apply first only those Try it applies before the lesson's own file.
+      for (const id of lesson.uses ?? []) {
+        const used = lessonContent[id];
+        writeFileSync(join(folder, used.filename), download(used));
+        if (lesson.tryIt.some(item => item.command === `kubectl apply -f ${used.filename}`)) {
+          equal(shell(`kubectl apply -f ${used.filename}`, folder).status, 0, `${lesson.id}: could not apply ${id}`);
+        }
+      }
       writeFileSync(file, brokenFile(lesson, fix).text);
       const applied = shell(`kubectl apply -f ${lesson.filename}`, folder);
       if (fix.source === 'apply') {
@@ -90,11 +101,12 @@ for (const lesson of Object.values(lessonContent).filter(lesson => lesson.kind &
         ok(applied.output.includes(fix.message), `${lesson.id}: expected\n${fix.message}\ngot\n${applied.output}`);
       } else {
         equal(applied.status, 0, `${lesson.id}: the broken copy should apply\n${applied.output}`);
-        confirm(`${lesson.id} fix`, fix.command, { pattern: fix.expect }, {}, folder, false);
+        // The command may fail on purpose, as wget does for a name that does not exist.
+        confirm(`${lesson.id} fix`, fix.command, { pattern: fix.expect, anyStatus: true }, {}, folder, false);
       }
     } finally {
       writeFileSync(file, practiceFile(lesson).text);
-      shell(`kubectl delete -f ${lesson.filename} --ignore-not-found --wait=true`, folder);
+      shell(`kubectl delete ${files(lesson)} --ignore-not-found --wait=true`, folder);
       rmSync(folder, { recursive: true, force: true });
     }
   });

@@ -1,0 +1,142 @@
+{
+  "id": "external-name",
+  "kind": "Service",
+  "filename": "external-name.yaml",
+  "finishedAt": 3,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "A Service gives something one stable name inside the cluster. It comes from the core v1 API.",
+      "why": "Here the name points to a website outside the cluster instead of to Pods.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create: a Service, from the core v1 API",
+      "term": "Service",
+      "yaml": "apiVersion: v1\nkind: Service\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "This Service is called academy-site. Pods in the namespace can look it up by that name.",
+      "why": "Apps use the inside name, so the outside address can change in one place.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "The inside name apps use",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: academy-site\n"
+    },
+    {
+      "title": "Point outside",
+      "what": "ExternalName tells cluster DNS to answer with an outside name instead of an address.",
+      "why": "No Pods and no ports are involved. Cluster DNS does all the work.",
+      "ifRemoved": "The Service becomes ClusterIP and needs Pods and ports instead.",
+      "comment": "Answer lookups with an outside name",
+      "term": "ExternalName",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: academy-site\nspec:\n  type: ExternalName\n"
+    },
+    {
+      "title": "The outside name",
+      "what": "externalName is the DNS name to answer with: avizacademy.com.",
+      "why": "Some websites reject requests sent to a name they do not expect. HTTP and HTTPS often fail this way.",
+      "ifRemoved": "Kubernetes rejects the Service, because an ExternalName needs a name to point to.",
+      "comment": "The outside DNS name",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: academy-site\nspec:\n  type: ExternalName\n  externalName: avizacademy.com\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version that define this kind. Services are in the core v1 API.",
+    "kind": "The type of object to create. A Service gives something one stable name.",
+    "metadata": "Details that identify the object, such as its name.",
+    "metadata.name": "The inside name. Pods look it up as academy-site.",
+    "spec": "The desired state: what the name should point to.",
+    "spec.type": "ExternalName makes cluster DNS answer with an outside name. No Pods are selected.",
+    "spec.externalName": "The outside DNS name to answer with. Write a name only, without https://."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f external-name.yaml",
+      "result": "Prints service/academy-site created.",
+      "check": {
+        "expect": [
+          "service/academy-site created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get service academy-site",
+      "result": "TYPE shows ExternalName and EXTERNAL-IP shows avizacademy.com. There is no CLUSTER-IP.",
+      "check": {
+        "pattern": "academy-site\\s+ExternalName\\s+<none>\\s+avizacademy\\.com"
+      }
+    },
+    {
+      "command": "kubectl run client --rm -i --restart=Never --image=busybox:1.37.0 -- nslookup academy-site.default.svc.cluster.local",
+      "result": "Shows canonical name = avizacademy.com. Cluster DNS answers with the outside name.",
+      "check": {
+        "expect": [
+          "canonical name = avizacademy.com"
+        ]
+      }
+    },
+    {
+      "command": "kubectl delete -f external-name.yaml",
+      "result": "Removes the Service.",
+      "check": {
+        "expect": [
+          "service \"academy-site\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "What does a Pod get when it looks up academy-site?",
+        "answers": [
+          "The address of a Pod",
+          "The outside name avizacademy.com",
+          "A ClusterIP address"
+        ],
+        "correct": 1,
+        "explain": "Cluster DNS answers with the outside name. The Pod then looks that name up as usual.",
+        "line": 7
+      },
+      {
+        "question": "Does this Service send traffic to any Pods?",
+        "answers": [
+          "Yes, to every Pod",
+          "No, it has no selector and only answers name lookups",
+          "Only to Pods labelled academy-site"
+        ],
+        "correct": 1,
+        "explain": "An ExternalName Service only answers DNS lookups. No traffic passes through it.",
+        "line": 6
+      },
+      {
+        "question": "Why use academy-site instead of writing avizacademy.com in every app?",
+        "answers": [
+          "If the address changes, you edit one Service instead of every app",
+          "It makes the website faster",
+          "It encrypts the traffic"
+        ],
+        "correct": 0,
+        "explain": "Apps keep using the same inside name. Only the Service changes when the outside address does.",
+        "line": 4
+      }
+    ],
+    "fix": {
+      "line": 7,
+      "text": "  externalName: https://avizacademy.com",
+      "source": "apply",
+      "message": "The Service \"academy-site\" is invalid: spec.externalName: Invalid value: \"https://avizacademy.com\": a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')",
+      "explain": "externalName takes a DNS name only. https:// belongs to a web address, not to a name.",
+      "fix": "Remove https://, leaving externalName: avizacademy.com."
+    }
+  },
+  "sources": [
+    {
+      "title": "Service type ExternalName",
+      "url": "https://kubernetes.io/docs/concepts/services-networking/service/#externalname"
+    },
+    {
+      "title": "DNS for Services and Pods",
+      "url": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/"
+    }
+  ]
+}

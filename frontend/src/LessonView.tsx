@@ -2,13 +2,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ExportActions } from './ExportActions';
 import { LessonEditor } from './LessonEditor';
 import {
-  brokenFile, glossary, lessonText, lineNote, matchLines, practiceFile, renderLesson, renderMistake,
+  brokenFile, glossary, lessonContent, lessonText, lineNote, matchLines, practiceFile, renderLesson, renderMistake,
   type LessonContent, type LessonValues,
 } from './lesson-builder';
 import { fixFound, LessonPractice, newPractice, type PracticeProgress } from './LessonPractice';
-import { runsOnLabels, type Lesson } from './lessons';
+import { levels, runsOnLabels, type Lesson } from './lessons';
 
 // `practising` shows Read it and Fix it after the last block. `practice` keeps their answers when learners go back.
+const lessonTitle = (id: string) => levels.flatMap(level => level.lessons).find(lesson => lesson.id === id)?.title ?? id;
+
 export type LessonProgress = {
   step: number;
   values: LessonValues;
@@ -185,9 +187,22 @@ export function LessonView({ lesson, content, progress, onProgress, next }: {
             <section className="lesson-try-it" aria-labelledby="try-it-title">
               <h3 id="try-it-title">Try it</h3>
               <p>Save the file, then run these commands against your practice cluster.</p>
+              {content.uses && (
+                <p className="lesson-uses">
+                  This lesson also uses{' '}
+                  {content.uses.map((id, index) => (
+                    <span key={id}>
+                      {index > 0 && (index === content.uses!.length - 1 ? ' and ' : ', ')}
+                      <code>{lessonContent[id].filename}</code> from <a href={`#learn/${id}`}>{lessonTitle(id)}</a>
+                    </span>
+                  ))}
+                  . Download {content.uses.length > 1 ? 'them' : 'it'} there if you no longer have {content.uses.length > 1 ? 'them' : 'it'}.
+                </p>
+              )}
               <ol>
-                {content.tryIt.map(item => (
-                  <li key={item.command}><code>{item.command}</code><span>{item.result}</span></li>
+                {/* A command can appear twice, such as checking a Pod before and after a probe fails. */}
+                {content.tryIt.map((item, index) => (
+                  <li key={`${index}-${item.command}`}><code>{item.command}</code><span>{item.result}</span></li>
                 ))}
               </ol>
             </section>

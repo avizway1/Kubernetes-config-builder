@@ -8,6 +8,17 @@ import namespaceLesson from '../../templates/kubernetes/lessons/namespace.json' 
 import configMapLesson from '../../templates/kubernetes/lessons/configmap.json' with { type: 'json' };
 import secretLesson from '../../templates/kubernetes/lessons/secret.json' with { type: 'json' };
 import jobsLesson from '../../templates/kubernetes/lessons/jobs.json' with { type: 'json' };
+import serviceLesson from '../../templates/kubernetes/lessons/service.json' with { type: 'json' };
+import dnsLesson from '../../templates/kubernetes/lessons/dns.json' with { type: 'json' };
+import nodePortLesson from '../../templates/kubernetes/lessons/node-port.json' with { type: 'json' };
+import externalNameLesson from '../../templates/kubernetes/lessons/external-name.json' with { type: 'json' };
+import headlessServiceLesson from '../../templates/kubernetes/lessons/headless-service.json' with { type: 'json' };
+import daemonSetLesson from '../../templates/kubernetes/lessons/daemonset.json' with { type: 'json' };
+import limitRangeLesson from '../../templates/kubernetes/lessons/limit-range.json' with { type: 'json' };
+import resourceQuotaLesson from '../../templates/kubernetes/lessons/resource-quota.json' with { type: 'json' };
+import probesLesson from '../../templates/kubernetes/lessons/probes.json' with { type: 'json' };
+import timingLesson from '../../templates/kubernetes/lessons/timing.json' with { type: 'json' };
+import podDisruptionBudgetLesson from '../../templates/kubernetes/lessons/pod-disruption-budget.json' with { type: 'json' };
 import glossaryData from '../../templates/kubernetes/glossary.json' with { type: 'json' };
 
 // A broken copy of a block's file, with the message a YAML reader prints for it. Line numbers count from 1.
@@ -15,9 +26,10 @@ export type LessonMistake = { yaml: string; line: number; error: string; explain
 
 // How the cluster check confirms a Try it result. `run` replaces a command learners cannot run as written, such as
 // one with a placeholder or one that keeps running. The output must contain every `expect` text and match `pattern`,
-// and `lines` counts the non-empty lines it prints. `then` checks the effect of the command afterwards.
+// and `lines` counts the non-empty lines it prints. `anyStatus` accepts a command that fails on purpose, such as one
+// Kubernetes refuses. `then` checks the effect of the command afterwards.
 // Values such as {{replicas}} are filled from the lesson's choices.
-export type LessonCheck = { run?: string; expect?: string[]; pattern?: string; lines?: number | string };
+export type LessonCheck = { run?: string; expect?: string[]; pattern?: string; lines?: number | string; anyStatus?: boolean };
 export type LessonTryIt = { command: string; result: string; check?: LessonCheck & { then?: LessonCheck } };
 
 // Read it: a question about the finished file, with three answers. `line` is the line the question is about.
@@ -60,6 +72,8 @@ export type LessonContent = {
   // The Kubernetes kind the file builds. Level 0's YAML lesson has none, so it is checked only as YAML.
   kind?: string;
   filename: string;
+  // Earlier lessons whose downloads Try it also applies, such as the Deployment a Service sends traffic to.
+  uses?: string[];
   finishedAt: number;
   choices?: Record<string, LessonChoice>;
   blocks: LessonBlock[];
@@ -84,6 +98,17 @@ export const lessonContent: Record<string, LessonContent> = {
   configmap: configMapLesson as LessonContent,
   secret: secretLesson as LessonContent,
   jobs: jobsLesson as LessonContent,
+  service: serviceLesson as LessonContent,
+  dns: dnsLesson as LessonContent,
+  'node-port': nodePortLesson as LessonContent,
+  'external-name': externalNameLesson as LessonContent,
+  'headless-service': headlessServiceLesson as LessonContent,
+  daemonset: daemonSetLesson as LessonContent,
+  'limit-range': limitRangeLesson as LessonContent,
+  'resource-quota': resourceQuotaLesson as LessonContent,
+  probes: probesLesson as LessonContent,
+  timing: timingLesson as LessonContent,
+  'pod-disruption-budget': podDisruptionBudgetLesson as LessonContent,
 };
 
 export const glossary: Record<string, string> = glossaryData;

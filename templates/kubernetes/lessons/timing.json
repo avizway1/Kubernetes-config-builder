@@ -1,0 +1,198 @@
+{
+  "id": "timing",
+  "kind": "Deployment",
+  "filename": "timing.yaml",
+  "finishedAt": 4,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "A Deployment keeps identical Pods running. It comes from the apps/v1 API.",
+      "why": "This lesson adds three timers that control how Pods start, roll out, and stop.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create: a Deployment, from the apps/v1 API",
+      "term": "Deployment",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "This Deployment is called timing-app.",
+      "why": "You use the name to watch its rollout.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A name to find the Deployment",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: timing-app\n"
+    },
+    {
+      "title": "Two copies and their label",
+      "what": "Keep two Pods running, and manage the Pods labelled app: timing.",
+      "why": "Two copies make the rollout and shutdown timing easy to watch.",
+      "ifRemoved": "Kubernetes rejects the file, because apps/v1 Deployments must have a selector.",
+      "comment": "Two copies of the Pods that carry this label",
+      "term": "replica",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: timing-app\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: timing\n"
+    },
+    {
+      "title": "Describe the Pods",
+      "what": "The template is the blueprint for each Pod. It gives each Pod the label app: timing.",
+      "why": "The template labels must match the selector, or Kubernetes rejects the Deployment.",
+      "ifRemoved": "The Deployment would have nothing to create, so Kubernetes rejects it.",
+      "comment": "The blueprint for each Pod, with the label the selector looks for",
+      "term": "Pod template",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: timing-app\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: timing\n  template:\n    metadata:\n      labels:\n        app: timing\n"
+    },
+    {
+      "title": "What should run?",
+      "what": "A busybox container that sleeps for an hour. This block makes the file ready.",
+      "why": "sleep ignores the polite stop signal, which shows how the grace period works.",
+      "ifRemoved": "Kubernetes rejects the Deployment, because its Pods would have nothing to run.",
+      "comment": "The container each Pod runs: it sleeps",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: timing-app\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: timing\n  template:\n    metadata:\n      labels:\n        app: timing\n    spec:\n      containers:\n        - name: app\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"sleep 3600\"]\n"
+    },
+    {
+      "title": "Wait before counting it ready",
+      "what": "minReadySeconds: a new Pod must stay ready for 10 seconds before it counts as available.",
+      "why": "A Pod that crashes soon after starting does not count. The rollout waits instead of moving on.",
+      "ifRemoved": "A Pod counts as available the moment it is ready.",
+      "comment": "A new Pod must stay ready 10 seconds to count",
+      "term": "rollout",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: timing-app\nspec:\n  replicas: 2\n  minReadySeconds: 10\n  selector:\n    matchLabels:\n      app: timing\n  template:\n    metadata:\n      labels:\n        app: timing\n    spec:\n      containers:\n        - name: app\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"sleep 3600\"]\n"
+    },
+    {
+      "title": "Give up on a stuck rollout",
+      "what": "progressDeadlineSeconds: if a rollout makes no progress for 60 seconds, it is marked as failed.",
+      "why": "You and your tools notice a stuck rollout. Kubernetes reports it but does not roll back by itself.",
+      "ifRemoved": "Kubernetes waits 600 seconds, the default, before reporting a stuck rollout.",
+      "comment": "Report the rollout as failed after 60 seconds without progress",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: timing-app\nspec:\n  replicas: 2\n  minReadySeconds: 10\n  progressDeadlineSeconds: 60\n  selector:\n    matchLabels:\n      app: timing\n  template:\n    metadata:\n      labels:\n        app: timing\n    spec:\n      containers:\n        - name: app\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"sleep 3600\"]\n"
+    },
+    {
+      "title": "Time to shut down",
+      "what": "terminationGracePeriodSeconds: a stopping container gets 5 seconds to finish, then it is forced to stop.",
+      "why": "Apps use the time to finish requests. The default is 30 seconds.",
+      "ifRemoved": "Kubernetes waits the default 30 seconds before forcing each container to stop.",
+      "comment": "Give each container 5 seconds to stop cleanly",
+      "yaml": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: timing-app\nspec:\n  replicas: 2\n  minReadySeconds: 10\n  progressDeadlineSeconds: 60\n  selector:\n    matchLabels:\n      app: timing\n  template:\n    metadata:\n      labels:\n        app: timing\n    spec:\n      terminationGracePeriodSeconds: 5\n      containers:\n        - name: app\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"sleep 3600\"]\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version that define this kind. Deployments are in apps/v1.",
+    "kind": "The type of object to create. A Deployment keeps identical Pods running.",
+    "metadata": "Details that identify the object, such as its name.",
+    "metadata.name": "The Deployment’s name. Its Pods get names that start with it.",
+    "spec": "The desired state of the Deployment, including its timers.",
+    "spec.replicas": "How many Pods to keep running.",
+    "spec.minReadySeconds": "Seconds a new Pod must stay ready before it counts as available. The default is 0.",
+    "spec.progressDeadlineSeconds": "Seconds without progress before the rollout is reported as failed. Must be more than minReadySeconds.",
+    "spec.selector": "Which Pods this Deployment manages. It cannot change after creation.",
+    "spec.selector.matchLabels": "Pods must have all of these labels to be managed by this Deployment.",
+    "spec.selector.matchLabels.app": "Match Pods whose app label is timing.",
+    "spec.template": "The Pod template: the blueprint for every Pod this Deployment creates.",
+    "spec.template.metadata": "Details given to every Pod created from the template.",
+    "spec.template.metadata.labels": "Labels given to every Pod. They must match the selector.",
+    "spec.template.metadata.labels.app": "Every Pod gets the label app: timing, so the selector finds it.",
+    "spec.template.spec": "What each Pod runs. This is the same spec as in a Pod file.",
+    "spec.template.spec.terminationGracePeriodSeconds": "Seconds a stopping container gets before it is forced to stop. The default is 30.",
+    "spec.template.spec.containers": "The containers in each Pod. Each list item starts with a dash.",
+    "spec.template.spec.containers[].name": "The container’s name. It must be unique within the Pod.",
+    "spec.template.spec.containers[].image": "A tiny image with basic shell tools, pinned to a version.",
+    "spec.template.spec.containers[].command": "Sleep for an hour. sleep ignores the polite stop signal."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f timing.yaml",
+      "result": "Prints deployment.apps/timing-app created.",
+      "check": {
+        "expect": [
+          "deployment.apps/timing-app created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl rollout status deployment/timing-app",
+      "result": "Waits about 10 seconds after the Pods start, then prints successfully rolled out.",
+      "check": {
+        "expect": [
+          "deployment \"timing-app\" successfully rolled out"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get deployment timing-app",
+      "result": "READY and AVAILABLE both show 2.",
+      "check": {
+        "pattern": "timing-app\\s+2/2\\s+2\\s+2\\s"
+      }
+    },
+    {
+      "command": "time kubectl delete pod -l app=timing",
+      "result": "Takes about 5 seconds. sleep ignores the stop signal, so Kubernetes waits out the grace period.",
+      "check": {
+        "run": "start=$(date +%s); kubectl delete pod -l app=timing >/dev/null; echo \"took $(( $(date +%s) - start ))s\"",
+        "pattern": "took ([5-9]|1[0-9])s"
+      }
+    },
+    {
+      "command": "kubectl delete -f timing.yaml",
+      "result": "Removes the Deployment and its Pods.",
+      "check": {
+        "expect": [
+          "deployment.apps \"timing-app\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "What does minReadySeconds: 10 do?",
+        "answers": [
+          "A new Pod must stay ready 10 seconds before it counts as available",
+          "Pods start 10 seconds late",
+          "The rollout must finish in 10 seconds"
+        ],
+        "correct": 0,
+        "explain": "A Pod that crashes soon after starting never counts. The rollout waits for a steady Pod.",
+        "line": 7
+      },
+      {
+        "question": "A rollout makes no progress for 60 seconds. What does Kubernetes do?",
+        "answers": [
+          "Rolls back to the old version",
+          "Reports the rollout as failed",
+          "Deletes the Pods"
+        ],
+        "correct": 1,
+        "explain": "The Deployment gets the ProgressDeadlineExceeded reason. Rolling back is up to you or your tools.",
+        "line": 8
+      },
+      {
+        "question": "An app ignores the stop signal. How long until it is forced to stop?",
+        "answers": [
+          "At once",
+          "5 seconds",
+          "60 seconds"
+        ],
+        "correct": 1,
+        "explain": "terminationGracePeriodSeconds is how long Kubernetes waits before forcing the stop.",
+        "line": 17
+      }
+    ],
+    "fix": {
+      "line": 8,
+      "text": "  progressDeadlineSeconds: 5",
+      "source": "apply",
+      "message": "The Deployment \"timing-app\" is invalid: spec.progressDeadlineSeconds: Invalid value: 5: must be greater than minReadySeconds",
+      "explain": "The deadline must be longer than minReadySeconds. Otherwise no Pod could count as available in time.",
+      "fix": "Set progressDeadlineSeconds above 10, such as 60."
+    }
+  },
+  "sources": [
+    {
+      "title": "Deployments",
+      "url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/"
+    },
+    {
+      "title": "Pod termination",
+      "url": "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination"
+    }
+  ]
+}

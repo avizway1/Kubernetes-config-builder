@@ -1,0 +1,181 @@
+{
+  "id": "node-port",
+  "kind": "Service",
+  "filename": "node-port.yaml",
+  "uses": [
+    "deployment"
+  ],
+  "finishedAt": 3,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "A Service gives a group of Pods one stable name and address. It comes from the core v1 API.",
+      "why": "This Service also opens a port on every node, so traffic from outside the cluster can reach the Pods.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create: a Service, from the core v1 API",
+      "term": "Service",
+      "yaml": "apiVersion: v1\nkind: Service\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "This Service is called web-nodeport.",
+      "why": "A different name from the web Service lets you try both side by side.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "The name of the Service",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: web-nodeport\n"
+    },
+    {
+      "title": "Which Pods?",
+      "what": "The selector picks every Pod labelled app: web, the Pods from the Deployment lesson.",
+      "why": "This is how a Service finds its Pods, whatever its type.",
+      "ifRemoved": "The Service has no Pods to send traffic to, so requests fail.",
+      "comment": "Send traffic to Pods labelled app: web",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: web-nodeport\nspec:\n  selector:\n    app: web\n"
+    },
+    {
+      "title": "Which ports?",
+      "what": "The Service listens on port 80 and forwards to port 80 on the Pods.",
+      "why": "These work as in a ClusterIP Service. The node port comes next.",
+      "ifRemoved": "Kubernetes rejects the Service, because it must say which port to listen on.",
+      "comment": "Listen on port 80 and forward to port 80 on the Pods",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: web-nodeport\nspec:\n  selector:\n    app: web\n  ports:\n    - protocol: TCP\n      port: 80\n      targetPort: 80\n"
+    },
+    {
+      "title": "A port on every node",
+      "what": "NodePort keeps the cluster address and also opens one port on every node.",
+      "why": "Anything that can reach a node can now reach the app, without being inside the cluster.",
+      "ifRemoved": "The Service falls back to ClusterIP and works only inside the cluster.",
+      "comment": "Also open a port on every node",
+      "term": "NodePort",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: web-nodeport\nspec:\n  selector:\n    app: web\n  ports:\n    - protocol: TCP\n      port: 80\n      targetPort: 80\n  type: NodePort\n"
+    },
+    {
+      "title": "Choose the node port",
+      "what": "nodePort picks the port number on each node. It must be between 30000 and 32767.",
+      "why": "A fixed number is easy to remember and to write down for others.",
+      "ifRemoved": "Kubernetes picks a free port in the range for you.",
+      "comment": "The port to open on each node",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: web-nodeport\nspec:\n  selector:\n    app: web\n  ports:\n    - protocol: TCP\n      port: 80\n      targetPort: 80\n      nodePort: 30080\n  type: NodePort\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version that define this kind. Services are in the core v1 API.",
+    "kind": "The type of object to create. A Service gives Pods one stable name and address.",
+    "metadata": "Details that identify the object, such as its name.",
+    "spec": "The desired state: which Pods to send traffic to, and on which ports.",
+    "spec.selector": "The labels a Pod must have to receive traffic from this Service.",
+    "spec.selector.app": "Send traffic to Pods labelled app: web, the Pods from the Deployment lesson.",
+    "spec.ports": "The ports the Service listens on. Each list item is one port.",
+    "spec.ports[].protocol": "The network protocol. TCP is the default and suits web traffic.",
+    "spec.ports[].port": "The port the Service listens on.",
+    "spec.ports[].targetPort": "The port on the Pods where the Service forwards each request. nginx listens on 80.",
+    "metadata.name": "The Service name. It must be unique among Services in the namespace.",
+    "spec.ports[].nodePort": "The port opened on every node, from 30000 to 32767 by default.",
+    "spec.type": "NodePort opens the same port on every node, as well as a cluster address."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f deployment.yaml",
+      "result": "Starts the two web Pods from the Keep your app running lesson.",
+      "check": {
+        "expect": [
+          "deployment.apps/web created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl apply -f node-port.yaml",
+      "result": "Prints service/web-nodeport created.",
+      "check": {
+        "expect": [
+          "service/web-nodeport created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get service web-nodeport",
+      "result": "TYPE shows NodePort. PORT(S) shows 80:30080/TCP: the Service port, then the node port.",
+      "check": {
+        "pattern": "web-nodeport\\s+NodePort\\s+\\S+\\s+<none>\\s+80:30080/TCP"
+      }
+    },
+    {
+      "command": "kubectl get nodes -o wide",
+      "result": "Note a node’s INTERNAL-IP address.",
+      "check": {
+        "pattern": "INTERNAL-IP[\\s\\S]*\\s\\d+\\.\\d+\\.\\d+\\.\\d+\\s"
+      }
+    },
+    {
+      "command": "kubectl run client --rm -i --restart=Never --image=busybox:1.37.0 -- wget -qO- http://<node INTERNAL-IP>:30080",
+      "result": "Prints the nginx welcome page, reached through port 30080 on the node.",
+      "check": {
+        "run": "kubectl run client --rm -i --restart=Never --image=busybox:1.37.0 -- wget -qO- http://$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type==\"InternalIP\")].address}'):30080",
+        "expect": [
+          "Welcome to nginx!"
+        ]
+      }
+    },
+    {
+      "command": "kubectl delete -f node-port.yaml -f deployment.yaml",
+      "result": "Removes the Service and the Deployment.",
+      "check": {
+        "expect": [
+          "service \"web-nodeport\" deleted",
+          "deployment.apps \"web\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "Which port do you connect to from outside the cluster?",
+        "answers": [
+          "80",
+          "30080",
+          "Any port on the node"
+        ],
+        "correct": 1,
+        "explain": "Outside the cluster, you connect to a node on nodePort 30080. Inside, the Service still listens on 80.",
+        "line": 12
+      },
+      {
+        "question": "Which nodes open port 30080?",
+        "answers": [
+          "Only nodes running a web Pod",
+          "Every node in the cluster",
+          "Only the control plane node"
+        ],
+        "correct": 1,
+        "explain": "A NodePort opens on every node. Each node forwards the traffic to a web Pod.",
+        "line": 13
+      },
+      {
+        "question": "What happens if you delete line 12?",
+        "answers": [
+          "Kubernetes rejects the Service",
+          "Kubernetes picks a free node port for you",
+          "The Service becomes ClusterIP"
+        ],
+        "correct": 1,
+        "explain": "nodePort is optional. Without it, Kubernetes picks a free port between 30000 and 32767.",
+        "line": 12
+      }
+    ],
+    "fix": {
+      "line": 12,
+      "text": "      nodePort: 80",
+      "source": "apply",
+      "message": "The Service \"web-nodeport\" is invalid: spec.ports[0].nodePort: Invalid value: 80: provided port is not in the valid range. The range of valid ports is 30000-32767",
+      "explain": "By default, Kubernetes allows node ports only from 30000 to 32767. Port 80 is outside that range.",
+      "fix": "Pick a port in the range, such as 30080."
+    }
+  },
+  "sources": [
+    {
+      "title": "Service type NodePort",
+      "url": "https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport"
+    }
+  ]
+}

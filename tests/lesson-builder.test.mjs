@@ -100,8 +100,18 @@ test('lesson text follows the style rules', () => {
     }
     ok(lesson.finishedAt >= 0 && lesson.finishedAt < lesson.blocks.length, lesson.id);
     // A file with a kind is applied to a cluster. Level 0's YAML-only file has nothing to run.
-    if (lesson.kind) equal(lesson.tryIt[0].command, `kubectl apply -f ${lesson.filename}`);
-    else equal(lesson.tryIt.length, 0, lesson.id);
+    // Try it applies the downloads of any earlier lessons this one uses. Files it needs first, such as the Deployment
+    // a Service selects, come before the lesson's own file. Others, such as a Pod tried in a new namespace, may follow.
+    const uses = (lesson.uses ?? []).map(id => lessonContent[id]);
+    const commands = lesson.tryIt.map(item => item.command);
+    if (lesson.kind) {
+      const own = commands.indexOf(`kubectl apply -f ${lesson.filename}`);
+      ok(own >= 0, `${lesson.id}: Try it applies ${lesson.filename}`);
+      deepEqual(commands.slice(0, own), commands.slice(0, own).filter(command => uses.some(used => command === `kubectl apply -f ${used.filename}`)), `${lesson.id}: only used files come first`);
+      for (const used of uses) ok(commands.some(command => /^kubectl apply\b/.test(command) && command.endsWith(` -f ${used.filename}`)), `${lesson.id}: Try it applies ${used.filename}`);
+    } else equal(lesson.tryIt.length, 0, lesson.id);
+    const order = levels.flatMap(level => level.lessons).map(item => item.id);
+    for (const used of uses) ok(used && order.indexOf(used.id) < order.indexOf(lesson.id), `${lesson.id} can only use an earlier, built lesson`);
     for (const item of lesson.tryIt) {
       ok(!/\b8080\b/.test(item.command), 'port 8080 is the dashboard port');
       // tests/lesson-cluster.check.mjs confirms every result on K3s, so each one needs something to check.

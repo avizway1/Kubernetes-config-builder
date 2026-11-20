@@ -136,7 +136,7 @@ Charan approved this curriculum on 2026-11-19. It replaces the 12-lesson Level 1
 | | 13 | Open your app to the internet | Service `LoadBalancer` with the Auto Mode NLB class | `07-LoadBalancer.yaml` | EKS only |
 | | 14 | Route web traffic | IngressClass, Ingress with an ALB, paths and hosts | `Ingress/*` | EKS only |
 | 3 Data and special workloads | 15 | Keep data after restarts | StorageClass, PersistentVolumeClaim on EBS | `14-storageclass.yaml` | EKS only |
-| | 16 ✚ | A name for every Pod | headless Service | `15-headless.yaml` | Anywhere |
+| | 16 ✚ | Reach every Pod directly | headless Service | `15-headless.yaml` | Anywhere |
 | | 17 ✚ | Databases with their own disks | StatefulSet, `volumeClaimTemplates` | `16-stateful-with-headless.yaml` | EKS only |
 | | 18 ✚ | Share files between Pods | EFS StorageClass, `ReadWriteMany` claim | `efs/*` | EKS only, needs the EFS CSI add-on |
 | | 19 ✚ | One Pod on every node | DaemonSet | `13-daemonsets.yaml` | Anywhere |
@@ -278,7 +278,7 @@ Phase 1 still needs 28 lessons (21 Anywhere, 7 EKS only), Read it and Fix it pra
 
 1. **Practice and cluster checks.** Add a **Practise** step with Read it and Fix it to the lesson screen, after Charan approves a mock-up, and add it to the ten existing lessons. Add a deploy check that applies every Anywhere lesson to fresh K3s 1.35, 1.36, and 1.37 and checks its **Try it** results. Run it on Levels 0 and 1, which have not yet been applied to a cluster.
 2. **Level 2 Anywhere lessons:** 9 ClusterIP, 10 DNS, 11 NodePort, 12 ExternalName.
-3. **Lab 1.** It needs the Level 2 ClusterIP Service. Timed from cluster creation, target under 15 minutes. Its sample image follows the lab image rule in section 5 and needs Charan’s approval.
+3. **Lab 1.** It needs the Level 2 ClusterIP Service. On 2026-11-20 Charan asked to build milestones 4 and 5 first, so Lab 1 follows Level 4. Timed from cluster creation, target under 15 minutes. Its sample image follows the lab image rule in section 5 and needs Charan’s approval.
 4. **Level 3 Anywhere lessons:** 16 headless Service, 19 DaemonSet.
 5. **Level 4:** lessons 20 to 24, with the class-file fixes for `11.1`, `11.2`, and `05-pdb.yml`.
 6. **Level 5 Anywhere lessons:** 25 to 27. They need a cluster with several nodes, so the practice cluster gains agent nodes for this level.
@@ -298,7 +298,31 @@ Phase 1 still needs 28 lessons (21 Anywhere, 7 EKS only), Read it and Fix it pra
 - **Progress.** Answers are kept per lesson, like block progress, and survive moving between views.
 - Mock-ups on the Deployment lesson: Read it with the first question answered, and Fix it with a label that does not match the selector. The selector message was taken from a server-side dry run on K3s 1.37.2.
 
-Every milestone pins the schemas its kinds need. Ingress, IngressClass, StorageClass, LimitRange, ResourceQuota, PodDisruptionBudget, HorizontalPodAutoscaler, `IngressClassParams`, and `NodePool` are not pinned yet.
+#### Milestone 2: Level 2 Anywhere lessons (2026-11-20)
+
+Charan asked to start milestone 2 on 2026-11-20. Four lessons, each with Read it and Fix it, built from corrected copies of the class files and checked on K3s 1.35, 1.36, and 1.37. They reuse `nginx:1.30.4` and `busybox:1.37.0` from Level 1, so no new images need approval. The class DNS file’s unpinned `hashicorp/http-echo` and `curlimages/curl` images are not used.
+
+- **Lessons can build on earlier downloads.** A Service needs Pods to send traffic to. Rather than rebuild a Deployment, a lesson lists the earlier lessons it `uses`, and its **Try it** starts by applying their downloaded files. The cluster check writes those files too.
+- **9 Give your app an address** (`service.yaml`, class `05-ClusterIP.yaml`). A ClusterIP Service called `web` that selects the Deployment lesson’s `app: web` Pods: name, selector, ports, then `type: ClusterIP`. Try it applies `deployment.yaml`, shows the EndpointSlice with both Pod addresses, and fetches the page from a short-lived busybox Pod inside the cluster. Fix it: a selector of `app: Web`, because labels are case-sensitive.
+- **10 Find a Service by name** (`dns.yaml`, class `23-dns.yaml`). A busybox Pod with two environment variables holding the short name `http://web` and the full name `http://web.default.svc.cluster.local`. Try it shows the search list in `/etc/resolv.conf`, looks the name up, and fetches the page by each name. Fix it: the full name with the wrong namespace.
+- **11 A port on every node** (`node-port.yaml`, class `06-NodePort.yaml`). A NodePort Service `web-nodeport` with `nodePort: 30080`. Try it reads the node’s address and fetches the page through the node port from inside the cluster, which works on any cluster. Fix it: `nodePort: 80`, outside the allowed range.
+- **12 Point to an outside name** (`external-name.yaml`, class `08-ExternalName.yaml`). An ExternalName Service `academy-site` for `avizacademy.com`. Try it shows the CNAME answer from cluster DNS. The lesson notes that HTTP and HTTPS often fail through an ExternalName, as the Kubernetes docs warn. Fix it: an address written as a URL with `https://`.
+
+#### Milestones 4 and 5: Level 3 and 4 Anywhere lessons (2026-11-20)
+
+Charan asked to complete the Anywhere lessons of Levels 3 and 4 on 2026-11-20, ahead of Lab 1. Seven lessons, each with Read it and Fix it, built from corrected copies of the class files. They reuse `nginx:1.30.4` and `busybox:1.37.0`, so no new images need approval. Every Try it result and Fix it message was first observed on a scratch K3s 1.37.2 cluster.
+
+- **16 Reach every Pod directly** (`headless.yaml`, class `15-headless.yaml`). Renamed from “A name for every Pod”: a headless Service makes a lookup return each Pod’s address, but only StatefulSet Pods get a name each, which lesson 17 teaches. `web-headless` with `clusterIP: None` selects the Deployment lesson’s Pods. Try it compares the two addresses from `nslookup` with the Pods’ IP column. Fix it: `clusterIP: none`, which Kubernetes reads as an invalid address.
+- **19 One Pod on every node** (`daemonset.yaml`, class `13-daemonsets.yaml`). `log-collector` keeps its own label, as the class fix asks. Its busybox container prints its node’s name, taken from `spec.nodeName` through `fieldRef`. Fix it: `spec.nodename`, because field names are case-sensitive. A selector typo was already the Deployment lesson’s mistake.
+- **20 Default sizes for a namespace** (`limit-range.yaml`, class `11-limitrange.yaml`, `11.1`, `11.2`). One file creates the `limits-demo` namespace and the `container-sizes` LimitRange with `max`, `default`, and `defaultRequest`. Try it shows a Pod with no sizes receiving the defaults, then applies the CPU and memory lesson’s file in `limits-demo`, where its 500m limit breaks the 400m max. This replaces the class `11.1` and `11.2` Pods and tests the LimitRange alone, as the class-file fix asks. Fix it: a default above the max.
+- **21 A budget for a namespace** (`resource-quota.yaml`, class `12-ResourceQuota.yaml`). The `quota-demo` namespace and the `team-budget` ResourceQuota. Try it shows a Pod without sizes refused, then the CPU and memory lesson’s Pod accepted and counted. Fix it: a CPU request budget of 200m, which the same Pod’s 250m request exceeds.
+- **22 Is the app healthy?** (`probes.yaml`, class `Deployment-controls/06-probes.yml`). A single Pod instead of the class Deployment and Service, so learners can watch one container. Startup, readiness, and liveness probes ask nginx for `/`. Try it deletes the home page: READY drops to 0/1 after about 15 seconds, then the liveness probe restarts the container, which comes back with its page. Fix it: the readiness probe on port 8080, shown by `kubectl describe pod`.
+- **23 Start and stop timing** (`timing.yaml`, class `Deployment-controls/timings.yml`). `minReadySeconds: 10`, `progressDeadlineSeconds: 60`, and `terminationGracePeriodSeconds: 5`, shorter than the class values so the effects are quick to watch. busybox `sleep` ignores the stop signal, so deleting a Pod takes the full grace period. Fix it: a progress deadline below `minReadySeconds`.
+- **24 Survive node maintenance** (`pdb.yaml`, class `Deployment-controls/05-pdb.yml`). `web-pdb` with `maxUnavailable: 1` protects the Deployment lesson’s two Pods. Try it drains only the web Pods with `--pod-selector`: one is evicted and the next refused, then `kubectl uncordon` brings the node back. On a one-node cluster the replacement cannot start, so the drain stops at its timeout. Fix it: a selector typo, shown by `kubectl describe pdb` as “No matching pods found”.
+- **Lessons can use earlier files after their own.** The LimitRange and ResourceQuota lessons apply the CPU and memory lesson’s file with `-n` after creating their namespace. The rule is now: files Try it needs first come before the lesson’s own file, and every used file is applied somewhere.
+- The LimitRange, ResourceQuota, and PodDisruptionBudget schemas are now pinned, with checksums.
+
+Every milestone pins the schemas its kinds need. Ingress, IngressClass, StorageClass, HorizontalPodAutoscaler, `IngressClassParams`, and `NodePool` are not pinned yet.
 
 ## Progress
 
@@ -365,6 +389,16 @@ Every milestone pins the schemas its kinds need. Ingress, IngressClass, StorageC
 - K3s 1.37.2 runs `metrics-server` in `kube-system` by default, which Level 7 can rely on for local practice.
 - Verified on Node 26.13.1: `npm run lint`, `npm test` (40 passing, including the practice style rules), `npm run build`, `tests/lesson-manifests.check.mjs` (4 passing, including the YAML Fix it message), `tests/site-shell.browser.mjs` (7 passing in Chrome, including the full Practise flow and the phone layout), and `tests/check-lessons-k3s.sh` on fresh K3s 1.37.2, 1.36.6, and 1.35.10 (19 passing on each, on ARM64, in 225, 180, and 179 seconds). Levels 0 and 1 have now been applied to a cluster, and every **Try it** result was observed.
 - **Not verified:** the cluster check does not run in CI, because CI has no K3s cluster. Client-side messages, such as the missing `apiVersion`, come from kubectl 1.36.1.
+
+**Milestone 2, Level 2 lessons (2026-11-20).** The four Level 2 lessons are built, with Read it and Fix it. Verified on Node 26.13.1: `npm run lint`, `npm test`, `npm run build`, `tests/lesson-manifests.check.mjs`, `tests/site-shell.browser.mjs` (8 passing in Chrome), and `tests/check-lessons-k3s.sh` on fresh K3s 1.37.2, 1.36.6, and 1.35.10 (27 passing on each, on ARM64, in 370, 280, and 378 seconds).
+
+**Milestones 4 and 5, Level 3 and 4 Anywhere lessons (2026-11-20).**
+
+- All seven lessons are built, with Read it and Fix it, and show **Start**. The glossary adds headless Service, DaemonSet, Downward API, LimitRange, ResourceQuota, probe, rollout, PodDisruptionBudget, and drain.
+- Claims checked on a scratch K3s 1.37.2 cluster before writing them: without `default`, a LimitRange gives containers its `max` as their limits. A PodDisruptionBudget without `maxUnavailable` or `minAvailable` allows 0 disruptions. A headless Service without ports still answers lookups with each Pod’s address.
+- Try it items can repeat a command, such as checking the probe Pod before and after its probe fails.
+- Verified on Node 26.13.1: `npm run lint`, `npm test` (40 passing), `npm run build`, `tests/lesson-manifests.check.mjs` (4 passing, strict kubeconform with no skipped objects), `tests/site-shell.browser.mjs` (9 passing in Chrome, including the Level 3 and 4 Start links and a command-source Fix it), and `tests/check-lessons-k3s.sh` on fresh K3s 1.37.2, 1.36.6, and 1.35.10 (41 passing on each, on ARM64, in 490, 479, and 491 seconds). All 66 pinned schemas match their checksums.
+- **Not verified:** the drain step was checked on a one-node cluster only, where the second eviction is always refused. On a cluster with several nodes, the drain can finish once the replacement Pod is ready elsewhere. The lesson text says so, but it waits for Level 5’s multi-node practice cluster to be observed.
 
 ## Acceptance criteria
 

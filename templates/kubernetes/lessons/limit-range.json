@@ -1,0 +1,205 @@
+{
+  "id": "limit-range",
+  "kind": "LimitRange",
+  "filename": "limit-range.yaml",
+  "uses": [
+    "resources"
+  ],
+  "finishedAt": 3,
+  "blocks": [
+    {
+      "title": "A namespace to limit",
+      "what": "A LimitRange works inside one namespace, so the file starts by creating limits-demo.",
+      "why": "A separate namespace keeps the rules away from your other lessons.",
+      "ifRemoved": "The LimitRange has no namespace to live in, so Kubernetes rejects it.",
+      "comment": "A namespace for the size rules",
+      "term": "namespace",
+      "yaml": "apiVersion: v1\nkind: Namespace\nmetadata:\n  name: limits-demo\n"
+    },
+    {
+      "title": "Add the LimitRange",
+      "what": "Three dashes start a second object: a LimitRange, from the core v1 API.",
+      "why": "A LimitRange sets size rules for each container in its namespace.",
+      "ifRemoved": "The file only creates the namespace.",
+      "comment": "A second object: a LimitRange with size rules",
+      "term": "LimitRange",
+      "yaml": "apiVersion: v1\nkind: Namespace\nmetadata:\n  name: limits-demo\n---\napiVersion: v1\nkind: LimitRange\n"
+    },
+    {
+      "title": "Name and namespace",
+      "what": "This LimitRange is called container-sizes and lives in limits-demo.",
+      "why": "Its rules apply only to Pods created in limits-demo.",
+      "ifRemoved": "Without the namespace, the rules land in your current namespace, usually default.",
+      "comment": "The LimitRange’s name and the namespace it governs",
+      "yaml": "apiVersion: v1\nkind: Namespace\nmetadata:\n  name: limits-demo\n---\napiVersion: v1\nkind: LimitRange\nmetadata:\n  name: container-sizes\n  namespace: limits-demo\n"
+    },
+    {
+      "title": "Rules for containers",
+      "what": "type: Container means the rules below apply to each container. This block makes the file ready.",
+      "why": "A LimitRange can also set rules for whole Pods and for storage claims.",
+      "ifRemoved": "Kubernetes rejects the LimitRange, because it needs at least one rule.",
+      "comment": "Rules for each container",
+      "yaml": "apiVersion: v1\nkind: Namespace\nmetadata:\n  name: limits-demo\n---\napiVersion: v1\nkind: LimitRange\nmetadata:\n  name: container-sizes\n  namespace: limits-demo\nspec:\n  limits:\n    - type: Container\n"
+    },
+    {
+      "title": "The largest size",
+      "what": "max is the biggest CPU and memory limit a container may set.",
+      "why": "It stops one container from asking for most of a node.",
+      "ifRemoved": "Containers can set any size.",
+      "comment": "No container may set a limit above this",
+      "term": "limit",
+      "yaml": "apiVersion: v1\nkind: Namespace\nmetadata:\n  name: limits-demo\n---\napiVersion: v1\nkind: LimitRange\nmetadata:\n  name: container-sizes\n  namespace: limits-demo\nspec:\n  limits:\n    - type: Container\n      max:\n        cpu: 400m\n        memory: 256Mi\n"
+    },
+    {
+      "title": "Limits when none are set",
+      "what": "default fills in the limits for a container that sets none.",
+      "why": "Every container ends up with a limit, even when its author forgot.",
+      "ifRemoved": "Containers that set no limits get the max instead: 400m CPU and 256Mi memory.",
+      "comment": "Limits for containers that set none",
+      "yaml": "apiVersion: v1\nkind: Namespace\nmetadata:\n  name: limits-demo\n---\napiVersion: v1\nkind: LimitRange\nmetadata:\n  name: container-sizes\n  namespace: limits-demo\nspec:\n  limits:\n    - type: Container\n      max:\n        cpu: 400m\n        memory: 256Mi\n      default:\n        cpu: 300m\n        memory: 128Mi\n"
+    },
+    {
+      "title": "Requests when none are set",
+      "what": "defaultRequest fills in the requests for a container that sets none.",
+      "why": "The scheduler needs requests to place Pods well.",
+      "ifRemoved": "Kubernetes uses the limit as the request, here 300m CPU and 128Mi memory.",
+      "comment": "Requests for containers that set none",
+      "term": "request",
+      "yaml": "apiVersion: v1\nkind: Namespace\nmetadata:\n  name: limits-demo\n---\napiVersion: v1\nkind: LimitRange\nmetadata:\n  name: container-sizes\n  namespace: limits-demo\nspec:\n  limits:\n    - type: Container\n      max:\n        cpu: 400m\n        memory: 256Mi\n      default:\n        cpu: 300m\n        memory: 128Mi\n      defaultRequest:\n        cpu: 100m\n        memory: 64Mi\n"
+    }
+  ],
+  "notes": {
+    "---": "Three dashes separate objects. One file can hold several objects.",
+    "apiVersion": "The API version. Namespaces and LimitRanges are both in the core v1 API.",
+    "Namespace:kind": "The type of object to create. A Namespace groups objects inside the cluster.",
+    "LimitRange:kind": "The type of object to create. A LimitRange sets size rules for its namespace.",
+    "metadata": "Details that identify the object, such as its name.",
+    "Namespace:metadata.name": "The Namespace’s name. It must be unique in the cluster.",
+    "LimitRange:metadata.name": "The LimitRange’s name, used with kubectl describe limitrange.",
+    "metadata.namespace": "The namespace whose containers these rules apply to.",
+    "spec": "The desired state: the list of size rules.",
+    "spec.limits": "The rules. Each list item covers one type of object.",
+    "spec.limits[].type": "Container: each rule applies to each container on its own.",
+    "spec.limits[].max": "The largest limit a container may set. Bigger limits are rejected.",
+    "spec.limits[].max.cpu": "At most 400m: four tenths of a CPU core.",
+    "spec.limits[].max.memory": "At most 256Mi of memory.",
+    "spec.limits[].default": "The limits given to a container that sets none.",
+    "spec.limits[].default.cpu": "A CPU limit of 300m when none is set.",
+    "spec.limits[].default.memory": "A memory limit of 128Mi when none is set.",
+    "spec.limits[].defaultRequest": "The requests given to a container that sets none.",
+    "spec.limits[].defaultRequest.cpu": "A CPU request of 100m when none is set.",
+    "spec.limits[].defaultRequest.memory": "A memory request of 64Mi when none is set."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f limit-range.yaml",
+      "result": "Prints namespace/limits-demo created and limitrange/container-sizes created.",
+      "check": {
+        "expect": [
+          "namespace/limits-demo created",
+          "limitrange/container-sizes created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl describe limitrange container-sizes -n limits-demo",
+      "result": "A table shows the max, default request, and default limit for CPU and memory.",
+      "check": {
+        "pattern": "Container\\s+cpu\\s+-\\s+400m\\s+100m\\s+300m[\\s\\S]*Container\\s+memory\\s+-\\s+256Mi\\s+64Mi\\s+128Mi"
+      }
+    },
+    {
+      "command": "kubectl run plain-web -n limits-demo --image=nginx:1.30.4",
+      "result": "Starts a Pod that sets no sizes at all. Prints pod/plain-web created.",
+      "check": {
+        "expect": [
+          "pod/plain-web created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get pod plain-web -n limits-demo -o jsonpath='{.spec.containers[0].resources}'",
+      "result": "The LimitRange filled in the sizes: limits of 300m and 128Mi, requests of 100m and 64Mi.",
+      "check": {
+        "expect": [
+          "{\"limits\":{\"cpu\":\"300m\",\"memory\":\"128Mi\"},\"requests\":{\"cpu\":\"100m\",\"memory\":\"64Mi\"}}"
+        ]
+      }
+    },
+    {
+      "command": "kubectl apply -n limits-demo -f resources.yaml",
+      "result": "Refused: the CPU and memory lesson’s Pod sets a 500m CPU limit, above the 400m max.",
+      "check": {
+        "expect": [
+          "pods \"sized-web\" is forbidden: maximum cpu usage per Container is 400m, but limit is 500m"
+        ],
+        "anyStatus": true
+      }
+    },
+    {
+      "command": "kubectl delete -f limit-range.yaml",
+      "result": "Deleting the namespace also deletes the LimitRange and the plain-web Pod.",
+      "check": {
+        "expect": [
+          "namespace \"limits-demo\" deleted",
+          "limitrange \"container-sizes\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "A container in limits-demo sets no CPU limit. What limit does it get?",
+        "answers": [
+          "None",
+          "300m, from default",
+          "400m, from max"
+        ],
+        "correct": 1,
+        "explain": "default fills in missing limits. max only rejects limits that are too big.",
+        "line": 18
+      },
+      {
+        "question": "A container sets a CPU limit of 500m. What happens?",
+        "answers": [
+          "Kubernetes rejects the Pod",
+          "Kubernetes lowers the limit to 400m",
+          "The Pod runs with 500m"
+        ],
+        "correct": 0,
+        "explain": "max is a hard rule. Kubernetes refuses the Pod and names the rule it broke.",
+        "line": 15
+      },
+      {
+        "question": "Does this LimitRange change Pods in the default namespace?",
+        "answers": [
+          "Yes, every namespace",
+          "No, only Pods created in limits-demo",
+          "Only Pods without labels"
+        ],
+        "correct": 1,
+        "explain": "A LimitRange works only in its own namespace, and only on Pods created after it.",
+        "line": 10
+      }
+    ],
+    "fix": {
+      "line": 18,
+      "text": "        cpu: 500m",
+      "source": "apply",
+      "message": "The LimitRange \"container-sizes\" is invalid: spec.limits[0].default[cpu]: Invalid value: \"400m\": default value 500m is greater than max value 400m",
+      "explain": "A default limit cannot be bigger than the max. Every container that used it would break the rule.",
+      "fix": "Lower the default CPU limit to 400m or less, such as 300m."
+    }
+  },
+  "sources": [
+    {
+      "title": "Limit Ranges",
+      "url": "https://kubernetes.io/docs/concepts/policy/limit-range/"
+    },
+    {
+      "title": "Configure default CPU requests and limits for a namespace",
+      "url": "https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/cpu-default-namespace/"
+    }
+  ]
+}

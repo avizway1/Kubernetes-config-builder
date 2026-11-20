@@ -1,0 +1,176 @@
+{
+  "id": "resource-quota",
+  "kind": "ResourceQuota",
+  "filename": "resource-quota.yaml",
+  "uses": [
+    "resources"
+  ],
+  "finishedAt": 3,
+  "blocks": [
+    {
+      "title": "A namespace with a budget",
+      "what": "A ResourceQuota works inside one namespace, so the file starts by creating quota-demo.",
+      "why": "Teams often get a namespace each, with its own budget.",
+      "ifRemoved": "The quota has no namespace to live in, so Kubernetes rejects it.",
+      "comment": "A namespace for the budget",
+      "term": "namespace",
+      "yaml": "apiVersion: v1\nkind: Namespace\nmetadata:\n  name: quota-demo\n"
+    },
+    {
+      "title": "Add the ResourceQuota",
+      "what": "Three dashes start a second object: a ResourceQuota, from the core v1 API.",
+      "why": "A ResourceQuota caps the total that all Pods in its namespace can ask for.",
+      "ifRemoved": "The file only creates the namespace.",
+      "comment": "A second object: a ResourceQuota with a budget",
+      "term": "ResourceQuota",
+      "yaml": "apiVersion: v1\nkind: Namespace\nmetadata:\n  name: quota-demo\n---\napiVersion: v1\nkind: ResourceQuota\n"
+    },
+    {
+      "title": "Name and namespace",
+      "what": "This ResourceQuota is called team-budget and lives in quota-demo.",
+      "why": "It counts every Pod created in quota-demo.",
+      "ifRemoved": "Without the namespace, the budget lands in your current namespace, usually default.",
+      "comment": "The quota’s name and the namespace it counts",
+      "yaml": "apiVersion: v1\nkind: Namespace\nmetadata:\n  name: quota-demo\n---\napiVersion: v1\nkind: ResourceQuota\nmetadata:\n  name: team-budget\n  namespace: quota-demo\n"
+    },
+    {
+      "title": "A budget for requests",
+      "what": "hard sets the totals. All Pods together may request 500m CPU and 256Mi memory.",
+      "why": "Requests reserve room on nodes, so capping them shares the cluster fairly.",
+      "ifRemoved": "Kubernetes rejects the quota, because it needs something to count.",
+      "comment": "All Pods together may request at most this much",
+      "term": "request",
+      "yaml": "apiVersion: v1\nkind: Namespace\nmetadata:\n  name: quota-demo\n---\napiVersion: v1\nkind: ResourceQuota\nmetadata:\n  name: team-budget\n  namespace: quota-demo\nspec:\n  hard:\n    requests.cpu: 500m\n    requests.memory: 256Mi\n"
+    },
+    {
+      "title": "A budget for limits",
+      "what": "All limits together may reach 1 CPU and 512Mi memory.",
+      "why": "Every new container must now state its requests and limits, so the quota can count them.",
+      "ifRemoved": "Limits are not counted, and containers need only state requests.",
+      "comment": "All Pods together may set limits up to this much",
+      "term": "limit",
+      "yaml": "apiVersion: v1\nkind: Namespace\nmetadata:\n  name: quota-demo\n---\napiVersion: v1\nkind: ResourceQuota\nmetadata:\n  name: team-budget\n  namespace: quota-demo\nspec:\n  hard:\n    requests.cpu: 500m\n    requests.memory: 256Mi\n    limits.cpu: \"1\"\n    limits.memory: 512Mi\n"
+    }
+  ],
+  "notes": {
+    "---": "Three dashes separate objects. One file can hold several objects.",
+    "apiVersion": "The API version. Namespaces and ResourceQuotas are both in the core v1 API.",
+    "Namespace:kind": "The type of object to create. A Namespace groups objects inside the cluster.",
+    "ResourceQuota:kind": "The type of object to create. A ResourceQuota caps a namespace’s totals.",
+    "metadata": "Details that identify the object, such as its name.",
+    "Namespace:metadata.name": "The Namespace’s name. It must be unique in the cluster.",
+    "ResourceQuota:metadata.name": "The quota’s name, used with kubectl describe resourcequota.",
+    "metadata.namespace": "The namespace whose Pods this quota counts.",
+    "spec": "The desired state: the totals the namespace may use.",
+    "spec.hard": "The totals. Kubernetes refuses any Pod that would take the namespace past them.",
+    "spec.hard.requests.cpu": "All CPU requests together may reach 500m, half a CPU core.",
+    "spec.hard.requests.memory": "All memory requests together may reach 256Mi.",
+    "spec.hard.limits.cpu": "All CPU limits together may reach 1 core. Quotes keep it a string.",
+    "spec.hard.limits.memory": "All memory limits together may reach 512Mi."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f resource-quota.yaml",
+      "result": "Prints namespace/quota-demo created and resourcequota/team-budget created.",
+      "check": {
+        "expect": [
+          "namespace/quota-demo created",
+          "resourcequota/team-budget created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl run no-sizes -n quota-demo --image=nginx:1.30.4",
+      "result": "Refused: the quota needs every container to state its requests and limits.",
+      "check": {
+        "expect": [
+          "pods \"no-sizes\" is forbidden: failed quota: team-budget: must specify limits.cpu for: no-sizes; limits.memory for: no-sizes; requests.cpu for: no-sizes; requests.memory for: no-sizes"
+        ],
+        "anyStatus": true
+      }
+    },
+    {
+      "command": "kubectl apply -n quota-demo -f resources.yaml",
+      "result": "The CPU and memory lesson’s Pod states its sizes, so it fits. Prints pod/sized-web created.",
+      "check": {
+        "expect": [
+          "pod/sized-web created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl describe resourcequota team-budget -n quota-demo",
+      "result": "Used shows what sized-web takes from the budget, such as 250m of 500m requested CPU.",
+      "check": {
+        "pattern": "limits\\.cpu\\s+500m\\s+1\\s[\\s\\S]*limits\\.memory\\s+128Mi\\s+512Mi[\\s\\S]*requests\\.cpu\\s+\\d+m\\s+500m[\\s\\S]*requests\\.memory\\s+64Mi\\s+256Mi"
+      }
+    },
+    {
+      "command": "kubectl delete -f resource-quota.yaml",
+      "result": "Deleting the namespace also deletes the quota and the sized-web Pod in it.",
+      "check": {
+        "expect": [
+          "namespace \"quota-demo\" deleted",
+          "resourcequota \"team-budget\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "A Pod in quota-demo sets no requests or limits. What happens?",
+        "answers": [
+          "It runs with no limits",
+          "Kubernetes rejects it",
+          "It gets half the budget"
+        ],
+        "correct": 1,
+        "explain": "When a quota counts CPU and memory, each container must state them. A LimitRange can fill them in.",
+        "line": 12
+      },
+      {
+        "question": "Two Pods each request 250m CPU. Can a third Pod requesting 250m start?",
+        "answers": [
+          "Yes, there is no cap on Pods",
+          "No, it would take requests past 500m",
+          "Yes, because limits.cpu is 1"
+        ],
+        "correct": 1,
+        "explain": "The quota counts requests from every Pod together. 750m is more than the 500m allowed.",
+        "line": 13
+      },
+      {
+        "question": "How does a ResourceQuota differ from a LimitRange?",
+        "answers": [
+          "A quota caps the namespace total. A LimitRange sets sizes for each container.",
+          "They do the same thing",
+          "A quota covers one Pod only"
+        ],
+        "correct": 0,
+        "explain": "They work well together. The LimitRange fills in sizes, and the quota adds them up.",
+        "line": 12
+      }
+    ],
+    "fix": {
+      "line": 13,
+      "text": "    requests.cpu: 200m",
+      "source": "command",
+      "command": "kubectl apply -n quota-demo -f resources.yaml",
+      "expect": "exceeded quota: team-budget, requested: requests\\.cpu=250m, used: requests\\.cpu=0, limited: requests\\.cpu=200m",
+      "message": "Error from server (Forbidden): error when creating \"resources.yaml\": pods \"sized-web\" is forbidden: exceeded quota: team-budget, requested: requests.cpu=250m, used: requests.cpu=0, limited: requests.cpu=200m",
+      "explain": "The budget allows 200m CPU in requests, and the Pod asks for 250m. Kubernetes refuses any Pod that would pass the budget.",
+      "fix": "Raise requests.cpu to 500m, as in the working file."
+    }
+  },
+  "sources": [
+    {
+      "title": "Resource Quotas",
+      "url": "https://kubernetes.io/docs/concepts/policy/resource-quotas/"
+    },
+    {
+      "title": "Configure memory and CPU quotas for a namespace",
+      "url": "https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/quota-memory-cpu-namespace/"
+    }
+  ]
+}

@@ -348,3 +348,68 @@ test('Practise asks Read it questions and finds the Fix it mistake, keeping answ
     await browser.close();
   }
 });
+
+test('Level 2 lessons start from the catalogue and name the earlier files they use', { timeout: 30000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
+    page.setDefaultTimeout(8000);
+    await page.goto(`${appUrl}#learn`);
+    for (const title of ['Give your app an address', 'Find a Service by name', 'A port on every node', 'Point to an outside name']) {
+      await page.getByRole('link', { name: `Start ${title}` }).waitFor();
+    }
+    await page.getByRole('link', { name: 'Start Find a Service by name' }).click();
+    await page.getByRole('heading', { name: 'Find a Service by name', level: 1 }).waitFor();
+    await page.getByRole('button', { name: 'Show whole file' }).click();
+    const uses = page.locator('.lesson-uses');
+    await uses.getByText('deployment.yaml', { exact: true }).waitFor();
+    await uses.getByText('service.yaml', { exact: true }).waitFor();
+    await uses.getByRole('link', { name: 'Give your app an address' }).click();
+    await page.getByRole('heading', { name: 'Give your app an address', level: 1 }).waitFor();
+
+    // The ExternalName lesson needs no earlier files, and its broken copy shows the real Kubernetes message.
+    const lesson = lessonContent['external-name'];
+    await page.goto(`${appUrl}#learn/external-name`);
+    await page.getByRole('button', { name: 'Show whole file' }).click();
+    assert.equal(await page.locator('.lesson-uses').count(), 0);
+    await page.getByRole('button', { name: 'Practise: Read it and Fix it' }).click();
+    await page.getByRole('tab', { name: 'Fix it' }).click();
+    await page.getByLabel('Wrong line').selectOption(String(lesson.practice.fix.line));
+    await page.getByRole('button', { name: 'Check my answer' }).click();
+    await page.getByText(lesson.practice.fix.message, { exact: true }).waitFor();
+  } finally {
+    await browser.close();
+  }
+});
+
+test('Level 3 and 4 lessons start from the catalogue, and Fix it says which command shows the mistake', { timeout: 30000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
+    page.setDefaultTimeout(8000);
+    await page.goto(`${appUrl}#learn`);
+    for (const title of ['Reach every Pod directly', 'One Pod on every node', 'Default sizes for a namespace', 'A budget for a namespace',
+      'Is the app healthy?', 'Start and stop timing', 'Survive node maintenance']) {
+      await page.getByRole('link', { name: `Start ${title}` }).waitFor();
+    }
+    // The LimitRange lesson tries the CPU and memory lesson's Pod in its own namespace, after its own file.
+    await page.getByRole('link', { name: 'Start Default sizes for a namespace' }).click();
+    await page.getByRole('heading', { name: 'Default sizes for a namespace', level: 1 }).waitFor();
+    await page.getByRole('button', { name: 'Show whole file' }).click();
+    await page.locator('.lesson-uses').getByText('resources.yaml', { exact: true }).waitFor();
+    await page.getByText('kubectl apply -n limits-demo -f resources.yaml', { exact: true }).waitFor();
+
+    // A mistake Kubernetes accepts names the command that reveals it.
+    const lesson = lessonContent.probes;
+    await page.goto(`${appUrl}#learn/probes`);
+    await page.getByRole('button', { name: 'Show whole file' }).click();
+    await page.getByRole('button', { name: 'Practise: Read it and Fix it' }).click();
+    await page.getByRole('tab', { name: 'Fix it' }).click();
+    await page.getByLabel('Wrong line').selectOption(String(lesson.practice.fix.line));
+    await page.getByRole('button', { name: 'Check my answer' }).click();
+    await page.getByText(`Right, line ${lesson.practice.fix.line}. The copy applies, but ${lesson.practice.fix.command} shows:`).waitFor();
+    await page.getByText(lesson.practice.fix.message, { exact: true }).waitFor();
+  } finally {
+    await browser.close();
+  }
+});

@@ -1,0 +1,202 @@
+{
+  "id": "probes",
+  "kind": "Pod",
+  "filename": "probes.yaml",
+  "finishedAt": 2,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "This file runs a Pod with health checks. It comes from the core v1 API.",
+      "why": "Probes work the same in a Pod and in a Deployment’s Pod template. A single Pod is easier to watch.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create: a Pod, from the core v1 API",
+      "term": "Pod",
+      "yaml": "apiVersion: v1\nkind: Pod\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "This Pod is called probe-demo.",
+      "why": "You use the name to watch its health and run commands inside it.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A name to find the Pod",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: probe-demo\n"
+    },
+    {
+      "title": "What should run?",
+      "what": "One nginx container that serves a web page on port 80. This block makes the file ready.",
+      "why": "Without probes, Kubernetes only knows whether the process is running, not whether it works.",
+      "ifRemoved": "Without containers, Kubernetes rejects the Pod.",
+      "comment": "The container to run and check",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: probe-demo\nspec:\n  containers:\n    - name: web\n      image: nginx:1.30.4\n      ports:\n        - containerPort: 80\n"
+    },
+    {
+      "title": "Has it started?",
+      "what": "The startup probe asks for the home page every 3 seconds, up to 10 times.",
+      "why": "Slow apps get time to start. The other probes wait until this one passes.",
+      "ifRemoved": "The other probes start at once and may restart a slow app too early.",
+      "comment": "Wait up to 30 seconds for the app to start",
+      "term": "probe",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: probe-demo\nspec:\n  containers:\n    - name: web\n      image: nginx:1.30.4\n      ports:\n        - containerPort: 80\n      startupProbe:\n        httpGet:\n          path: /\n          port: 80\n        failureThreshold: 10\n        periodSeconds: 3\n"
+    },
+    {
+      "title": "Is it ready for traffic?",
+      "what": "The readiness probe asks for the page every 5 seconds while the Pod runs.",
+      "why": "While it fails, Services stop sending traffic to this Pod. Nothing is restarted.",
+      "ifRemoved": "The Pod counts as ready as soon as it starts, even if the app cannot answer yet.",
+      "comment": "Only send traffic while the page answers",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: probe-demo\nspec:\n  containers:\n    - name: web\n      image: nginx:1.30.4\n      ports:\n        - containerPort: 80\n      startupProbe:\n        httpGet:\n          path: /\n          port: 80\n        failureThreshold: 10\n        periodSeconds: 3\n      readinessProbe:\n        httpGet:\n          path: /\n          port: 80\n        periodSeconds: 5\n"
+    },
+    {
+      "title": "Is it still working?",
+      "what": "The liveness probe asks every 10 seconds. After 3 failures in a row, Kubernetes restarts the container.",
+      "why": "A restart fixes apps that are stuck but still running.",
+      "ifRemoved": "A stuck container keeps running and never recovers.",
+      "comment": "Restart the container if the page stops answering",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: probe-demo\nspec:\n  containers:\n    - name: web\n      image: nginx:1.30.4\n      ports:\n        - containerPort: 80\n      startupProbe:\n        httpGet:\n          path: /\n          port: 80\n        failureThreshold: 10\n        periodSeconds: 3\n      readinessProbe:\n        httpGet:\n          path: /\n          port: 80\n        periodSeconds: 5\n      livenessProbe:\n        httpGet:\n          path: /\n          port: 80\n        periodSeconds: 10\n        failureThreshold: 3\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version that define this kind. Pods are in the core v1 API.",
+    "kind": "The type of object to create. A Pod runs one or more containers together.",
+    "metadata": "Details that identify the object, such as its name.",
+    "metadata.name": "The Pod’s name. kubectl get and kubectl exec use it.",
+    "spec": "The desired state: what you want Kubernetes to run.",
+    "spec.containers": "The containers in this Pod. Each list item starts with a dash.",
+    "spec.containers[].name": "The container’s name. Probe messages in events name it.",
+    "spec.containers[].image": "The nginx web server, pinned to a version.",
+    "spec.containers[].ports": "Ports the container listens on. This list is mostly informational.",
+    "spec.containers[].ports[].containerPort": "nginx listens on port 80 inside the container.",
+    "spec.containers[].startupProbe": "Checks whether the app has started. The other probes wait until it passes.",
+    "spec.containers[].startupProbe.httpGet": "Check by asking for a web page. Any status from 200 to 399 passes.",
+    "spec.containers[].startupProbe.httpGet.path": "The page to ask for: /, nginx’s home page.",
+    "spec.containers[].startupProbe.httpGet.port": "The port to ask on. It must be where the app listens: 80.",
+    "spec.containers[].startupProbe.periodSeconds": "How many seconds to wait between checks.",
+    "spec.containers[].startupProbe.failureThreshold": "Allow 10 failed checks, about 30 seconds, before restarting the container.",
+    "spec.containers[].readinessProbe": "Checks whether the app can take traffic. Failing removes the Pod from Services.",
+    "spec.containers[].readinessProbe.httpGet": "Check by asking for a web page. Any status from 200 to 399 passes.",
+    "spec.containers[].readinessProbe.httpGet.path": "The page to ask for: /, nginx’s home page.",
+    "spec.containers[].readinessProbe.httpGet.port": "The port to ask on. It must be where the app listens: 80.",
+    "spec.containers[].readinessProbe.periodSeconds": "How many seconds to wait between checks.",
+    "spec.containers[].livenessProbe": "Checks whether the app still works. Failing too often restarts the container.",
+    "spec.containers[].livenessProbe.httpGet": "Check by asking for a web page. Any status from 200 to 399 passes.",
+    "spec.containers[].livenessProbe.httpGet.path": "The page to ask for: /, nginx’s home page.",
+    "spec.containers[].livenessProbe.httpGet.port": "The port to ask on. It must be where the app listens: 80.",
+    "spec.containers[].livenessProbe.periodSeconds": "How many seconds to wait between checks.",
+    "spec.containers[].livenessProbe.failureThreshold": "Restart after 3 failed checks in a row, about 30 seconds."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f probes.yaml",
+      "result": "Prints pod/probe-demo created.",
+      "check": {
+        "expect": [
+          "pod/probe-demo created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get pod probe-demo",
+      "result": "READY shows 1/1 once the startup and readiness probes pass.",
+      "check": {
+        "pattern": "probe-demo\\s+1/1\\s+Running\\s+0\\s"
+      }
+    },
+    {
+      "command": "kubectl exec probe-demo -- rm /usr/share/nginx/html/index.html",
+      "result": "Prints nothing. Deleting the home page makes nginx answer / with 403 Forbidden, so the probes start failing.",
+      "check": {
+        "lines": 0
+      }
+    },
+    {
+      "command": "kubectl get pod probe-demo",
+      "result": "Within about 15 seconds, READY drops to 0/1. Services stop sending traffic, but nothing restarts yet.",
+      "check": {
+        "pattern": "probe-demo\\s+0/1\\s+Running\\s+0\\s"
+      }
+    },
+    {
+      "command": "kubectl describe pod probe-demo",
+      "result": "Events show Liveness probe failed with status code 403, then the container failed liveness probe and will be restarted.",
+      "check": {
+        "expect": [
+          "Liveness probe failed: HTTP probe failed with statuscode: 403",
+          "failed liveness probe, will be restarted"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get pod probe-demo",
+      "result": "RESTARTS shows 1 and READY is back to 1/1. The new container has a fresh home page.",
+      "check": {
+        "pattern": "probe-demo\\s+1/1\\s+Running\\s+1\\s"
+      }
+    },
+    {
+      "command": "kubectl delete -f probes.yaml",
+      "result": "Removes the Pod.",
+      "check": {
+        "expect": [
+          "pod \"probe-demo\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "Which probe decides whether the container is restarted?",
+        "answers": [
+          "startupProbe",
+          "readinessProbe",
+          "livenessProbe"
+        ],
+        "correct": 2,
+        "explain": "A failing liveness probe restarts the container. A failing startup probe does too, but only while starting.",
+        "line": 22
+      },
+      {
+        "question": "The readiness probe fails, but the liveness probe passes. What happens?",
+        "answers": [
+          "The container restarts",
+          "The Pod keeps running but gets no Service traffic",
+          "The Pod is deleted"
+        ],
+        "correct": 1,
+        "explain": "Readiness only controls traffic. The Pod waits until the probe passes again.",
+        "line": 17
+      },
+      {
+        "question": "How long can nginx take to start before the startup probe gives up?",
+        "answers": [
+          "3 seconds",
+          "About 30 seconds",
+          "10 minutes"
+        ],
+        "correct": 1,
+        "explain": "Ten checks, 3 seconds apart, give the app about 30 seconds to start.",
+        "line": 15
+      }
+    ],
+    "fix": {
+      "line": 20,
+      "text": "          port: 8080",
+      "source": "command",
+      "command": "kubectl describe pod probe-demo",
+      "expect": "Readiness probe failed: Get \"http://[\\d.]+:8080/\": dial tcp [\\d.]+:8080: connect: connection refused",
+      "message": "Readiness probe failed: Get \"http://<Pod IP>:8080/\": dial tcp <Pod IP>:8080: connect: connection refused",
+      "explain": "nginx listens on port 80, so nothing answers on 8080. The Pod never becomes ready, so it never gets traffic.",
+      "fix": "Point the probe at the port the app listens on: port: 80."
+    }
+  },
+  "sources": [
+    {
+      "title": "Liveness, Readiness, and Startup Probes",
+      "url": "https://kubernetes.io/docs/concepts/configuration/liveness-readiness-startup-probes/"
+    },
+    {
+      "title": "Configure Liveness, Readiness and Startup Probes",
+      "url": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/"
+    }
+  ]
+}

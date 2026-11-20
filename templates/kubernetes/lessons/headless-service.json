@@ -1,0 +1,173 @@
+{
+  "id": "headless-service",
+  "kind": "Service",
+  "filename": "headless.yaml",
+  "uses": [
+    "deployment"
+  ],
+  "finishedAt": 3,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "A Service gives a group of Pods a name. It comes from the core v1 API.",
+      "why": "This Service skips the shared address, so a lookup returns each Pod’s own address.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create: a Service, from the core v1 API",
+      "term": "Service",
+      "yaml": "apiVersion: v1\nkind: Service\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "This Service is called web-headless. Its DNS name is built from it.",
+      "why": "A different name from the web Service lets you compare the two side by side.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "The name apps look up",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: web-headless\n"
+    },
+    {
+      "title": "No shared address",
+      "what": "clusterIP: None makes the Service headless. It gets no address of its own.",
+      "why": "Cluster DNS then answers with the address of every matching Pod, so clients can pick one.",
+      "ifRemoved": "The Service gets a shared address, like the web Service, and DNS returns only that.",
+      "comment": "Headless: no shared address, so DNS returns each Pod",
+      "term": "headless Service",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: web-headless\nspec:\n  clusterIP: None\n"
+    },
+    {
+      "title": "Which Pods?",
+      "what": "The selector picks every Pod labelled app: web, the Pods from the Deployment lesson.",
+      "why": "DNS lists only Pods that match and are ready. This block makes the file ready to apply.",
+      "ifRemoved": "DNS has no Pods to return, so lookups find nothing.",
+      "comment": "Return the Pods labelled app: web",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: web-headless\nspec:\n  clusterIP: None\n  selector:\n    app: web\n"
+    },
+    {
+      "title": "Which ports?",
+      "what": "The ports list the port the Pods serve on. No traffic passes through the Service itself.",
+      "why": "Clients connect straight to a Pod’s address. The ports tell people and tools where to connect.",
+      "ifRemoved": "Lookups still work. A headless Service may leave out ports.",
+      "comment": "The port the Pods serve on",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: web-headless\nspec:\n  clusterIP: None\n  selector:\n    app: web\n  ports:\n    - protocol: TCP\n      port: 80\n      targetPort: 80\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version that define this kind. Services are in the core v1 API.",
+    "kind": "The type of object to create. A Service gives a group of Pods a name.",
+    "metadata": "Details that identify the object, such as its name.",
+    "metadata.name": "The Service name. Its full DNS name is web-headless.default.svc.cluster.local.",
+    "spec": "The desired state: which Pods DNS should return, and on which ports.",
+    "spec.clusterIP": "None, with a capital N, means no shared address. That makes the Service headless.",
+    "spec.selector": "The labels a Pod must have to be returned by DNS lookups.",
+    "spec.selector.app": "Return Pods labelled app: web, the Pods from the Deployment lesson.",
+    "spec.ports": "The ports the Pods serve on. Each list item is one port.",
+    "spec.ports[].protocol": "The network protocol. TCP is the default and suits web traffic.",
+    "spec.ports[].port": "The port this Service lists for clients.",
+    "spec.ports[].targetPort": "The port on the Pods. nginx listens on 80."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f deployment.yaml",
+      "result": "Starts the two web Pods from the Keep your app running lesson.",
+      "check": {
+        "expect": [
+          "deployment.apps/web created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl apply -f headless.yaml",
+      "result": "Prints service/web-headless created.",
+      "check": {
+        "expect": [
+          "service/web-headless created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get service web-headless",
+      "result": "CLUSTER-IP shows None. The Service has no address of its own.",
+      "check": {
+        "pattern": "web-headless\\s+ClusterIP\\s+None\\s+<none>\\s+80/TCP"
+      }
+    },
+    {
+      "command": "kubectl run client --rm -i --restart=Never --image=busybox:1.37.0 -- nslookup web-headless.default.svc.cluster.local",
+      "result": "Shows two addresses, one for each web Pod, instead of one Service address.",
+      "check": {
+        "pattern": "Name:\\s+web-headless\\.default\\.svc\\.cluster\\.local\\s+Address: \\d+\\.\\d+\\.\\d+\\.\\d+[\\s\\S]*Name:\\s+web-headless\\.default\\.svc\\.cluster\\.local\\s+Address: \\d+\\.\\d+\\.\\d+\\.\\d+"
+      }
+    },
+    {
+      "command": "kubectl get pods -l app=web -o wide",
+      "result": "The IP column shows the same two addresses that DNS returned.",
+      "check": {
+        "pattern": "web-\\S+\\s+1/1\\s+Running\\s+\\d+\\s+\\S+\\s+\\d+\\.\\d+\\.\\d+\\.\\d+[\\s\\S]*web-\\S+\\s+1/1\\s+Running\\s+\\d+\\s+\\S+\\s+\\d+\\.\\d+\\.\\d+\\.\\d+"
+      }
+    },
+    {
+      "command": "kubectl delete -f headless.yaml -f deployment.yaml",
+      "result": "Removes the Service and the Deployment.",
+      "check": {
+        "expect": [
+          "service \"web-headless\" deleted",
+          "deployment.apps \"web\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "What does a lookup of web-headless return?",
+        "answers": [
+          "One shared Service address",
+          "The address of each ready web Pod",
+          "The node’s address"
+        ],
+        "correct": 1,
+        "explain": "clusterIP: None means no shared address. DNS answers with every matching Pod instead.",
+        "line": 6
+      },
+      {
+        "question": "A web Pod is not ready yet. Is its address returned?",
+        "answers": [
+          "Yes, always",
+          "No, DNS lists only ready Pods",
+          "Only if it has the label twice"
+        ],
+        "correct": 1,
+        "explain": "Like any Service, a headless one only lists ready Pods.",
+        "line": 8
+      },
+      {
+        "question": "When is a headless Service useful?",
+        "answers": [
+          "When a client must reach one particular Pod, such as a database copy",
+          "When you want a public address",
+          "When you want fewer Pods"
+        ],
+        "correct": 0,
+        "explain": "Clients get every Pod’s address and choose for themselves. The StatefulSet lesson builds on this.",
+        "line": 6
+      }
+    ],
+    "fix": {
+      "line": 6,
+      "text": "  clusterIP: none",
+      "source": "apply",
+      "message": "The Service \"web-headless\" is invalid: spec.clusterIPs[0]: Invalid value: \"none\": must be a valid IP address, (e.g. 10.9.8.7 or 2001:db8::ffff)",
+      "explain": "Only None with a capital N means no address. Kubernetes reads none as an address, and it is not a valid one.",
+      "fix": "Write clusterIP: None, with a capital N."
+    }
+  },
+  "sources": [
+    {
+      "title": "Headless Services",
+      "url": "https://kubernetes.io/docs/concepts/services-networking/service/#headless-services"
+    },
+    {
+      "title": "DNS for Services and Pods",
+      "url": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/"
+    }
+  ]
+}

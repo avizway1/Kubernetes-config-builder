@@ -1,0 +1,199 @@
+{
+  "id": "dns",
+  "kind": "Pod",
+  "filename": "dns.yaml",
+  "uses": [
+    "deployment",
+    "service"
+  ],
+  "finishedAt": 2,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "This file runs a Pod you can look up names from. It comes from the core v1 API.",
+      "why": "Looking up the web Service from inside a Pod shows how apps find each other.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create: a Pod to test names from",
+      "yaml": "apiVersion: v1\nkind: Pod\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "This Pod is called dns-client.",
+      "why": "You use the name to run commands inside it with kubectl exec.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A name to run commands in",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: dns-client\n"
+    },
+    {
+      "title": "A container that waits",
+      "what": "A small busybox container sleeps for an hour, so you can run commands inside it.",
+      "why": "busybox includes nslookup and wget, the tools for checking names and fetching pages.",
+      "ifRemoved": "Without containers, Kubernetes rejects the Pod.",
+      "comment": "A busybox container that waits for your commands",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: dns-client\nspec:\n  containers:\n    - name: client\n      image: busybox:1.37.0\n      command: [\"sh\", \"-c\", \"sleep 3600\"]\n"
+    },
+    {
+      "title": "The short name",
+      "what": "SHORT_URL holds the Service name alone: http://web.",
+      "why": "Inside the same namespace, the Service name is enough. Cluster DNS fills in the rest.",
+      "ifRemoved": "The variable is gone. The short name still works if you type it yourself.",
+      "comment": "The short name: works from the same namespace",
+      "term": "DNS",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: dns-client\nspec:\n  containers:\n    - name: client\n      image: busybox:1.37.0\n      command: [\"sh\", \"-c\", \"sleep 3600\"]\n      env:\n        - name: SHORT_URL\n          value: http://web\n"
+    },
+    {
+      "title": "The full name",
+      "what": "FULL_URL holds the full name: the Service, its namespace, then svc.cluster.local.",
+      "why": "The full name works from any namespace, so apps elsewhere in the cluster use it.",
+      "ifRemoved": "The variable is gone. The full name still works if you type it yourself.",
+      "comment": "The full name: works from any namespace",
+      "yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: dns-client\nspec:\n  containers:\n    - name: client\n      image: busybox:1.37.0\n      command: [\"sh\", \"-c\", \"sleep 3600\"]\n      env:\n        - name: SHORT_URL\n          value: http://web\n        - name: FULL_URL\n          value: http://web.default.svc.cluster.local\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version that define this kind. Pods are in the core v1 API.",
+    "kind": "The type of object to create. A Pod runs one or more containers together.",
+    "metadata": "Details that identify the object, such as its name.",
+    "metadata.name": "The Pod’s name. kubectl exec uses it to run commands inside.",
+    "spec": "The desired state: what you want Kubernetes to run.",
+    "spec.containers": "The containers in this Pod. Each list item starts with a dash.",
+    "spec.containers[].name": "The container’s name. It must be unique within the Pod.",
+    "spec.containers[].image": "busybox, a small image with nslookup and wget, at a fixed version.",
+    "spec.containers[].command": "Sleep for an hour, so the container keeps running while you test.",
+    "spec.containers[].env": "Environment variables for the container. Apps often read addresses from them.",
+    "spec.containers[].env[].name": "The variable’s name.",
+    "spec.containers[].env[].value": "The variable’s value: an address made from the Service’s DNS name."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f deployment.yaml",
+      "result": "Starts the two web Pods from the Keep your app running lesson.",
+      "check": {
+        "expect": [
+          "deployment.apps/web created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl apply -f service.yaml",
+      "result": "Creates the web Service from the Give your app an address lesson.",
+      "check": {
+        "expect": [
+          "service/web created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl apply -f dns.yaml",
+      "result": "Prints pod/dns-client created.",
+      "check": {
+        "expect": [
+          "pod/dns-client created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl exec dns-client -- cat /etc/resolv.conf",
+      "result": "The search line starts with default.svc.cluster.local. Short names like web are tried with each ending in turn.",
+      "check": {
+        "expect": [
+          "search default.svc.cluster.local svc.cluster.local cluster.local",
+          "nameserver"
+        ]
+      }
+    },
+    {
+      "command": "kubectl exec dns-client -- nslookup web.default.svc.cluster.local",
+      "result": "Shows the full name and the Service’s CLUSTER-IP address.",
+      "check": {
+        "pattern": "Name:\\s+web\\.default\\.svc\\.cluster\\.local\\s+Address: \\d+\\.\\d+\\.\\d+\\.\\d+"
+      }
+    },
+    {
+      "command": "kubectl exec dns-client -- sh -c 'wget -qO- $SHORT_URL'",
+      "result": "Prints the nginx welcome page, reached by the short name.",
+      "check": {
+        "expect": [
+          "Welcome to nginx!"
+        ]
+      }
+    },
+    {
+      "command": "kubectl exec dns-client -- sh -c 'wget -qO- $FULL_URL'",
+      "result": "Prints the same page, reached by the full name.",
+      "check": {
+        "expect": [
+          "Welcome to nginx!"
+        ]
+      }
+    },
+    {
+      "command": "kubectl delete -f dns.yaml -f service.yaml -f deployment.yaml",
+      "result": "Removes the Pod, the Service, and the Deployment.",
+      "check": {
+        "expect": [
+          "pod \"dns-client\" deleted",
+          "service \"web\" deleted",
+          "deployment.apps \"web\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "In web.default.svc.cluster.local, what is default?",
+        "answers": [
+          "The namespace the Service is in",
+          "The Service type",
+          "The name of the cluster"
+        ],
+        "correct": 0,
+        "explain": "A full name is the Service name, its namespace, then svc.cluster.local.",
+        "line": 14
+      },
+      {
+        "question": "Why does http://web work without the rest of the name?",
+        "answers": [
+          "The Pod’s search list adds default.svc.cluster.local",
+          "web is a public website",
+          "Kubernetes renames the Service"
+        ],
+        "correct": 0,
+        "explain": "Each Pod gets a search list in /etc/resolv.conf. Short names are tried with each ending in turn.",
+        "line": 12
+      },
+      {
+        "question": "An app in the shop namespace needs this Service. Which address should it use?",
+        "answers": [
+          "http://web",
+          "http://web.default.svc.cluster.local",
+          "http://web.shop.svc.cluster.local"
+        ],
+        "correct": 1,
+        "explain": "From shop, the short name looks in shop first. The full name says default.",
+        "line": 14
+      }
+    ],
+    "fix": {
+      "line": 14,
+      "text": "          value: http://web.shop.svc.cluster.local",
+      "source": "command",
+      "command": "kubectl exec dns-client -- sh -c 'wget -qO- $FULL_URL'",
+      "expect": "wget: bad address 'web\\.shop\\.svc\\.cluster\\.local'",
+      "message": "wget: bad address 'web.shop.svc.cluster.local'",
+      "explain": "No Service called web exists in the shop namespace. The name points to the wrong namespace.",
+      "fix": "Use the Service’s namespace: web.default.svc.cluster.local."
+    }
+  },
+  "sources": [
+    {
+      "title": "DNS for Services and Pods",
+      "url": "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/"
+    },
+    {
+      "title": "Debugging DNS resolution",
+      "url": "https://kubernetes.io/docs/tasks/administer-cluster/dns-debugging-resolution/"
+    }
+  ]
+}
