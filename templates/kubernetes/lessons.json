@@ -127,7 +127,7 @@
         {
           "id": "ingress",
           "title": "Route web traffic",
-          "objects": "IngressClass, Ingress",
+          "objects": "IngressClassParams, IngressClass, Ingress",
           "runsOn": "eks",
           "summary": "EKS Auto Mode creates an AWS Application Load Balancer that routes web requests to your app."
         }
@@ -248,7 +248,7 @@
           "title": "Choose your machines",
           "objects": "Auto Mode NodePool, nodeSelector",
           "runsOn": "eks",
-          "summary": "Tell EKS Auto Mode which instance types, sizes, and zones to launch for your Pods."
+          "summary": "Tell EKS Auto Mode which kinds of machines it may launch for your Pods."
         }
       ]
     },
@@ -312,27 +312,6 @@
           "objects": "ServiceAccount, Pod Identity",
           "runsOn": "eks",
           "summary": "Give a Pod its own AWS permissions through an IAM role, without storing access keys."
-        }
-      ]
-    },
-    {
-      "id": "level-9",
-      "title": "Level 9 · Read any manifest",
-      "summary": "Read files for tools you have never seen, then explain a mixed file on your own.",
-      "lessons": [
-        {
-          "id": "unknown-kinds",
-          "title": "Meet an unknown kind",
-          "objects": "API groups, CustomResourceDefinitions, kubectl explain",
-          "runsOn": "anywhere",
-          "summary": "Find out what any kind does from its API group, its definition, and the official docs."
-        },
-        {
-          "id": "final-challenge",
-          "title": "Final challenge",
-          "objects": "A file that mixes many kinds",
-          "runsOn": "anywhere",
-          "summary": "Read a file with many kinds and explain what each part does."
         }
       ]
     }

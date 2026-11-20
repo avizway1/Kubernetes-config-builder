@@ -1,0 +1,296 @@
+{
+  "id": "statefulset",
+  "kind": "StatefulSet",
+  "filename": "statefulset.yaml",
+  "uses": [
+    "storage"
+  ],
+  "finishedAt": 9,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "The first object is a Service, from the core v1 API.",
+      "why": "A StatefulSet, later in the file, needs a headless Service to give each Pod its own DNS name.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create first: a Service",
+      "term": "headless Service",
+      "yaml": "apiVersion: v1\nkind: Service\n"
+    },
+    {
+      "title": "A headless Service",
+      "what": "This Service is called db. clusterIP: None makes it headless: no shared address.",
+      "why": "Lookups then return each Pod, and each StatefulSet Pod gets a name such as db-0.db.",
+      "ifRemoved": "The Service gets a shared address, and Pods get no names of their own.",
+      "comment": "No shared address, so each Pod gets its own DNS name",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: db\nspec:\n  clusterIP: None\n"
+    },
+    {
+      "title": "Which Pods?",
+      "what": "The selector finds Pods labelled app: db.",
+      "why": "These are the StatefulSet’s Pods.",
+      "ifRemoved": "The Service finds no Pods, so no names are created.",
+      "comment": "Find Pods labelled app: db",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: db\nspec:\n  clusterIP: None\n  selector:\n    app: db\n"
+    },
+    {
+      "title": "Add the StatefulSet",
+      "what": "Three dashes start a second object: a StatefulSet called db, from apps/v1.",
+      "why": "A StatefulSet is like a Deployment, but each Pod keeps its name and its own disk.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A second object: the StatefulSet",
+      "term": "StatefulSet",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: db\nspec:\n  clusterIP: None\n  selector:\n    app: db\n---\napiVersion: apps/v1\nkind: StatefulSet\nmetadata:\n  name: db\n"
+    },
+    {
+      "title": "Names and copies",
+      "what": "serviceName links the headless Service. Two copies, managed by the label app: db.",
+      "why": "The Pods are called db-0 and db-1, and start in that order.",
+      "ifRemoved": "Kubernetes rejects the StatefulSet, because it needs a selector.",
+      "comment": "Two Pods, db-0 and db-1, named through the db Service",
+      "term": "replica",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: db\nspec:\n  clusterIP: None\n  selector:\n    app: db\n---\napiVersion: apps/v1\nkind: StatefulSet\nmetadata:\n  name: db\nspec:\n  serviceName: db\n  replicas: 2\n  selector:\n    matchLabels:\n      app: db\n"
+    },
+    {
+      "title": "Describe the Pods",
+      "what": "The template gives each Pod the label app: db.",
+      "why": "The labels must match the selector, as in a Deployment.",
+      "ifRemoved": "Kubernetes rejects the StatefulSet, because it would have nothing to create.",
+      "comment": "Label each Pod app: db",
+      "term": "Pod template",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: db\nspec:\n  clusterIP: None\n  selector:\n    app: db\n---\napiVersion: apps/v1\nkind: StatefulSet\nmetadata:\n  name: db\nspec:\n  serviceName: db\n  replicas: 2\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n"
+    },
+    {
+      "title": "What each Pod runs",
+      "what": "busybox writes its own name and the time to /data/log, then sleeps.",
+      "why": "It stands in for a database. Each line shows which Pod wrote it.",
+      "ifRemoved": "Kubernetes rejects the StatefulSet, because its Pods would have nothing to run.",
+      "comment": "Note the Pod’s name and start time in /data/log",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: db\nspec:\n  clusterIP: None\n  selector:\n    app: db\n---\napiVersion: apps/v1\nkind: StatefulSet\nmetadata:\n  name: db\nspec:\n  serviceName: db\n  replicas: 2\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n        - name: db\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"echo $(hostname) started at $(date) >> /data/log && sleep 3600\"]\n"
+    },
+    {
+      "title": "Where the disk appears",
+      "what": "The volume named data appears at /data.",
+      "why": "Each Pod writes to its own disk here.",
+      "ifRemoved": "Files under /data are lost whenever a Pod is replaced.",
+      "comment": "The Pod’s own disk appears at /data",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: db\nspec:\n  clusterIP: None\n  selector:\n    app: db\n---\napiVersion: apps/v1\nkind: StatefulSet\nmetadata:\n  name: db\nspec:\n  serviceName: db\n  replicas: 2\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n        - name: db\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"echo $(hostname) started at $(date) >> /data/log && sleep 3600\"]\n          volumeMounts:\n            - name: data\n              mountPath: /data\n"
+    },
+    {
+      "title": "A disk for each Pod",
+      "what": "volumeClaimTemplates makes one claim per Pod from this template, named data-db-0 and data-db-1.",
+      "why": "A replaced Pod gets back the claim with its name, and so its data.",
+      "ifRemoved": "Kubernetes rejects the StatefulSet, because the mount names a volume that does not exist.",
+      "comment": "Make a claim called data for each Pod",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: db\nspec:\n  clusterIP: None\n  selector:\n    app: db\n---\napiVersion: apps/v1\nkind: StatefulSet\nmetadata:\n  name: db\nspec:\n  serviceName: db\n  replicas: 2\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n        - name: db\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"echo $(hostname) started at $(date) >> /data/log && sleep 3600\"]\n          volumeMounts:\n            - name: data\n              mountPath: /data\n  volumeClaimTemplates:\n    - metadata:\n        name: data\n      spec:\n"
+    },
+    {
+      "title": "What kind of disk?",
+      "what": "Each claim uses the auto-ebs StorageClass from the storage lesson: 1Gi, one node at a time. This block makes the file ready.",
+      "why": "Each Pod gets its own EBS volume.",
+      "ifRemoved": "Kubernetes rejects the claim template, because it must say how much storage it needs.",
+      "comment": "1Gi on auto-ebs for each Pod",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: db\nspec:\n  clusterIP: None\n  selector:\n    app: db\n---\napiVersion: apps/v1\nkind: StatefulSet\nmetadata:\n  name: db\nspec:\n  serviceName: db\n  replicas: 2\n  selector:\n    matchLabels:\n      app: db\n  template:\n    metadata:\n      labels:\n        app: db\n    spec:\n      containers:\n        - name: db\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"echo $(hostname) started at $(date) >> /data/log && sleep 3600\"]\n          volumeMounts:\n            - name: data\n              mountPath: /data\n  volumeClaimTemplates:\n    - metadata:\n        name: data\n      spec:\n        storageClassName: auto-ebs\n        accessModes:\n          - ReadWriteOnce\n        resources:\n          requests:\n            storage: 1Gi\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version. Services are in core v1; StatefulSets are in apps/v1.",
+    "metadata": "Details that identify the object, such as its name.",
+    "---": "Three dashes separate objects. One file can hold several objects.",
+    "Service:kind": "A Service gives Pods a name to be found by.",
+    "StatefulSet:kind": "Runs Pods that each keep their name and their own disk.",
+    "Service:metadata.name": "The Service name, db. Pod names end in .db.",
+    "StatefulSet:metadata.name": "The StatefulSet name. Pods are called db-0, db-1, and so on.",
+    "Service:spec": "The desired state of the Service.",
+    "StatefulSet:spec": "The desired state of the StatefulSet.",
+    "spec.clusterIP": "None makes the Service headless: lookups return each Pod’s own address.",
+    "Service:spec.selector": "Pods with all of these labels get DNS names.",
+    "spec.selector.app": "Find Pods labelled app: db.",
+    "spec.serviceName": "The headless Service that gives each Pod its DNS name.",
+    "spec.replicas": "How many Pods to run: two.",
+    "spec.selector": "Which Pods this StatefulSet manages. It cannot change after creation.",
+    "spec.selector.matchLabels": "Pods must have all of these labels.",
+    "spec.selector.matchLabels.app": "Manage Pods labelled app: db.",
+    "spec.template": "The Pod template: the blueprint for every Pod.",
+    "spec.template.metadata": "Details given to every Pod.",
+    "spec.template.metadata.labels": "Labels given to every Pod. They must match the selector.",
+    "spec.template.metadata.labels.app": "Every Pod gets the label app: db.",
+    "spec.template.spec": "What each Pod runs.",
+    "spec.template.spec.containers": "The containers in each Pod.",
+    "spec.template.spec.containers[].name": "The container’s name.",
+    "spec.template.spec.containers[].image": "A tiny image with basic shell tools, pinned to a version.",
+    "spec.template.spec.containers[].command": "Add the Pod’s name and the time to /data/log, then sleep.",
+    "spec.template.spec.containers[].volumeMounts": "Where volumes appear inside the container.",
+    "spec.template.spec.containers[].volumeMounts[].name": "Which volume: data, from the claim template.",
+    "spec.template.spec.containers[].volumeMounts[].mountPath": "The volume appears at /data.",
+    "spec.volumeClaimTemplates": "Templates for claims. Each Pod gets its own claim from each template.",
+    "spec.volumeClaimTemplates[].metadata": "Details for each claim.",
+    "spec.volumeClaimTemplates[].metadata.name": "data. The claims are called data-db-0 and data-db-1.",
+    "spec.volumeClaimTemplates[].spec": "What storage each claim needs.",
+    "spec.volumeClaimTemplates[].spec.storageClassName": "auto-ebs, the StorageClass from the storage lesson.",
+    "spec.volumeClaimTemplates[].spec.accessModes": "How each volume can be used.",
+    "spec.volumeClaimTemplates[].spec.accessModes[]": "ReadWriteOnce: one node at a time.",
+    "spec.volumeClaimTemplates[].spec.resources": "How much storage each claim needs.",
+    "spec.volumeClaimTemplates[].spec.resources.requests": "The amount to ask for.",
+    "spec.volumeClaimTemplates[].spec.resources.requests.storage": "1Gi for each Pod."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f storage.yaml",
+      "result": "Creates the auto-ebs StorageClass from the storage lesson, with its Pod and claim.",
+      "check": {
+        "expect": [
+          "storageclass.storage.k8s.io/auto-ebs"
+        ]
+      }
+    },
+    {
+      "command": "kubectl apply -f statefulset.yaml",
+      "result": "Creates the headless Service and the StatefulSet.",
+      "check": {
+        "expect": [
+          "service/db created",
+          "statefulset.apps/db created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get pods -l app=db",
+      "result": "db-0 and db-1 are Running. db-1 started only after db-0 was ready.",
+      "check": {
+        "pattern": "db-0\\s+1/1\\s+Running[\\s\\S]*db-1\\s+1/1\\s+Running"
+      }
+    },
+    {
+      "command": "kubectl get pvc -l app=db",
+      "result": "data-db-0 and data-db-1 are Bound: one EBS volume each.",
+      "check": {
+        "pattern": "data-db-0\\s+Bound[\\s\\S]*data-db-1\\s+Bound"
+      }
+    },
+    {
+      "command": "kubectl exec db-0 -- cat /data/log",
+      "result": "Prints one line from db-0.",
+      "check": {
+        "expect": [
+          "db-0 started at"
+        ],
+        "lines": 1
+      }
+    },
+    {
+      "command": "kubectl delete pod db-0",
+      "result": "Removes db-0. The StatefulSet creates it again with the same name.",
+      "check": {
+        "expect": [
+          "pod \"db-0\" deleted"
+        ]
+      }
+    },
+    {
+      "command": "kubectl exec db-0 -- cat /data/log",
+      "result": "Prints two lines from db-0. The new Pod got the same disk back.",
+      "check": {
+        "pattern": "db-0 started at[^\\n]*\\n[^\\n]*db-0 started at",
+        "lines": 2
+      }
+    },
+    {
+      "command": "kubectl run client --rm -i --restart=Never --image=busybox:1.37.0 -- nslookup db-0.db.default.svc.cluster.local",
+      "result": "Prints db-0’s own address. busybox’s nslookup needs the full name.",
+      "check": {
+        "pattern": "Name:\\s+db-0\\.db\\.default\\.svc\\.cluster\\.local"
+      }
+    },
+    {
+      "command": "kubectl delete -f statefulset.yaml",
+      "result": "Removes the Service and the StatefulSet.",
+      "check": {
+        "expect": [
+          "service \"db\" deleted",
+          "statefulset.apps \"db\" deleted"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get pvc -l app=db",
+      "result": "Both claims are still there. A StatefulSet keeps its disks, so data is not lost by accident.",
+      "check": {
+        "pattern": "data-db-0\\s+Bound[\\s\\S]*data-db-1\\s+Bound"
+      }
+    },
+    {
+      "command": "kubectl delete pvc -l app=db",
+      "result": "Removes both claims, and Auto Mode deletes their EBS volumes.",
+      "check": {
+        "expect": [
+          "persistentvolumeclaim \"data-db-0\" deleted",
+          "persistentvolumeclaim \"data-db-1\" deleted"
+        ]
+      }
+    },
+    {
+      "command": "kubectl delete -f storage.yaml",
+      "result": "Removes the storage lesson’s objects.",
+      "check": {
+        "expect": [
+          "storageclass.storage.k8s.io \"auto-ebs\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "What are the two Pods called?",
+        "answers": [
+          "Random names, like Deployment Pods",
+          "db-0 and db-1, kept when they are replaced",
+          "db and db-copy"
+        ],
+        "correct": 1,
+        "explain": "A StatefulSet numbers its Pods from 0, and a replacement keeps the same name.",
+        "line": 16
+      },
+      {
+        "question": "db-0 is replaced. Which disk does the new db-0 get?",
+        "answers": [
+          "A new empty disk",
+          "Its own claim, data-db-0",
+          "db-1’s disk"
+        ],
+        "correct": 1,
+        "explain": "Claims are named after the template and the Pod, so db-0 always gets data-db-0.",
+        "line": 34
+      },
+      {
+        "question": "Why does the Service have clusterIP: None?",
+        "answers": [
+          "So each Pod gets its own DNS name",
+          "To block all traffic",
+          "To save money"
+        ],
+        "correct": 0,
+        "explain": "A headless Service has no shared address. Each StatefulSet Pod gets a name such as db-0.db.",
+        "line": 6
+      }
+    ],
+    "fix": {
+      "line": 30,
+      "text": "            - name: disk",
+      "source": "apply",
+      "message": "The StatefulSet \"db\" is invalid: spec.template.spec.containers[0].volumeMounts[0].name: Not found: \"disk\"",
+      "explain": "The mount asks for a volume called disk, but the claim template is called data.",
+      "fix": "Use the claim template’s name: data."
+    }
+  },
+  "sources": [
+    {
+      "title": "StatefulSets",
+      "url": "https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/"
+    },
+    {
+      "title": "Create a storage class",
+      "url": "https://docs.aws.amazon.com/eks/latest/userguide/create-storage-class.html"
+    }
+  ]
+}

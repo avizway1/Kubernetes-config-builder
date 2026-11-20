@@ -1,0 +1,207 @@
+{
+  "id": "pod-identity",
+  "kind": "ServiceAccount",
+  "filename": "pod-identity.yaml",
+  "finishedAt": 4,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "A ServiceAccount is an identity for Pods. It comes from the core v1 API.",
+      "why": "EKS Pod Identity links a ServiceAccount to an IAM role, so its Pods get AWS keys without storing any.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "An identity for Pods, from the core v1 API",
+      "term": "ServiceAccount",
+      "yaml": "apiVersion: v1\nkind: ServiceAccount\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "This ServiceAccount is called aws-caller.",
+      "why": "The Pod Identity association names it, together with the namespace and the IAM role.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "The name the Pod Identity association refers to",
+      "term": "Pod Identity",
+      "yaml": "apiVersion: v1\nkind: ServiceAccount\nmetadata:\n  name: aws-caller\n"
+    },
+    {
+      "title": "A Pod to test it",
+      "what": "Three dashes start a second object: a Pod, also called aws-caller.",
+      "why": "The Pod shows the credentials EKS gives it.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A second object: a Pod that uses the identity",
+      "term": "Pod",
+      "yaml": "apiVersion: v1\nkind: ServiceAccount\nmetadata:\n  name: aws-caller\n---\napiVersion: v1\nkind: Pod\nmetadata:\n  name: aws-caller\n"
+    },
+    {
+      "title": "Use the identity",
+      "what": "serviceAccountName runs the Pod as aws-caller.",
+      "why": "Only Pods using this ServiceAccount get the role’s permissions.",
+      "ifRemoved": "The Pod runs as the default ServiceAccount, which has no IAM role.",
+      "comment": "Run as the aws-caller ServiceAccount",
+      "yaml": "apiVersion: v1\nkind: ServiceAccount\nmetadata:\n  name: aws-caller\n---\napiVersion: v1\nkind: Pod\nmetadata:\n  name: aws-caller\nspec:\n  serviceAccountName: aws-caller\n"
+    },
+    {
+      "title": "What should run?",
+      "what": "A busybox container that sleeps, so you can run commands in it. This block makes the file ready.",
+      "why": "busybox can fetch credentials with wget. A real app would use an AWS SDK, which does this for you.",
+      "ifRemoved": "Kubernetes rejects the Pod, because it has nothing to run.",
+      "comment": "A container to run commands in",
+      "yaml": "apiVersion: v1\nkind: ServiceAccount\nmetadata:\n  name: aws-caller\n---\napiVersion: v1\nkind: Pod\nmetadata:\n  name: aws-caller\nspec:\n  serviceAccountName: aws-caller\n  containers:\n    - name: shell\n      image: busybox:1.37.0\n      command: [\"sh\", \"-c\", \"sleep 3600\"]\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version. ServiceAccounts and Pods are in the core v1 API.",
+    "metadata": "Details that identify the object, such as its name.",
+    "---": "Three dashes separate objects. One file can hold several objects.",
+    "ServiceAccount:kind": "An identity that Pods run as. Pod Identity links it to an IAM role.",
+    "Pod:kind": "A Pod runs one or more containers together.",
+    "ServiceAccount:metadata.name": "aws-caller. The Pod Identity association uses this name.",
+    "Pod:metadata.name": "The Pod’s name. kubectl exec aws-caller runs commands in it.",
+    "spec": "What the Pod runs, and as which identity.",
+    "spec.serviceAccountName": "Run as aws-caller, so EKS gives the Pod the associated role’s credentials.",
+    "spec.containers": "The containers in this Pod.",
+    "spec.containers[].name": "The container’s name.",
+    "spec.containers[].image": "A tiny image with basic shell tools, pinned to a version.",
+    "spec.containers[].command": "Sleep for an hour, so you can run commands in the container."
+  },
+  "tryIt": [
+    {
+      "command": "aws iam create-role --role-name kcb-pod-identity-demo --assume-role-policy-document '{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"pods.eks.amazonaws.com\"},\"Action\":[\"sts:AssumeRole\",\"sts:TagSession\"]}]}'",
+      "result": "Creates an IAM role that only EKS Pod Identity can use. It has no permissions yet.",
+      "check": {
+        "expect": [
+          "\"RoleName\": \"kcb-pod-identity-demo\""
+        ]
+      }
+    },
+    {
+      "command": "aws eks create-pod-identity-association --cluster-name <cluster> --namespace default --service-account aws-caller --role-arn arn:aws:iam::<account-id>:role/kcb-pod-identity-demo",
+      "result": "Links the role to the aws-caller ServiceAccount in default. Put in your cluster name and account ID.",
+      "check": {
+        "run": "aws eks create-pod-identity-association --cluster-name \"$KCB_EKS_CLUSTER\" --namespace default --service-account aws-caller --role-arn \"arn:aws:iam::$KCB_EKS_ACCOUNT:role/kcb-pod-identity-demo\"",
+        "expect": [
+          "\"serviceAccount\": \"aws-caller\""
+        ]
+      }
+    },
+    {
+      "command": "sleep 60",
+      "result": "Waits a minute. A new association can take several seconds to work, and EKS adds credentials only as a Pod starts.",
+      "check": {
+        "lines": 0
+      }
+    },
+    {
+      "command": "kubectl apply -f pod-identity.yaml",
+      "result": "Creates the ServiceAccount and the Pod. If the next step shows no AWS variables, delete the Pod and apply again.",
+      "check": {
+        "expect": [
+          "serviceaccount/aws-caller created",
+          "pod/aws-caller created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl exec aws-caller -- env",
+      "result": "Lists AWS_CONTAINER_CREDENTIALS_FULL_URI and AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE, which EKS added.",
+      "check": {
+        "expect": [
+          "AWS_CONTAINER_CREDENTIALS_FULL_URI=",
+          "AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE="
+        ]
+      }
+    },
+    {
+      "command": "kubectl exec aws-caller -- sh -c 'wget -qO- --header \"Authorization: $(cat $AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE)\" $AWS_CONTAINER_CREDENTIALS_FULL_URI | grep -o \"\\\"Expiration\\\":\\\"[^\\\"]*\\\"\"'",
+      "result": "Prints when the temporary keys expire, and nothing secret. The keys came from EKS, not from the file.",
+      "check": {
+        "pattern": "\"Expiration\":\"\\d{4}-"
+      }
+    },
+    {
+      "command": "kubectl delete -f pod-identity.yaml",
+      "result": "Removes the Pod and the ServiceAccount. It takes up to 30 seconds, because sleep ignores the stop signal.",
+      "check": {
+        "expect": [
+          "serviceaccount \"aws-caller\" deleted",
+          "pod \"aws-caller\" deleted"
+        ]
+      }
+    },
+    {
+      "command": "aws eks delete-pod-identity-association --cluster-name <cluster> --association-id $(aws eks list-pod-identity-associations --cluster-name <cluster> --namespace default --service-account aws-caller --query 'associations[0].associationId' --output text)",
+      "result": "Removes the association.",
+      "check": {
+        "run": "aws eks delete-pod-identity-association --cluster-name \"$KCB_EKS_CLUSTER\" --association-id $(aws eks list-pod-identity-associations --cluster-name \"$KCB_EKS_CLUSTER\" --namespace default --service-account aws-caller --query 'associations[0].associationId' --output text)",
+        "expect": [
+          "\"serviceAccount\": \"aws-caller\""
+        ]
+      }
+    },
+    {
+      "command": "aws iam delete-role --role-name kcb-pod-identity-demo",
+      "result": "Removes the IAM role. It prints nothing.",
+      "check": {
+        "lines": 0
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "Where are the AWS keys stored?",
+        "answers": [
+          "In the file, as environment variables",
+          "Nowhere: EKS hands out temporary keys to Pods running as aws-caller",
+          "In a Secret"
+        ],
+        "correct": 1,
+        "explain": "The keys are made when needed and expire. No file or Secret holds them.",
+        "line": 11
+      },
+      {
+        "question": "Another Pod in default sets no serviceAccountName. Does it get the role?",
+        "answers": [
+          "Yes, every Pod in the namespace",
+          "No, it runs as the default ServiceAccount",
+          "Only if it runs busybox"
+        ],
+        "correct": 1,
+        "explain": "The association names one ServiceAccount. Pods running as any other get nothing.",
+        "line": 11
+      },
+      {
+        "question": "What links the ServiceAccount to the IAM role?",
+        "answers": [
+          "A Pod Identity association, made with the AWS CLI or console",
+          "An annotation in this file",
+          "The image"
+        ],
+        "correct": 0,
+        "explain": "Pod Identity keeps the link in EKS, so the file holds no AWS details at all.",
+        "line": 4
+      }
+    ],
+    "fix": {
+      "line": 11,
+      "text": "  serviceAccountName: aws-calller",
+      "source": "apply",
+      "message": "pods \"aws-caller\" is forbidden: error looking up service account default/aws-calller: serviceaccount \"aws-calller\" not found",
+      "explain": "The Pod names a ServiceAccount that does not exist, so Kubernetes refuses to create it.",
+      "fix": "Match the ServiceAccount’s name exactly: aws-caller."
+    }
+  },
+  "sources": [
+    {
+      "title": "Learn how EKS Pod Identity grants pods access to AWS services",
+      "url": "https://docs.aws.amazon.com/eks/latest/userguide/pod-identities.html"
+    },
+    {
+      "title": "create-pod-identity-association",
+      "url": "https://docs.aws.amazon.com/cli/latest/reference/eks/create-pod-identity-association.html"
+    },
+    {
+      "title": "Service Accounts",
+      "url": "https://kubernetes.io/docs/concepts/security/service-accounts/"
+    }
+  ]
+}

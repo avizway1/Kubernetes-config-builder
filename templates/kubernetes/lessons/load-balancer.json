@@ -1,0 +1,189 @@
+{
+  "id": "load-balancer",
+  "kind": "Service",
+  "filename": "load-balancer.yaml",
+  "uses": [
+    "deployment"
+  ],
+  "finishedAt": 5,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "A Service gives Pods one stable address. It comes from the core v1 API.",
+      "why": "This one asks AWS for a load balancer, so people outside the cluster can reach your app.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "What to create: a Service, from the core v1 API",
+      "term": "Service",
+      "yaml": "apiVersion: v1\nkind: Service\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "This Service is called web-public.",
+      "why": "Auto Mode also uses the name when it names the AWS load balancer.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A name to find the Service",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: web-public\n"
+    },
+    {
+      "title": "Make it public",
+      "what": "An annotation is a note that other tools read. This one asks for an internet-facing load balancer.",
+      "why": "Auto Mode makes an internal load balancer unless you ask, so only your VPC could reach it.",
+      "ifRemoved": "Auto Mode creates an internal load balancer. Your laptop cannot reach it.",
+      "comment": "Ask AWS for a load balancer that the internet can reach",
+      "term": "annotation",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: web-public\n  annotations:\n    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing\n"
+    },
+    {
+      "title": "Ask for a load balancer",
+      "what": "type: LoadBalancer asks for an outside address. loadBalancerClass names who provides it: Auto Mode’s Network Load Balancer.",
+      "why": "On an Auto Mode cluster, eks.amazonaws.com/nlb is already the default. Writing it makes the file clear.",
+      "ifRemoved": "Without type, the Service is a ClusterIP Service, reachable only inside the cluster.",
+      "comment": "An AWS Network Load Balancer, created by EKS Auto Mode",
+      "term": "load balancer",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: web-public\n  annotations:\n    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing\nspec:\n  type: LoadBalancer\n  loadBalancerClass: eks.amazonaws.com/nlb\n"
+    },
+    {
+      "title": "Which Pods get traffic?",
+      "what": "The selector sends traffic to Pods labelled app: web, from the Deployment lesson.",
+      "why": "The load balancer forwards to these Pods, wherever they run.",
+      "ifRemoved": "The Service has no Pods, so the load balancer has nowhere to send traffic.",
+      "comment": "Send traffic to Pods labelled app: web",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: web-public\n  annotations:\n    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing\nspec:\n  type: LoadBalancer\n  loadBalancerClass: eks.amazonaws.com/nlb\n  selector:\n    app: web\n"
+    },
+    {
+      "title": "Which port?",
+      "what": "Listen on port 80 and forward to port 80 in each Pod. This block makes the file ready.",
+      "why": "nginx listens on port 80 inside its container.",
+      "ifRemoved": "Kubernetes rejects the Service, because it must say which port to listen on.",
+      "comment": "Port 80 on the load balancer goes to port 80 in the Pods",
+      "yaml": "apiVersion: v1\nkind: Service\nmetadata:\n  name: web-public\n  annotations:\n    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing\nspec:\n  type: LoadBalancer\n  loadBalancerClass: eks.amazonaws.com/nlb\n  selector:\n    app: web\n  ports:\n    - port: 80\n      targetPort: 80\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version. Services are in the core v1 API.",
+    "metadata": "Details that identify the object, such as its name.",
+    "kind": "The type of object to create. A Service gives Pods one stable address.",
+    "metadata.name": "The Service name. kubectl get service web-public shows its outside address.",
+    "metadata.annotations": "Notes for other tools. Auto Mode reads these to configure the load balancer.",
+    "metadata.annotations.service.beta.kubernetes.io/aws-load-balancer-scheme": "internet-facing: anyone on the internet can reach it. The default, internal, allows only your VPC.",
+    "spec": "The desired state: what kind of Service, which Pods, which ports.",
+    "spec.type": "LoadBalancer: ask the cloud for a load balancer with an outside address.",
+    "spec.loadBalancerClass": "Who provides the load balancer: EKS Auto Mode’s Network Load Balancer. It cannot change later.",
+    "spec.selector": "Pods with all of these labels receive traffic.",
+    "spec.selector.app": "Send traffic to Pods labelled app: web, from the Deployment lesson.",
+    "spec.ports": "The ports the Service listens on. Each list item is one port.",
+    "spec.ports[].port": "The load balancer listens on port 80.",
+    "spec.ports[].targetPort": "Traffic goes to port 80 inside each Pod, where nginx listens."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f deployment.yaml",
+      "result": "Starts the two nginx Pods from the Deployment lesson.",
+      "check": {
+        "expect": [
+          "deployment.apps/web"
+        ]
+      }
+    },
+    {
+      "command": "kubectl apply -f load-balancer.yaml",
+      "result": "Prints service/web-public created. Auto Mode starts creating a Network Load Balancer.",
+      "check": {
+        "expect": [
+          "service/web-public created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get service web-public",
+      "result": "EXTERNAL-IP shows a name ending in amazonaws.com after a minute or two.",
+      "check": {
+        "pattern": "web-public\\s+LoadBalancer\\s+\\S+\\s+\\S+\\.amazonaws\\.com"
+      }
+    },
+    {
+      "command": "curl -s http://$(kubectl get service web-public -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')",
+      "result": "Prints the nginx welcome page from your laptop. A new name can take a few minutes to work.",
+      "check": {
+        "expect": [
+          "Welcome to nginx!"
+        ]
+      }
+    },
+    {
+      "command": "kubectl delete -f load-balancer.yaml",
+      "result": "Removes the Service. Auto Mode deletes the load balancer too, which stops its charges.",
+      "check": {
+        "expect": [
+          "service \"web-public\" deleted"
+        ]
+      }
+    },
+    {
+      "command": "kubectl delete -f deployment.yaml",
+      "result": "Removes the Deployment and its Pods.",
+      "check": {
+        "expect": [
+          "deployment.apps \"web\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "Without the scheme annotation, who can reach the load balancer?",
+        "answers": [
+          "Anyone on the internet",
+          "Only addresses inside your VPC",
+          "Nobody at all"
+        ],
+        "correct": 1,
+        "explain": "Auto Mode makes an internal load balancer by default. internet-facing makes it public.",
+        "line": 6
+      },
+      {
+        "question": "Who creates the AWS load balancer?",
+        "answers": [
+          "You, in the AWS console",
+          "EKS Auto Mode, named by loadBalancerClass",
+          "The nginx Pods"
+        ],
+        "correct": 1,
+        "explain": "Auto Mode watches for LoadBalancer Services of its class and creates the load balancer for you.",
+        "line": 9
+      },
+      {
+        "question": "Which Pods receive the traffic?",
+        "answers": [
+          "Every Pod in the cluster",
+          "Pods labelled app: web",
+          "Pods named web-public"
+        ],
+        "correct": 1,
+        "explain": "The selector picks Pods by label, as for every Service.",
+        "line": 11
+      }
+    ],
+    "fix": {
+      "line": 6,
+      "text": "    service.beta.kubernetes.io/aws-load-balancer-schema: internet-facing",
+      "source": "command",
+      "command": "aws elbv2 describe-load-balancers --query \"LoadBalancers[?DNSName=='$(kubectl get service web-public -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')'].Scheme\" --output text",
+      "expect": "^internal\\s*$",
+      "message": "internal",
+      "explain": "The annotation says schema, not scheme. Auto Mode ignores the unknown annotation, so AWS makes an internal load balancer your laptop cannot reach.",
+      "fix": "Spell the annotation aws-load-balancer-scheme."
+    }
+  },
+  "sources": [
+    {
+      "title": "Use Service annotations to configure Network Load Balancers",
+      "url": "https://docs.aws.amazon.com/eks/latest/userguide/auto-configure-nlb.html"
+    },
+    {
+      "title": "Service type LoadBalancer",
+      "url": "https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer"
+    }
+  ]
+}

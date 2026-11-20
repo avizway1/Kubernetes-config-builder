@@ -29,6 +29,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3 \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=backend /out/helm /usr/local/bin/helm
 COPY backend/download-charts.sh backend/chart-checksums.txt backend/download-schemas.py backend/schema-checksums.txt backend/
+COPY backend/eks-crds/ backend/eks-crds/
 RUN ./backend/download-charts.sh && python3 backend/download-schemas.py \
     && cd .runtime/schemas && sha256sum --check --strict /src/backend/schema-checksums.txt
 

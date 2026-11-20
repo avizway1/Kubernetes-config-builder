@@ -48,5 +48,17 @@
   "blue-green": "Running the new version beside the old one, then switching all traffic at once.",
   "canary": "Sending a small share of traffic to a new version before moving everyone.",
   "HorizontalPodAutoscaler": "An object that changes how many Pods run, based on measured load such as CPU.",
-  "metrics-server": "A cluster add-on that collects CPU and memory use from every node."
+  "metrics-server": "A cluster add-on that collects CPU and memory use from every node.",
+  "annotation": "A note on an object for tools to read. Unlike labels, annotations are not used to select objects.",
+  "load balancer": "A cloud service with one outside address that spreads traffic across many machines or Pods.",
+  "Ingress": "Rules that route web requests to Services by host name and path.",
+  "IngressClass": "Names the controller that serves an Ingress, such as EKS Auto Mode’s Application Load Balancer.",
+  "StorageClass": "A recipe that tells Kubernetes how to make storage when a claim asks for it.",
+  "PersistentVolumeClaim": "A request for storage. Kubernetes finds or makes a volume to match it.",
+  "StatefulSet": "Runs Pods that keep their names and their own disks when they are replaced.",
+  "Amazon EFS": "An AWS file system that many machines can use at once.",
+  "access mode": "How a volume may be used: by one node, by many nodes, or read-only.",
+  "NodePool": "Rules for the machines EKS Auto Mode or Karpenter may launch, such as type and capacity.",
+  "ServiceAccount": "An identity that Pods run as when they talk to Kubernetes or, through Pod Identity, to AWS.",
+  "Pod Identity": "An EKS feature that gives Pods temporary AWS keys from an IAM role linked to their ServiceAccount."
 }

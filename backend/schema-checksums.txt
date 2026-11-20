@@ -6,10 +6,14 @@
 327c0ba4c3ff08c49cf3cb0bc3d9dc7476547ffae2c04862b02da4cf7ea24345  v1.35.0-standalone-strict/daemonset-apps-v1.json
 c79edd116874e49025538be375caa2ddc285476d2a1d9f7a31922ab9ff774390  v1.35.0-standalone-strict/deployment-apps-v1.json
 245843f05839999488c6cacf53c45b25522c7980f6db7146fc26cf5e519a7776  v1.35.0-standalone-strict/horizontalpodautoscaler-autoscaling-v2.json
+07e4e79fae515814ee7d6ea13dc885ecf2421119e56b238eb18761b0cb46db2a  v1.35.0-standalone-strict/ingress-networking-v1.json
+e9ce923009feeb58dbef4172dec010b593a757ee9f0981878cb949dd6e0e6526  v1.35.0-standalone-strict/ingressclass-networking-v1.json
+8608ba75e8ed83c247eb19dbac7a4603651a406ff9e560cd841a8433e2b6e10b  v1.35.0-standalone-strict/ingressclassparams-eks-v1.json
 ab8e088a1acd07d4e27797d23743df96f5a059abe58e35745ffed8ff064298da  v1.35.0-standalone-strict/job-batch-v1.json
 082dc0be584c1c7175d8a3458dc5546a0fb45cf56b495e4aa1ec6fb9b90fa9dc  v1.35.0-standalone-strict/limitrange-v1.json
 f2e647b4dfb300f76ee892b7327fe27366d48aa72351abd2a2fa26a24d52fa3f  v1.35.0-standalone-strict/namespace-v1.json
 0e9b587a893d9fbabab17e9c0547e23d34a0314d8a22e19b82ae82e87f5be3a6  v1.35.0-standalone-strict/networkpolicy-networking-v1.json
+73575b15c6f36a972917fb9a4a267e6b542ad92a964a0ca0ed119bdc3724b045  v1.35.0-standalone-strict/nodepool-karpenter-v1.json
 7acd2d08433cbdcd31a9edd5e784a9089b3e98b7cc3b393eed4553c4a690debb  v1.35.0-standalone-strict/persistentvolumeclaim-v1.json
 a46df75287c35cf546027c6e423c0d85b934393a721fd9a51fd2f3144bea2b40  v1.35.0-standalone-strict/pod-v1.json
 ef914ce4666d9c1a659cc1abfbf999e6a31df4d0c5c958670ba0c1a985a08de7  v1.35.0-standalone-strict/poddisruptionbudget-policy-v1.json
@@ -21,6 +25,7 @@ d7e906aa26ffc24df0c4d85c6534b049f6a59b9d0a5529642caee15c5138ed6f  v1.35.0-standa
 a0d81defee618eae870732de9d690c8963c8d712d287eb487bc7185ee8e69202  v1.35.0-standalone-strict/service-v1.json
 827362d7127f02e7b9a652157550479a705c061e1462f30bb88d6cdf51c91983  v1.35.0-standalone-strict/serviceaccount-v1.json
 e8391dbe9b3b48a1dc8509ea9213c21ef52de2a430c47c5365192e48563e194e  v1.35.0-standalone-strict/statefulset-apps-v1.json
+620851f72b4787ca7b536bf94292f77a4088e780ae828a8acd8d7e4f5109773f  v1.35.0-standalone-strict/storageclass-storage-v1.json
 8325ec2e5285c7fb2e1cafef70437a9a85ec74e9450b32b0ff728daa506c126a  v1.36.0-standalone-strict/clusterrole-rbac-v1.json
 169d680e48c3c97fd387e2d9c706eda7674c87a44265a22a4851398502857b2f  v1.36.0-standalone-strict/clusterrolebinding-rbac-v1.json
 233f424d7a9727fd18f30bee00015bc44aa3f6a38b84e484c66287224f063b5e  v1.36.0-standalone-strict/configmap-v1.json
@@ -29,10 +34,14 @@ e8391dbe9b3b48a1dc8509ea9213c21ef52de2a430c47c5365192e48563e194e  v1.35.0-standa
 9690d468cac7ed3391b7217bafb30160672a42c458fb00cb84dc48566c2411aa  v1.36.0-standalone-strict/daemonset-apps-v1.json
 f5d75e8017a40f949e1a37eb3bf7e5dd0c76eab414375414e211a5670a83fac9  v1.36.0-standalone-strict/deployment-apps-v1.json
 963db648e0dfd2c129d8bcfc0be02c14860e00e4bb24c83493ded1ca89922e25  v1.36.0-standalone-strict/horizontalpodautoscaler-autoscaling-v2.json
+07e4e79fae515814ee7d6ea13dc885ecf2421119e56b238eb18761b0cb46db2a  v1.36.0-standalone-strict/ingress-networking-v1.json
+e9ce923009feeb58dbef4172dec010b593a757ee9f0981878cb949dd6e0e6526  v1.36.0-standalone-strict/ingressclass-networking-v1.json
+8608ba75e8ed83c247eb19dbac7a4603651a406ff9e560cd841a8433e2b6e10b  v1.36.0-standalone-strict/ingressclassparams-eks-v1.json
 75e01a3e6e27e061ff2b2680df7f2a29f623c320587420a4d22df5a760693dc3  v1.36.0-standalone-strict/job-batch-v1.json
 082dc0be584c1c7175d8a3458dc5546a0fb45cf56b495e4aa1ec6fb9b90fa9dc  v1.36.0-standalone-strict/limitrange-v1.json
 f2e647b4dfb300f76ee892b7327fe27366d48aa72351abd2a2fa26a24d52fa3f  v1.36.0-standalone-strict/namespace-v1.json
 0e9b587a893d9fbabab17e9c0547e23d34a0314d8a22e19b82ae82e87f5be3a6  v1.36.0-standalone-strict/networkpolicy-networking-v1.json
+73575b15c6f36a972917fb9a4a267e6b542ad92a964a0ca0ed119bdc3724b045  v1.36.0-standalone-strict/nodepool-karpenter-v1.json
 7acd2d08433cbdcd31a9edd5e784a9089b3e98b7cc3b393eed4553c4a690debb  v1.36.0-standalone-strict/persistentvolumeclaim-v1.json
 34a42f50e9bc7a79ff314aecf4a83cbb4fa46d8b4259a146afd622c97db8bbcf  v1.36.0-standalone-strict/pod-v1.json
 193ce42894d88b4d9c4d48c85131e06bd5df23f569471a904152089a3737be21  v1.36.0-standalone-strict/poddisruptionbudget-policy-v1.json
@@ -44,6 +53,7 @@ d7e906aa26ffc24df0c4d85c6534b049f6a59b9d0a5529642caee15c5138ed6f  v1.36.0-standa
 a0d81defee618eae870732de9d690c8963c8d712d287eb487bc7185ee8e69202  v1.36.0-standalone-strict/service-v1.json
 827362d7127f02e7b9a652157550479a705c061e1462f30bb88d6cdf51c91983  v1.36.0-standalone-strict/serviceaccount-v1.json
 7de917457b5b8a5eb7ee98bfa3fc66f4922061015b6a126ac92c496ff06dfbaf  v1.36.0-standalone-strict/statefulset-apps-v1.json
+620851f72b4787ca7b536bf94292f77a4088e780ae828a8acd8d7e4f5109773f  v1.36.0-standalone-strict/storageclass-storage-v1.json
 19baaf65026c495e33539e6d41622dbba50bf7ceb704fc755ec3569a8cdc9f45  v1.37.0-standalone-strict/clusterrole-rbac-v1.json
 f42cfc3acaf4dd42555c286fc46d34318ef09087808db18056416d40c802a3ec  v1.37.0-standalone-strict/clusterrolebinding-rbac-v1.json
 a12a2094828a5003ec96e82a366558edc60a6db82fd832a7ae850506a9811baf  v1.37.0-standalone-strict/configmap-v1.json
@@ -52,10 +62,14 @@ a12a2094828a5003ec96e82a366558edc60a6db82fd832a7ae850506a9811baf  v1.37.0-standa
 bf058ca798600317b7e123cd329fc8348a64274d21a1064835a05a5da501a5d1  v1.37.0-standalone-strict/daemonset-apps-v1.json
 d55fb502d4f6a137cf1c282619892b8a2eef145d3a4fad78d1bab85a2cce046c  v1.37.0-standalone-strict/deployment-apps-v1.json
 7b9e5d29dcd32fd419e50f74dfbb8a7db12a3283414c655afd3a3bc508539a53  v1.37.0-standalone-strict/horizontalpodautoscaler-autoscaling-v2.json
+07e4e79fae515814ee7d6ea13dc885ecf2421119e56b238eb18761b0cb46db2a  v1.37.0-standalone-strict/ingress-networking-v1.json
+e9ce923009feeb58dbef4172dec010b593a757ee9f0981878cb949dd6e0e6526  v1.37.0-standalone-strict/ingressclass-networking-v1.json
+8608ba75e8ed83c247eb19dbac7a4603651a406ff9e560cd841a8433e2b6e10b  v1.37.0-standalone-strict/ingressclassparams-eks-v1.json
 74ecab80b9ee85a199e0d62249bd788685e9391b6e38773c03f4875e4e262361  v1.37.0-standalone-strict/job-batch-v1.json
 082dc0be584c1c7175d8a3458dc5546a0fb45cf56b495e4aa1ec6fb9b90fa9dc  v1.37.0-standalone-strict/limitrange-v1.json
 f2e647b4dfb300f76ee892b7327fe27366d48aa72351abd2a2fa26a24d52fa3f  v1.37.0-standalone-strict/namespace-v1.json
 0e9b587a893d9fbabab17e9c0547e23d34a0314d8a22e19b82ae82e87f5be3a6  v1.37.0-standalone-strict/networkpolicy-networking-v1.json
+73575b15c6f36a972917fb9a4a267e6b542ad92a964a0ca0ed119bdc3724b045  v1.37.0-standalone-strict/nodepool-karpenter-v1.json
 772573fafd1b01b258ac25c32ddeac99854d5a822b8aad8b04979ce0129d03f6  v1.37.0-standalone-strict/persistentvolumeclaim-v1.json
 de14bd82a17e6f83ecad47ddce5495f3f760831a97a83798f03dc2c849ac9e74  v1.37.0-standalone-strict/pod-v1.json
 1a15364dcea2f012b557b02e9ddb6cfe9df1320908168ff8ed88c7fa2f07965a  v1.37.0-standalone-strict/poddisruptionbudget-policy-v1.json
@@ -67,3 +81,4 @@ d7e906aa26ffc24df0c4d85c6534b049f6a59b9d0a5529642caee15c5138ed6f  v1.37.0-standa
 a0d81defee618eae870732de9d690c8963c8d712d287eb487bc7185ee8e69202  v1.37.0-standalone-strict/service-v1.json
 827362d7127f02e7b9a652157550479a705c061e1462f30bb88d6cdf51c91983  v1.37.0-standalone-strict/serviceaccount-v1.json
 6c60f699f3c753dd4bddfffd0eb5aead40e91a2ff615ebbb803f7ae90c211884  v1.37.0-standalone-strict/statefulset-apps-v1.json
+620851f72b4787ca7b536bf94292f77a4088e780ae828a8acd8d7e4f5109773f  v1.37.0-standalone-strict/storageclass-storage-v1.json

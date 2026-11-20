@@ -1,0 +1,247 @@
+{
+  "id": "storage",
+  "kind": "PersistentVolumeClaim",
+  "filename": "storage.yaml",
+  "finishedAt": 9,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "The first object is a StorageClass: a recipe for making disks. It comes from storage.k8s.io/v1.",
+      "why": "Auto Mode creates no StorageClass, as the AWS docs say. You must create one before asking for a disk.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "A recipe for disks, from the storage.k8s.io API",
+      "term": "StorageClass",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\n"
+    },
+    {
+      "title": "Who makes the disks?",
+      "what": "auto-ebs uses Auto Mode’s EBS provisioner. WaitForFirstConsumer waits for a Pod before making a disk.",
+      "why": "An EBS volume lives in one zone, so Auto Mode waits to learn which zone the Pod runs in.",
+      "ifRemoved": "Kubernetes rejects the StorageClass, because it needs a provisioner.",
+      "comment": "Auto Mode makes an EBS volume once a Pod needs it",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: auto-ebs\nprovisioner: ebs.csi.eks.amazonaws.com\nvolumeBindingMode: WaitForFirstConsumer\n"
+    },
+    {
+      "title": "What kind of disk?",
+      "what": "parameters are AWS settings: a gp3 volume, encrypted.",
+      "why": "gp3 is the current general-purpose EBS type. Encryption protects the data at rest.",
+      "ifRemoved": "Auto Mode uses its defaults: gp3, not encrypted.",
+      "comment": "An encrypted gp3 EBS volume",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: auto-ebs\nprovisioner: ebs.csi.eks.amazonaws.com\nvolumeBindingMode: WaitForFirstConsumer\nparameters:\n  type: gp3\n  encrypted: \"true\"\n"
+    },
+    {
+      "title": "Ask for a disk",
+      "what": "Three dashes start a second object: a PersistentVolumeClaim called notes-disk.",
+      "why": "A claim asks for storage. The StorageClass decides how to make it.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A second object: a request for a disk",
+      "term": "PersistentVolumeClaim",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: auto-ebs\nprovisioner: ebs.csi.eks.amazonaws.com\nvolumeBindingMode: WaitForFirstConsumer\nparameters:\n  type: gp3\n  encrypted: \"true\"\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: notes-disk\n"
+    },
+    {
+      "title": "Which recipe?",
+      "what": "The claim uses the auto-ebs StorageClass. ReadWriteOnce means one node at a time can use it.",
+      "why": "An EBS volume attaches to one machine at a time.",
+      "ifRemoved": "The cluster’s default StorageClass is used. Auto Mode has none, so the claim waits forever.",
+      "comment": "Use auto-ebs, attached to one node at a time",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: auto-ebs\nprovisioner: ebs.csi.eks.amazonaws.com\nvolumeBindingMode: WaitForFirstConsumer\nparameters:\n  type: gp3\n  encrypted: \"true\"\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: notes-disk\nspec:\n  storageClassName: auto-ebs\n  accessModes:\n    - ReadWriteOnce\n"
+    },
+    {
+      "title": "How big?",
+      "what": "The claim asks for 1Gi.",
+      "why": "Pay for what you need. An EBS volume can grow later, but never shrink.",
+      "ifRemoved": "Kubernetes rejects the claim, because it must say how much storage it needs.",
+      "comment": "One gibibyte of storage",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: auto-ebs\nprovisioner: ebs.csi.eks.amazonaws.com\nvolumeBindingMode: WaitForFirstConsumer\nparameters:\n  type: gp3\n  encrypted: \"true\"\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: notes-disk\nspec:\n  storageClassName: auto-ebs\n  accessModes:\n    - ReadWriteOnce\n  resources:\n    requests:\n      storage: 1Gi\n"
+    },
+    {
+      "title": "A Pod to use it",
+      "what": "Three dashes start a third object: a Pod called notes.",
+      "why": "The Pod writes to the disk so you can see the data survive.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A third object: a Pod that writes to the disk",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: auto-ebs\nprovisioner: ebs.csi.eks.amazonaws.com\nvolumeBindingMode: WaitForFirstConsumer\nparameters:\n  type: gp3\n  encrypted: \"true\"\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: notes-disk\nspec:\n  storageClassName: auto-ebs\n  accessModes:\n    - ReadWriteOnce\n  resources:\n    requests:\n      storage: 1Gi\n---\napiVersion: v1\nkind: Pod\nmetadata:\n  name: notes\n"
+    },
+    {
+      "title": "Write the start time",
+      "what": "busybox adds the current time to /data/starts, then sleeps.",
+      "why": "Each time the Pod starts, the file gains a line.",
+      "ifRemoved": "Kubernetes rejects the Pod, because it has nothing to run.",
+      "comment": "Add a line to /data/starts each time the container starts",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: auto-ebs\nprovisioner: ebs.csi.eks.amazonaws.com\nvolumeBindingMode: WaitForFirstConsumer\nparameters:\n  type: gp3\n  encrypted: \"true\"\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: notes-disk\nspec:\n  storageClassName: auto-ebs\n  accessModes:\n    - ReadWriteOnce\n  resources:\n    requests:\n      storage: 1Gi\n---\napiVersion: v1\nkind: Pod\nmetadata:\n  name: notes\nspec:\n  containers:\n    - name: notes\n      image: busybox:1.37.0\n      command: [\"sh\", \"-c\", \"date >> /data/starts && sleep 3600\"]\n"
+    },
+    {
+      "title": "Where the disk appears",
+      "what": "volumeMounts puts the volume named disk at /data inside the container.",
+      "why": "Files written under /data go to the EBS volume.",
+      "ifRemoved": "Files under /data go to the container’s own storage, lost when the Pod goes.",
+      "comment": "The disk appears at /data",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: auto-ebs\nprovisioner: ebs.csi.eks.amazonaws.com\nvolumeBindingMode: WaitForFirstConsumer\nparameters:\n  type: gp3\n  encrypted: \"true\"\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: notes-disk\nspec:\n  storageClassName: auto-ebs\n  accessModes:\n    - ReadWriteOnce\n  resources:\n    requests:\n      storage: 1Gi\n---\napiVersion: v1\nkind: Pod\nmetadata:\n  name: notes\nspec:\n  containers:\n    - name: notes\n      image: busybox:1.37.0\n      command: [\"sh\", \"-c\", \"date >> /data/starts && sleep 3600\"]\n      volumeMounts:\n        - name: disk\n          mountPath: /data\n"
+    },
+    {
+      "title": "Which claim?",
+      "what": "The volume named disk comes from the notes-disk claim. This block makes the file ready.",
+      "why": "The claim outlives the Pod, so a new Pod finds the same data.",
+      "ifRemoved": "Kubernetes rejects the Pod, because the mount names a volume that does not exist.",
+      "comment": "The volume is the notes-disk claim",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: auto-ebs\nprovisioner: ebs.csi.eks.amazonaws.com\nvolumeBindingMode: WaitForFirstConsumer\nparameters:\n  type: gp3\n  encrypted: \"true\"\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: notes-disk\nspec:\n  storageClassName: auto-ebs\n  accessModes:\n    - ReadWriteOnce\n  resources:\n    requests:\n      storage: 1Gi\n---\napiVersion: v1\nkind: Pod\nmetadata:\n  name: notes\nspec:\n  containers:\n    - name: notes\n      image: busybox:1.37.0\n      command: [\"sh\", \"-c\", \"date >> /data/starts && sleep 3600\"]\n      volumeMounts:\n        - name: disk\n          mountPath: /data\n  volumes:\n    - name: disk\n      persistentVolumeClaim:\n        claimName: notes-disk\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version. StorageClass is in storage.k8s.io/v1; the others are in core v1.",
+    "metadata": "Details that identify the object, such as its name.",
+    "---": "Three dashes separate objects. One file can hold several objects.",
+    "StorageClass:kind": "A recipe for making disks on demand.",
+    "PersistentVolumeClaim:kind": "A request for storage, which a StorageClass fulfils.",
+    "Pod:kind": "A Pod runs one or more containers together.",
+    "StorageClass:metadata.name": "The recipe’s name. Claims choose it with storageClassName.",
+    "PersistentVolumeClaim:metadata.name": "The claim’s name. The Pod refers to it.",
+    "Pod:metadata.name": "The Pod’s name.",
+    "provisioner": "ebs.csi.eks.amazonaws.com: EKS Auto Mode’s built-in EBS support.",
+    "volumeBindingMode": "WaitForFirstConsumer: make the volume once a Pod using it is placed, in that Pod’s zone.",
+    "parameters": "AWS settings for each volume. Values are text.",
+    "parameters.type": "gp3: the general-purpose SSD volume type.",
+    "parameters.encrypted": "Encrypt the volume with the default aws/ebs key. Quotes keep it text.",
+    "PersistentVolumeClaim:spec": "What storage the claim needs.",
+    "Pod:spec": "What the Pod runs, and which volumes it uses.",
+    "spec.storageClassName": "Which StorageClass makes the disk: auto-ebs.",
+    "spec.accessModes": "How the volume can be used. Each list item is one mode.",
+    "spec.accessModes[]": "ReadWriteOnce: one node at a time can read and write.",
+    "spec.resources": "How much storage the claim needs.",
+    "spec.resources.requests": "The amount to ask for.",
+    "spec.resources.requests.storage": "1Gi: one gibibyte.",
+    "spec.containers": "The containers in this Pod. Each list item starts with a dash.",
+    "spec.containers[].name": "The container’s name.",
+    "spec.containers[].image": "A tiny image with basic shell tools, pinned to a version.",
+    "spec.containers[].command": "Add the time to /data/starts, then sleep for an hour.",
+    "spec.containers[].volumeMounts": "Where volumes appear inside the container.",
+    "spec.containers[].volumeMounts[].name": "Which volume: disk, defined under volumes.",
+    "spec.containers[].volumeMounts[].mountPath": "The volume appears at /data.",
+    "spec.volumes": "Volumes the Pod can mount. Each list item is one volume.",
+    "spec.volumes[].name": "The volume’s name, used by volumeMounts.",
+    "spec.volumes[].persistentVolumeClaim": "The volume comes from a claim.",
+    "spec.volumes[].persistentVolumeClaim.claimName": "The claim to use: notes-disk."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f storage.yaml",
+      "result": "Creates the StorageClass, the claim, and the Pod.",
+      "check": {
+        "expect": [
+          "storageclass.storage.k8s.io/auto-ebs created",
+          "persistentvolumeclaim/notes-disk created",
+          "pod/notes created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get pvc notes-disk",
+      "result": "STATUS turns Bound once the Pod is placed. Auto Mode has made a 1Gi EBS volume.",
+      "check": {
+        "pattern": "notes-disk\\s+Bound"
+      }
+    },
+    {
+      "command": "kubectl exec notes -- cat /data/starts",
+      "result": "Prints one start time.",
+      "check": {
+        "pattern": "\\d{2}:\\d{2}:\\d{2}",
+        "lines": 1
+      }
+    },
+    {
+      "command": "kubectl delete pod notes",
+      "result": "Removes the Pod. It takes up to 30 seconds, because sleep ignores the stop signal.",
+      "check": {
+        "expect": [
+          "pod \"notes\" deleted"
+        ]
+      }
+    },
+    {
+      "command": "kubectl apply -f storage.yaml",
+      "result": "Creates the Pod again. The claim and its volume were never deleted.",
+      "check": {
+        "expect": [
+          "pod/notes created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl exec notes -- cat /data/starts",
+      "result": "Prints two start times. The new Pod found the old data.",
+      "check": {
+        "pattern": "\\d{2}:\\d{2}:\\d{2}[\\s\\S]*\\d{2}:\\d{2}:\\d{2}",
+        "lines": 2
+      }
+    },
+    {
+      "command": "kubectl delete -f storage.yaml",
+      "result": "Removes all three. Auto Mode deletes the EBS volume too, because the reclaim policy is Delete.",
+      "check": {
+        "expect": [
+          "storageclass.storage.k8s.io \"auto-ebs\" deleted",
+          "persistentvolumeclaim \"notes-disk\" deleted",
+          "pod \"notes\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "When does Auto Mode create the EBS volume?",
+        "answers": [
+          "When the StorageClass is applied",
+          "When a Pod using the claim is placed on a node",
+          "When the claim is deleted"
+        ],
+        "correct": 1,
+        "explain": "WaitForFirstConsumer waits for a Pod, so the volume is made in that Pod’s zone.",
+        "line": 6
+      },
+      {
+        "question": "The Pod is deleted and created again. What is in /data/starts?",
+        "answers": [
+          "Nothing, it starts empty",
+          "The earlier lines plus a new one",
+          "The Pod cannot start"
+        ],
+        "correct": 1,
+        "explain": "The claim and its volume outlive the Pod, so the data stays.",
+        "line": 38
+      },
+      {
+        "question": "Which provisioner belongs to EKS Auto Mode?",
+        "answers": [
+          "ebs.csi.eks.amazonaws.com",
+          "ebs.csi.aws.com",
+          "kubernetes.io/aws-ebs"
+        ],
+        "correct": 0,
+        "explain": "ebs.csi.aws.com is the separately installed EBS CSI driver. Auto Mode has its own.",
+        "line": 5
+      }
+    ],
+    "fix": {
+      "line": 16,
+      "text": "  storageClassName: gp3",
+      "source": "command",
+      "command": "kubectl describe pvc notes-disk",
+      "expect": "storageclass\\.storage\\.k8s\\.io \"gp3\" not found",
+      "message": "storageclass.storage.k8s.io \"gp3\" not found",
+      "explain": "Many guides assume a StorageClass called gp3. Auto Mode creates none, so the claim stays Pending.",
+      "fix": "Name the StorageClass this file creates: storageClassName: auto-ebs."
+    }
+  },
+  "sources": [
+    {
+      "title": "Create a storage class",
+      "url": "https://docs.aws.amazon.com/eks/latest/userguide/create-storage-class.html"
+    },
+    {
+      "title": "Persistent Volumes",
+      "url": "https://kubernetes.io/docs/concepts/storage/persistent-volumes/"
+    }
+  ]
+}

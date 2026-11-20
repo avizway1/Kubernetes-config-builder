@@ -4,8 +4,9 @@ import { labs, levels, runsOnLabels } from '../frontend/src/lessons.ts';
 
 const words = text => text.trim().split(/\s+/).length;
 
-test('the lesson catalogue follows the approved ten-level class curriculum, without phase 2 tool lessons', () => {
-  deepEqual(levels.map(level => level.id), [...Array(10).keys()].map(index => `level-${index}`));
+// Charan removed lessons 35 and 37 on 2026-11-20, so phase 1 ends at Level 8. Level 9 returns in phase 2 with lesson 36.
+test('the lesson catalogue follows the approved class curriculum, Levels 0 to 8, without phase 2 tool lessons', () => {
+  deepEqual(levels.map(level => level.id), [...Array(9).keys()].map(index => `level-${index}`));
   deepEqual(levels.map(level => level.lessons.map(lesson => lesson.id)), [
     ['reading-yaml', 'manifest-parts'],
     ['pod', 'replicaset', 'deployment', 'resources', 'namespace', 'configmap', 'secret', 'jobs'],
@@ -16,7 +17,6 @@ test('the lesson catalogue follows the approved ten-level class curriculum, with
     ['rolling-update', 'recreate', 'blue-green', 'canary'],
     ['autoscaling'],
     ['pod-identity'],
-    ['unknown-kinds', 'final-challenge'],
   ]);
   deepEqual(levels.flatMap(level => level.lessons).filter(lesson => lesson.runsOn === 'eks').map(lesson => lesson.id),
     ['load-balancer', 'ingress', 'storage', 'statefulset', 'efs', 'node-pool', 'pod-identity']);

@@ -186,7 +186,20 @@ export function LessonView({ lesson, content, progress, onProgress, next }: {
           ) : finished ? (
             <section className="lesson-try-it" aria-labelledby="try-it-title">
               <h3 id="try-it-title">Try it</h3>
-              <p>Save the file, then run these commands against your practice cluster.</p>
+              {lesson.runsOn === 'eks' ? (
+                <p className="lesson-eks">
+                  Save the file, then run these commands against your EKS Auto Mode cluster. AWS charges for the cluster and anything
+                  it creates, so finish with the delete steps.
+                </p>
+              ) : (
+                <p>Save the file, then run these commands against your practice cluster.</p>
+              )}
+              {content.needs && (
+                <p className="lesson-needs">
+                  Before you start, set up: {content.needs.text}{' '}
+                  <a href={content.needs.url} target="_blank" rel="noopener">How to set it up</a>
+                </p>
+              )}
               {content.uses && (
                 <p className="lesson-uses">
                   This lesson also uses{' '}

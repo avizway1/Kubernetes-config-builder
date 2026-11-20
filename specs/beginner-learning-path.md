@@ -107,7 +107,7 @@ Notes from the official EKS docs, checked on 2026-11-18:
 
 On 2026-11-19 Charan shared the manifests used in the Aviz Academy EKS class (`awar10-dailynotes/EKS/manifests`, 51 YAML files and 4 diagrams) and asked for the app to cover them all, from easy to hard. The goal: a learner who finishes can **write** a manifest, **understand** one, and **read any** Kubernetes manifest, including tools they have never seen.
 
-Charan approved this curriculum on 2026-11-19. It replaces the 12-lesson Level 1 above with ten levels, and all 12 approved lessons keep their place inside them. Charan chose to leave out IRSA, Fargate, Argo Rollouts, Istio, and the VerticalPodAutoscaler, so `20-irsa.yaml`, `22-vpa.yaml`, `24-peerauth.yaml`, `25-fargate.yaml`, and `argo-rollout/*` are not covered. Explain my code stays on the roadmap.
+Charan approved this curriculum on 2026-11-19. On 2026-11-20 Charan removed lessons 35 and 37, so phase 1 ends at Level 8 and Level 9 holds only lesson 36, built in phase 2. Learners still practise reading manifests through Read it and Fix it in every lesson. It replaces the 12-lesson Level 1 above with ten levels, and all 12 approved lessons keep their place inside them. Charan chose to leave out IRSA, Fargate, Argo Rollouts, Istio, and the VerticalPodAutoscaler, so `20-irsa.yaml`, `22-vpa.yaml`, `24-peerauth.yaml`, `25-fargate.yaml`, and `argo-rollout/*` are not covered. Explain my code stays on the roadmap.
 
 **Three skills in every lesson**
 
@@ -155,9 +155,9 @@ Charan approved this curriculum on 2026-11-19. It replaces the 12-lesson Level 1
 | | 32 ✚ | Canary | replica ratio behind one Service | `deployments/04-canary.yaml` | Anywhere |
 | 7 Scale | 33 | Scale with load | HorizontalPodAutoscaler, written as YAML | `21-hpa.yaml` | Anywhere, needs metrics-server |
 | 8 AWS access | 34 | Let a Pod call AWS safely | ServiceAccount with Pod Identity | none in class | EKS only |
-| 9 Read any manifest | 35 ✚ | Meet an unknown kind | API group → CustomResourceDefinition → official docs, `kubectl get crd`, `kubectl explain`, using `NodePool` and `IngressClassParams` from earlier lessons | — | Anywhere |
+| 9 Read any manifest | ~~35 ✚~~ | ~~Meet an unknown kind~~ (removed 2026-11-20) | API group → CustomResourceDefinition → official docs, `kubectl get crd`, `kubectl explain`, using `NodePool` and `IngressClassParams` from earlier lessons | — | Anywhere |
 | | 36 | GitOps and monitoring (phase 2) | Argo CD and Prometheus custom resources (existing Levels 2 and 3) | — | Tested on K3s |
-| | 37 ✚ | Final challenge | read a mixed file of many kinds and explain each part | all levels | — |
+| | ~~37 ✚~~ | ~~Final challenge~~ (removed 2026-11-20) | read a mixed file of many kinds and explain each part | all levels | — |
 
 **Notes from official docs, checked on 2026-11-19**
 
@@ -252,7 +252,7 @@ Orange and navy together reach 5.9:1, so orange buttons use navy text, and orang
 
 ## Delivery phases
 
-**Two product phases (Charan, 2026-11-19).** Phase 1 is **Learn Kubernetes** end to end: Levels 0 to 9 without lesson 36, Lab 1, and Lab 2. Phase 2 is **Build a config**, with lesson 36 and Lab 3 (GitOps and monitoring). In phase 1:
+**Two product phases (Charan, 2026-11-19).** Phase 1 is **Learn Kubernetes** end to end: Levels 0 to 8, Lab 1, and Lab 2. Lessons 35 and 37 were removed on 2026-11-20. Phase 2 is **Build a config**, with lesson 36 and Lab 3 (GitOps and monitoring). In phase 1:
 
 - The dashboard opens straight into Learn Kubernetes. The home page’s two doors and the header’s Build a config link are hidden behind one switch, `showBuildAConfig` in `frontend/src/Site.tsx`, which phase 2 turns back on.
 - `#build` still opens Build a config when typed directly, so its existing browser tests keep running in CI. Nothing in Learn Kubernetes links to it.
@@ -284,7 +284,7 @@ Phase 1 still needs 28 lessons (21 Anywhere, 7 EKS only), Read it and Fix it pra
 6. **Level 5 Anywhere lessons:** 25 to 27. They need a cluster with several nodes, so the practice cluster gains agent nodes for this level.
 7. **Level 6:** lessons 29 to 32, including the canary 9-to-1 fix.
 8. **Level 7:** lesson 33. Check whether the pinned K3s release ships metrics-server before writing its prerequisites.
-9. **Level 9:** lessons 35 and 37.
+9. **Level 9:** removed by Charan on 2026-11-20. Lessons 35 and 37 are not built, and Level 9 leaves the catalogue until phase 2 adds lesson 36.
 10. **EKS only lessons and Lab 2:** 13, 14, 15, 17, 18, 28, and 34. Written and checked with pinned schemas without a cluster. Deploying them waits for Charan’s approval of the AWS account, Region, and budget (open question 4).
 11. **Docs:** the README and `docs/contributing.md` restructure from section 8, and acceptance criteria updated to match phase 1.
 
@@ -339,7 +339,30 @@ Charan asked to complete Levels 5, 6, and 7 on 2026-11-20. Eight Anywhere lesson
 - Blue-green and canary build a second Deployment over several blocks, so their files become valid only at the last block.
 - The HorizontalPodAutoscaler `autoscaling/v2` schema is now pinned, with checksums.
 
-Every milestone pins the schemas its kinds need. Ingress, IngressClass, StorageClass, `IngressClassParams`, and `NodePool` are not pinned yet.
+#### Milestone 10: EKS only lessons (2026-11-20)
+
+On 2026-11-20 Charan asked to write the EKS only lessons first, then test them on an EKS Auto Mode cluster. Seven lessons, each with Read it and Fix it, built from corrected copies of the class files. They reuse `nginx:1.30.4` and `busybox:1.37.0`, so the class `mysql` image and an AWS CLI image are not needed. Lab 2 follows as its own step.
+
+- **Written now, run on EKS later.** The lessons are written from the AWS and Kubernetes docs and checked with strict kubeconform. Their Try it results and the one EKS-only Fix it message are checked later by `tests/check-lessons-eks.sh`, which runs against an existing dedicated EKS Auto Mode cluster. Creating that cluster waits for Charan’s approval of the AWS account, Region, and budget, and it is deleted after the run.
+- **Messages captured before the EKS run.** Fix it messages that come from the Kubernetes API server were captured on K3s 1.37.2, which runs the same API server: an unknown Ingress field, a StorageClass parameter written as a number, a missing StorageClass, a StatefulSet mount name that matches no volume, and a missing ServiceAccount. The NodePool message was captured with the official Karpenter v1.15.2 NodePool CRD, whose consolidation policies match the Auto Mode docs. The load balancer mistake can only be seen on EKS.
+- **Try it on EKS.** For EKS only lessons, the Try it panel says to run the commands against your EKS Auto Mode cluster, that AWS charges for load balancers, volumes, and nodes while they exist, and to finish with the delete steps. A lesson can name what it `needs` before Try it, with a link to the AWS guide, as the EFS lesson does for its add-on and file system. Commands with account or cluster values use placeholders such as `<cluster>` and `<account-id>`.
+- **13 Open your app to the internet** (`load-balancer.yaml`, class `07-LoadBalancer.yaml`). A Service `web-public` of `type: LoadBalancer` with `loadBalancerClass: eks.amazonaws.com/nlb` and the `aws-load-balancer-scheme: internet-facing` annotation, selecting the Deployment lesson’s Pods. Auto Mode creates an internal Network Load Balancer unless the scheme says otherwise. Try it waits for the hostname and fetches the nginx page from your laptop. Fix it: the annotation misspelled `aws-load-balancer-schema`, which Kubernetes accepts and Auto Mode ignores, so the load balancer is internal.
+- **14 Route web traffic** (`ingress.yaml`, class `Ingress/ingress-single.yaml`). An `IngressClassParams` `public-alb` with `scheme: internet-facing`, an IngressClass `public-alb` with controller `eks.amazonaws.com/alb`, and an Ingress `web` sending `shop.example.com/` to the ClusterIP Service lesson’s `web` Service. Try it fetches the page through the ALB with a `Host: shop.example.com` header, so no domain is needed, and shows that other hosts get 404. Fix it: the old `kubernetes.io/ingress.class` annotation written in place of `ingressClassName`, which the API server rejects as an unknown field.
+- **15 Keep data after restarts** (`storage.yaml`, class `14-storageclass.yaml`). A StorageClass `auto-ebs` with provisioner `ebs.csi.eks.amazonaws.com`, `WaitForFirstConsumer`, and encrypted gp3, a 1Gi PersistentVolumeClaim `notes-disk`, and a busybox Pod `notes` that adds the start time to `/data/starts`. Try it deletes and recreates the Pod and sees both start times. Auto Mode creates no StorageClass, as the AWS docs say. Fix it: `storageClassName: gp3`, copied from guides that assume one exists, shown by `kubectl describe pvc` as `storageclass.storage.k8s.io "gp3" not found`.
+- **17 Databases with their own disks** (`statefulset.yaml`, class `16-stateful-with-headless.yaml`). The headless Service `db` and a two-replica StatefulSet `db` with a `data` claim template on `auto-ebs`. busybox stands in for MySQL, so the class file’s password Secret is not needed. Try it shows `db-0` and `db-1` with their own claims, deletes `db-0` and sees it return with the same name and disk, and looks up `db-0.db.default.svc.cluster.local`. busybox’s `nslookup` ignores the search list, so the lesson uses the full name. The claims stay after the StatefulSet is deleted, so Try it deletes them by their `app=db` label. Fix it: the volume mount named `disk`, which matches no claim template.
+- **18 Share files between Pods** (`efs.yaml`, class `efs/*`). A StorageClass `efs` with `provisioningMode: efs-ap` and a placeholder `fileSystemId`, a `ReadWriteMany` claim `shared`, and a two-replica Deployment `writers` that each add their name to `/shared/visitors`. Try it reads one file holding both Pods’ names. It needs the EFS CSI add-on with its Pod Identity role and an EFS file system with mount targets, following the AWS EFS guide. Fix it: `directoryPerms: 700` without quotes, which the API server refuses because StorageClass parameters are text.
+- **28 Choose your machines** (`node-pool.yaml`, class `auto/NodePool.yaml` and `26-automode.yaml`). A NodePool `flex` limited to `c7i-flex.large` and `m7i-flex.large`, On-Demand, with `consolidationPolicy: WhenEmpty` and a CPU limit of 8. It also has a two-replica Deployment `flex-web` with `nodeSelector: karpenter.sh/nodepool: flex` and per-container requests. Try it shows the pool, the new node’s pool, instance type, and capacity type, and the node going away after deletion. Fix it uses the v1beta1 `WhenUnderutilized` value. On 2026-11-20 Charan chose this Free plan friendly version over the Graviton and Spot pool. On the AWS Free plan, these two types are the only ones Auto Mode can launch.
+- **34 Let a Pod call AWS safely** (`pod-identity.yaml`). A ServiceAccount and a busybox Pod `aws-caller`. Try it creates an IAM role that trusts `pods.eks.amazonaws.com` and has no permissions, associates it with the ServiceAccount, applies the file, shows the `AWS_CONTAINER_*` variables EKS adds, and reads only the expiry time of the temporary credentials. Then it deletes the association and the role. Auto Mode includes the Pod Identity Agent, per the AWS docs. Fix it: `serviceAccountName` misspelled, which the API server refuses.
+- **Schemas.** Ingress, IngressClass, and StorageClass are pinned from the schema catalog. AWS publishes no CRD for `IngressClassParams`, and Auto Mode’s `NodePool` CRD can differ from open-source Karpenter’s, so kubeconform skips these two kinds until the EKS run exports both CRDs from the cluster as JSON. Until then, the NodePool passed a server-side dry run on K3s against the official Karpenter v1.15.2 CRD (commit `3a0361d`).
+- **Progress, 2026-11-20.** All seven lessons are written and appear in the catalogue. Unit tests, the type check, the build, strict kubeconform for Kubernetes 1.35 to 1.37 (skipping `NodePool` and `IngressClassParams`), and the site browser tests pass. The EFS lesson lists its add-on and file system under **Before you start**. `tests/check-lessons-eks.sh` checks the lesson results on an existing dedicated cluster named `kcb-lessons-*`. It saves both CRDs to `.runtime/eks-crds` so their schemas can be pinned. The script creates nothing in AWS beyond the lessons’ own Try it steps. Still to do: the EKS run, after Charan approves the account, Region, budget, and Kubernetes version. Until that run, the load balancer Fix it and every Try it result are unverified.
+- **EKS run approved, 2026-11-20.** Account: the `default` profile, on the AWS Free plan with $60 of credits. Region ap-south-1, Kubernetes 1.37, cluster `kcb-lessons-137`. Spend comes only from the credits. On the Free plan, Auto Mode can launch only c7i-flex.large and m7i-flex.large, both amd64, so the Graviton NodePool in lesson 28 cannot launch there.
+- **EKS run results, 2026-11-20.** All seven lessons pass every Try it step and Fix it message on EKS Auto Mode 1.37 (`v1.37.1-eks-577a51e`) in ap-south-1, on a Free plan account. Auto Mode’s built-in pools launched `c7i-flex.large` on their own. Four changes came from the run:
+  - Lesson 34 now waits a minute after creating the association, because AWS says [associations take several seconds to work](https://docs.aws.amazon.com/cli/latest/reference/eks/create-pod-identity-association.html), and EKS adds credentials only as a Pod starts. Listing an association by ServiceAccount also needs `--namespace`.
+  - Lesson 13’s Fix it asks AWS for the load balancer’s scheme. An internal Network Load Balancer’s hostname does not start with `internal-`.
+  - The cluster check runs a lesson’s own delete steps when the lesson fails partway, and `KCB_LESSON_ONLY` reruns chosen lessons.
+  - The exported NodePool and IngressClassParams CRDs are kept in `backend/eks-crds`. `backend/download-schemas.py` builds strict schemas from them, and kubeconform now checks every lesson without skipping a kind.
+
+Every milestone pins the schemas its kinds need.
 
 ## Progress
 
@@ -417,6 +440,12 @@ Every milestone pins the schemas its kinds need. Ingress, IngressClass, StorageC
 - Verified on Node 26.13.1: `npm run lint`, `npm test` (40 passing), `npm run build`, `tests/lesson-manifests.check.mjs` (4 passing, strict kubeconform with no skipped objects), `tests/site-shell.browser.mjs` (9 passing in Chrome, including the Level 3 and 4 Start links and a command-source Fix it), and `tests/check-lessons-k3s.sh` on fresh K3s 1.37.2, 1.36.6, and 1.35.10 (41 passing on each, on ARM64, in 490, 479, and 491 seconds). All 66 pinned schemas match their checksums.
 - **Not verified:** the drain step was checked on a one-node cluster only, where the second eviction is always refused. On a cluster with several nodes, the drain can finish once the replacement Pod is ready elsewhere. The lesson text says so, but it waits for Level 5’s multi-node practice cluster to be observed.
 
+**Milestones 6, 7, and 8, Level 5, 6, and 7 Anywhere lessons (2026-11-20).**
+
+- All eight lessons are built, with Read it and Fix it, and show **Start**. The glossary adds node affinity, Pod anti-affinity, topology key, taint, toleration, rolling update, Recreate, blue-green, canary, HorizontalPodAutoscaler, and metrics-server.
+- The first three-node run found that `kubectl describe` leaves out events when it describes several objects, as its `--show-events` help says. Node affinity and anti-affinity now read scheduling messages with `kubectl get events --field-selector reason=FailedScheduling`.
+- Verified on Node 26.13.1: `npm run lint`, `npm test` (40 passing), `npm run build`, `tests/lesson-manifests.check.mjs` (4 passing), `tests/site-shell.browser.mjs` (10 passing in Chrome), and `tests/check-lessons-k3s.sh` on fresh K3s 1.37.2, 1.36.6, and 1.35.10 (51 one-node and 7 three-node checks passing on each, on ARM64, in 561, 736, and 701 seconds). All 69 pinned schemas match their checksums.
+
 ## Acceptance criteria
 
 - [ ] A first-time visitor sees the two front doors and can start a lesson with one click.
@@ -467,6 +496,7 @@ Charan approved each of these on 2026-11-18.
 | 2026-11-19 | Class curriculum | Approved the ten levels in section 4a, covering the class manifests from easy to hard, in place of the 12-lesson Level 1. |
 | 2026-11-19 | Reading any manifest | Read it and Fix it practice in every lesson, plus Level 9 on unknown kinds. Explain my code stays on the roadmap. |
 | 2026-11-19 | Argo Rollouts, Istio, VPA | Leave out. |
+| 2026-11-20 | Lessons 35 and 37 | Remove Meet an unknown kind and the Final challenge. Phase 1 ends at Level 8. |
 | 2026-11-19 | IRSA and Fargate | Leave out. Teach Pod Identity and Auto Mode only. |
 | 2026-11-19 | Class folder | Fix the class manifests in place and replace real account details with dummy values. |
 | 2026-11-19 | Next step | Start building. Phase 4 starts with the Pod and Deployment lessons. |

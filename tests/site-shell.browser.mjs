@@ -30,7 +30,8 @@ test('the dashboard opens into Learn Kubernetes and nothing links to Build a con
     assert.equal(await page.locator('.lesson-meta button').count(), 0);
     assert.equal(await page.locator('.badge-k3s').count(), 0);
 
-    assert.equal(await page.locator('section.level').count(), 11);
+    // Levels 0 to 8 and the labs. Level 9 returns in phase 2.
+    assert.equal(await page.locator('section.level').count(), 10);
     const basics = page.locator('section[aria-labelledby="level-1-title"] .lesson');
     assert.equal(await basics.count(), 8);
     assert.equal(await basics.locator('.lesson-start').count(), 8);
@@ -439,6 +440,47 @@ test('Level 5, 6, and 7 lessons start from the catalogue, and scheduling lessons
     await page.getByRole('button', { name: 'Show whole file' }).click();
     await page.getByText('kubectl patch service shop', { exact: false }).first().waitFor();
     assert.equal(await page.locator('.lesson-nodes').count(), 0, 'one-node lessons say nothing about adding nodes');
+  } finally {
+    await browser.close();
+  }
+});
+
+test('EKS only lessons start from the catalogue, ask for an EKS Auto Mode cluster, and name what to set up first', { timeout: 30000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
+    page.setDefaultTimeout(8000);
+    await page.goto(`${appUrl}#learn`);
+    for (const title of ['Open your app to the internet', 'Route web traffic', 'Keep data after restarts', 'Databases with their own disks',
+      'Share files between Pods', 'Choose your machines', 'Let a Pod call AWS safely']) {
+      await page.getByRole('link', { name: `Start ${title}`, exact: true }).waitFor();
+    }
+    // An EKS lesson's Try it runs against EKS Auto Mode, warns about charges, and says nothing about the K3s practice cluster.
+    await page.getByRole('link', { name: 'Start Open your app to the internet', exact: true }).click();
+    await page.getByRole('heading', { name: 'Open your app to the internet', level: 1 }).waitFor();
+    await page.getByRole('button', { name: 'Show whole file' }).click();
+    await page.locator('.lesson-eks').getByText(/run these commands against your EKS Auto Mode cluster\. AWS charges/).waitFor();
+    assert.equal(await page.getByText('run these commands against your practice cluster', { exact: false }).count(), 0);
+    await page.locator('.lesson-uses').getByText('deployment.yaml', { exact: true }).waitFor();
+    assert.equal(await page.locator('.lesson-needs').count(), 0, 'only lessons with an AWS prerequisite list one');
+
+    // The EFS lesson names the add-on and file system it needs, with the official guide.
+    const efs = lessonContent.efs;
+    await page.goto(`${appUrl}#learn/efs`);
+    await page.getByRole('heading', { name: 'Share files between Pods', level: 1 }).waitFor();
+    await page.getByRole('button', { name: 'Show whole file' }).click();
+    await page.locator('.lesson-needs').getByText(efs.needs.text, { exact: false }).waitFor();
+    assert.equal(await page.locator('.lesson-needs a').getAttribute('href'), efs.needs.url);
+
+    // A Fix it that only EKS Auto Mode's own API rejects shows the message for its kind.
+    const pool = lessonContent['node-pool'];
+    await page.goto(`${appUrl}#learn/node-pool`);
+    await page.getByRole('button', { name: 'Show whole file' }).click();
+    await page.getByRole('button', { name: 'Practise: Read it and Fix it' }).click();
+    await page.getByRole('tab', { name: 'Fix it' }).click();
+    await page.getByLabel('Wrong line').selectOption(String(pool.practice.fix.line));
+    await page.getByRole('button', { name: 'Check my answer' }).click();
+    await page.getByText(pool.practice.fix.message, { exact: true }).waitFor();
   } finally {
     await browser.close();
   }

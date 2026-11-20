@@ -27,6 +27,13 @@ import recreateLesson from '../../templates/kubernetes/lessons/recreate.json' wi
 import blueGreenLesson from '../../templates/kubernetes/lessons/blue-green.json' with { type: 'json' };
 import canaryLesson from '../../templates/kubernetes/lessons/canary.json' with { type: 'json' };
 import autoscalingLesson from '../../templates/kubernetes/lessons/autoscaling.json' with { type: 'json' };
+import loadBalancerLesson from '../../templates/kubernetes/lessons/load-balancer.json' with { type: 'json' };
+import ingressLesson from '../../templates/kubernetes/lessons/ingress.json' with { type: 'json' };
+import storageLesson from '../../templates/kubernetes/lessons/storage.json' with { type: 'json' };
+import statefulSetLesson from '../../templates/kubernetes/lessons/statefulset.json' with { type: 'json' };
+import efsLesson from '../../templates/kubernetes/lessons/efs.json' with { type: 'json' };
+import nodePoolLesson from '../../templates/kubernetes/lessons/node-pool.json' with { type: 'json' };
+import podIdentityLesson from '../../templates/kubernetes/lessons/pod-identity.json' with { type: 'json' };
 import glossaryData from '../../templates/kubernetes/glossary.json' with { type: 'json' };
 
 // A broken copy of a block's file, with the message a YAML reader prints for it. Line numbers count from 1.
@@ -84,6 +91,8 @@ export type LessonContent = {
   uses?: string[];
   // How many nodes Try it needs. Scheduling lessons need three, so learners add two worker nodes to the practice cluster.
   nodes?: number;
+  // Something learners set up in AWS before Try it, such as an add-on, with the official guide that explains how.
+  needs?: { text: string; url: string };
   finishedAt: number;
   choices?: Record<string, LessonChoice>;
   blocks: LessonBlock[];
@@ -127,6 +136,13 @@ export const lessonContent: Record<string, LessonContent> = {
   'blue-green': blueGreenLesson as LessonContent,
   canary: canaryLesson as LessonContent,
   autoscaling: autoscalingLesson as LessonContent,
+  'load-balancer': loadBalancerLesson as LessonContent,
+  ingress: ingressLesson as LessonContent,
+  storage: storageLesson as LessonContent,
+  statefulset: statefulSetLesson as LessonContent,
+  efs: efsLesson as LessonContent,
+  'node-pool': nodePoolLesson as LessonContent,
+  'pod-identity': podIdentityLesson as LessonContent,
 };
 
 export const glossary: Record<string, string> = glossaryData;

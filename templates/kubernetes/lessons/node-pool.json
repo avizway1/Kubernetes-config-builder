@@ -1,0 +1,274 @@
+{
+  "id": "node-pool",
+  "kind": "NodePool",
+  "filename": "node-pool.yaml",
+  "finishedAt": 12,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "A NodePool tells EKS Auto Mode which machines it may launch. It comes from the karpenter.sh/v1 API.",
+      "why": "Auto Mode is built on Karpenter, which adds nodes when Pods need room and removes them when they do not.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "Rules for the machines Auto Mode may launch",
+      "term": "NodePool",
+      "yaml": "apiVersion: karpenter.sh/v1\nkind: NodePool\n"
+    },
+    {
+      "title": "Give it a name",
+      "what": "This NodePool is called flex.",
+      "why": "Pods can ask for this pool by name. Nodes it launches carry the name as a label.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A name, which also labels the nodes it launches",
+      "yaml": "apiVersion: karpenter.sh/v1\nkind: NodePool\nmetadata:\n  name: flex\n"
+    },
+    {
+      "title": "How to launch machines",
+      "what": "nodeClassRef points to a NodeClass, which holds AWS settings such as subnets and the node role.",
+      "why": "Auto Mode’s built-in NodeClass is called default. This block names its group and kind.",
+      "ifRemoved": "Kubernetes rejects the NodePool, because it must name a NodeClass.",
+      "comment": "Use Auto Mode’s NodeClass for AWS settings",
+      "yaml": "apiVersion: karpenter.sh/v1\nkind: NodePool\nmetadata:\n  name: flex\nspec:\n  template:\n    spec:\n      nodeClassRef:\n        group: eks.amazonaws.com\n        kind: NodeClass\n"
+    },
+    {
+      "title": "Which machine types?",
+      "what": "The default NodeClass, and a first requirement: only c7i-flex.large or m7i-flex.large machines.",
+      "why": "On the AWS Free plan, these are the only types Auto Mode can launch. They work on paid accounts too.",
+      "ifRemoved": "Auto Mode may pick any supported type. A Free plan account cannot launch most of them.",
+      "comment": "Use the default NodeClass, and only these two machine types",
+      "yaml": "apiVersion: karpenter.sh/v1\nkind: NodePool\nmetadata:\n  name: flex\nspec:\n  template:\n    spec:\n      nodeClassRef:\n        group: eks.amazonaws.com\n        kind: NodeClass\n        name: default\n      requirements:\n        - key: node.kubernetes.io/instance-type\n          operator: In\n          values: [\"c7i-flex.large\", \"m7i-flex.large\"]\n"
+    },
+    {
+      "title": "On-Demand only",
+      "what": "Use On-Demand capacity: a normal machine that AWS never takes back.",
+      "why": "Spot is cheaper but can be taken back at short notice. Paid accounts can add it here.",
+      "ifRemoved": "Auto Mode tries reserved capacity, then Spot, then On-Demand.",
+      "comment": "Only On-Demand machines",
+      "yaml": "apiVersion: karpenter.sh/v1\nkind: NodePool\nmetadata:\n  name: flex\nspec:\n  template:\n    spec:\n      nodeClassRef:\n        group: eks.amazonaws.com\n        kind: NodeClass\n        name: default\n      requirements:\n        - key: node.kubernetes.io/instance-type\n          operator: In\n          values: [\"c7i-flex.large\", \"m7i-flex.large\"]\n        - key: karpenter.sh/capacity-type\n          operator: In\n          values: [\"on-demand\"]\n"
+    },
+    {
+      "title": "Remove empty machines",
+      "what": "WhenEmpty removes a node once it has run no Pods for one minute.",
+      "why": "You stop paying for machines nobody uses.",
+      "ifRemoved": "Auto Mode uses its default: it also moves Pods to pack nodes more tightly.",
+      "comment": "Remove a node one minute after it becomes empty",
+      "yaml": "apiVersion: karpenter.sh/v1\nkind: NodePool\nmetadata:\n  name: flex\nspec:\n  template:\n    spec:\n      nodeClassRef:\n        group: eks.amazonaws.com\n        kind: NodeClass\n        name: default\n      requirements:\n        - key: node.kubernetes.io/instance-type\n          operator: In\n          values: [\"c7i-flex.large\", \"m7i-flex.large\"]\n        - key: karpenter.sh/capacity-type\n          operator: In\n          values: [\"on-demand\"]\n  disruption:\n    consolidationPolicy: WhenEmpty\n    consolidateAfter: 1m\n"
+    },
+    {
+      "title": "A spending cap",
+      "what": "All of this pool’s machines together may have at most 8 CPUs: four of these machines.",
+      "why": "A limit stops a runaway app from launching many machines.",
+      "ifRemoved": "The pool has no limit.",
+      "comment": "At most 8 CPUs across the pool",
+      "yaml": "apiVersion: karpenter.sh/v1\nkind: NodePool\nmetadata:\n  name: flex\nspec:\n  template:\n    spec:\n      nodeClassRef:\n        group: eks.amazonaws.com\n        kind: NodeClass\n        name: default\n      requirements:\n        - key: node.kubernetes.io/instance-type\n          operator: In\n          values: [\"c7i-flex.large\", \"m7i-flex.large\"]\n        - key: karpenter.sh/capacity-type\n          operator: In\n          values: [\"on-demand\"]\n  disruption:\n    consolidationPolicy: WhenEmpty\n    consolidateAfter: 1m\n  limits:\n    cpu: \"8\"\n"
+    },
+    {
+      "title": "An app for the pool",
+      "what": "Three dashes start a second object: a Deployment called flex-web.",
+      "why": "It shows Auto Mode launching a machine from this pool.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A second object: a Deployment that uses the pool",
+      "term": "Deployment",
+      "yaml": "apiVersion: karpenter.sh/v1\nkind: NodePool\nmetadata:\n  name: flex\nspec:\n  template:\n    spec:\n      nodeClassRef:\n        group: eks.amazonaws.com\n        kind: NodeClass\n        name: default\n      requirements:\n        - key: node.kubernetes.io/instance-type\n          operator: In\n          values: [\"c7i-flex.large\", \"m7i-flex.large\"]\n        - key: karpenter.sh/capacity-type\n          operator: In\n          values: [\"on-demand\"]\n  disruption:\n    consolidationPolicy: WhenEmpty\n    consolidateAfter: 1m\n  limits:\n    cpu: \"8\"\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: flex-web\n"
+    },
+    {
+      "title": "Two copies",
+      "what": "Keep two Pods, labelled app: flex-web.",
+      "why": "Two Pods fit on one machine.",
+      "ifRemoved": "Kubernetes rejects the file, because apps/v1 Deployments must have a selector.",
+      "comment": "Two copies of the Pods with this label",
+      "term": "replica",
+      "yaml": "apiVersion: karpenter.sh/v1\nkind: NodePool\nmetadata:\n  name: flex\nspec:\n  template:\n    spec:\n      nodeClassRef:\n        group: eks.amazonaws.com\n        kind: NodeClass\n        name: default\n      requirements:\n        - key: node.kubernetes.io/instance-type\n          operator: In\n          values: [\"c7i-flex.large\", \"m7i-flex.large\"]\n        - key: karpenter.sh/capacity-type\n          operator: In\n          values: [\"on-demand\"]\n  disruption:\n    consolidationPolicy: WhenEmpty\n    consolidateAfter: 1m\n  limits:\n    cpu: \"8\"\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: flex-web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: flex-web\n"
+    },
+    {
+      "title": "Describe the Pods",
+      "what": "The template gives each Pod the label app: flex-web.",
+      "why": "The labels must match the selector.",
+      "ifRemoved": "The Deployment would have nothing to create, so Kubernetes rejects it.",
+      "comment": "Label each Pod app: flex-web",
+      "term": "Pod template",
+      "yaml": "apiVersion: karpenter.sh/v1\nkind: NodePool\nmetadata:\n  name: flex\nspec:\n  template:\n    spec:\n      nodeClassRef:\n        group: eks.amazonaws.com\n        kind: NodeClass\n        name: default\n      requirements:\n        - key: node.kubernetes.io/instance-type\n          operator: In\n          values: [\"c7i-flex.large\", \"m7i-flex.large\"]\n        - key: karpenter.sh/capacity-type\n          operator: In\n          values: [\"on-demand\"]\n  disruption:\n    consolidationPolicy: WhenEmpty\n    consolidateAfter: 1m\n  limits:\n    cpu: \"8\"\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: flex-web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: flex-web\n  template:\n    metadata:\n      labels:\n        app: flex-web\n"
+    },
+    {
+      "title": "Run on this pool",
+      "what": "nodeSelector asks for nodes labelled karpenter.sh/nodepool: flex.",
+      "why": "Auto Mode labels every node with the pool that launched it.",
+      "ifRemoved": "The Pods can run on any node, including the built-in pools.",
+      "comment": "Only on nodes from the flex pool",
+      "term": "label",
+      "yaml": "apiVersion: karpenter.sh/v1\nkind: NodePool\nmetadata:\n  name: flex\nspec:\n  template:\n    spec:\n      nodeClassRef:\n        group: eks.amazonaws.com\n        kind: NodeClass\n        name: default\n      requirements:\n        - key: node.kubernetes.io/instance-type\n          operator: In\n          values: [\"c7i-flex.large\", \"m7i-flex.large\"]\n        - key: karpenter.sh/capacity-type\n          operator: In\n          values: [\"on-demand\"]\n  disruption:\n    consolidationPolicy: WhenEmpty\n    consolidateAfter: 1m\n  limits:\n    cpu: \"8\"\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: flex-web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: flex-web\n  template:\n    metadata:\n      labels:\n        app: flex-web\n    spec:\n      nodeSelector:\n        karpenter.sh/nodepool: flex\n"
+    },
+    {
+      "title": "What should run?",
+      "what": "Each Pod runs nginx.",
+      "why": "The nginx image runs on these Intel machines.",
+      "ifRemoved": "Kubernetes rejects the Deployment, because its Pods would have nothing to run.",
+      "comment": "The container each Pod runs",
+      "yaml": "apiVersion: karpenter.sh/v1\nkind: NodePool\nmetadata:\n  name: flex\nspec:\n  template:\n    spec:\n      nodeClassRef:\n        group: eks.amazonaws.com\n        kind: NodeClass\n        name: default\n      requirements:\n        - key: node.kubernetes.io/instance-type\n          operator: In\n          values: [\"c7i-flex.large\", \"m7i-flex.large\"]\n        - key: karpenter.sh/capacity-type\n          operator: In\n          values: [\"on-demand\"]\n  disruption:\n    consolidationPolicy: WhenEmpty\n    consolidateAfter: 1m\n  limits:\n    cpu: \"8\"\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: flex-web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: flex-web\n  template:\n    metadata:\n      labels:\n        app: flex-web\n    spec:\n      nodeSelector:\n        karpenter.sh/nodepool: flex\n      containers:\n        - name: web\n          image: nginx:1.30.4\n"
+    },
+    {
+      "title": "Size each container",
+      "what": "Each container requests 250m CPU and 64Mi memory, with a 128Mi memory limit. This block makes the file ready.",
+      "why": "Auto Mode picks a machine size from the requests. Resources go on each container, not on the Pod.",
+      "ifRemoved": "Auto Mode cannot tell how much room the Pods need.",
+      "comment": "Room each container needs, so Auto Mode can size the machine",
+      "term": "request",
+      "yaml": "apiVersion: karpenter.sh/v1\nkind: NodePool\nmetadata:\n  name: flex\nspec:\n  template:\n    spec:\n      nodeClassRef:\n        group: eks.amazonaws.com\n        kind: NodeClass\n        name: default\n      requirements:\n        - key: node.kubernetes.io/instance-type\n          operator: In\n          values: [\"c7i-flex.large\", \"m7i-flex.large\"]\n        - key: karpenter.sh/capacity-type\n          operator: In\n          values: [\"on-demand\"]\n  disruption:\n    consolidationPolicy: WhenEmpty\n    consolidateAfter: 1m\n  limits:\n    cpu: \"8\"\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: flex-web\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: flex-web\n  template:\n    metadata:\n      labels:\n        app: flex-web\n    spec:\n      nodeSelector:\n        karpenter.sh/nodepool: flex\n      containers:\n        - name: web\n          image: nginx:1.30.4\n          resources:\n            requests:\n              cpu: 250m\n              memory: 64Mi\n            limits:\n              memory: 128Mi\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version. NodePools are in karpenter.sh/v1; Deployments in apps/v1.",
+    "metadata": "Details that identify the object, such as its name.",
+    "---": "Three dashes separate objects. One file can hold several objects.",
+    "NodePool:kind": "Rules for the machines EKS Auto Mode may launch.",
+    "Deployment:kind": "A Deployment keeps identical Pods running.",
+    "NodePool:metadata.name": "The pool’s name. Its nodes get the label karpenter.sh/nodepool: flex.",
+    "Deployment:metadata.name": "The Deployment’s name.",
+    "NodePool:spec": "The pool’s rules.",
+    "Deployment:spec": "The desired state of the Deployment.",
+    "NodePool:spec.template": "A template for every node this pool launches.",
+    "NodePool:spec.template.spec": "Settings for each node.",
+    "spec.template.spec.nodeClassRef": "The NodeClass with AWS settings, such as subnets and the node role.",
+    "spec.template.spec.nodeClassRef.group": "The NodeClass’s API group: eks.amazonaws.com.",
+    "spec.template.spec.nodeClassRef.kind": "NodeClass: Auto Mode’s kind for AWS node settings.",
+    "spec.template.spec.nodeClassRef.name": "default: the NodeClass Auto Mode creates for you.",
+    "spec.template.spec.requirements": "Rules a machine must meet. Each list item is one rule.",
+    "spec.template.spec.requirements[].key": "The machine property to check, as a node label.",
+    "spec.template.spec.requirements[].operator": "In: the property must be one of the values.",
+    "spec.template.spec.requirements[].values": "The allowed values for this property.",
+    "spec.disruption": "When Auto Mode may remove this pool’s nodes.",
+    "spec.disruption.consolidationPolicy": "WhenEmpty: remove nodes that run no Pods. Pods are never moved to save money.",
+    "spec.disruption.consolidateAfter": "Wait one minute after a node empties before removing it.",
+    "spec.limits": "The most this pool may launch, across all its nodes.",
+    "spec.limits.cpu": "At most 8 CPUs in total. Quotes keep it text.",
+    "spec.replicas": "How many Pods to keep running: two.",
+    "spec.selector": "Which Pods this Deployment manages.",
+    "spec.selector.matchLabels": "Pods must have all of these labels.",
+    "spec.selector.matchLabels.app": "Manage Pods labelled app: flex-web.",
+    "Deployment:spec.template": "The Pod template: the blueprint for every Pod.",
+    "spec.template.metadata": "Details given to every Pod.",
+    "spec.template.metadata.labels": "Labels given to every Pod. They must match the selector.",
+    "spec.template.metadata.labels.app": "Every Pod gets the label app: flex-web.",
+    "Deployment:spec.template.spec": "What each Pod runs, and where.",
+    "spec.template.spec.nodeSelector": "Node labels the Pods require.",
+    "spec.template.spec.nodeSelector.karpenter.sh/nodepool": "Only nodes launched by the flex pool.",
+    "spec.template.spec.containers": "The containers in each Pod.",
+    "spec.template.spec.containers[].name": "The container’s name.",
+    "spec.template.spec.containers[].image": "The nginx web server, pinned to a version.",
+    "spec.template.spec.containers[].resources": "The CPU and memory this container needs and may use.",
+    "spec.template.spec.containers[].resources.requests": "What the container is guaranteed. Auto Mode sizes machines from requests.",
+    "spec.template.spec.containers[].resources.requests.cpu": "250m: a quarter of a CPU core.",
+    "spec.template.spec.containers[].resources.requests.memory": "64Mi of memory.",
+    "spec.template.spec.containers[].resources.limits": "The most the container may use.",
+    "spec.template.spec.containers[].resources.limits.memory": "At most 128Mi. Above it, the container is stopped and restarted."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f node-pool.yaml",
+      "result": "Creates the NodePool and the Deployment.",
+      "check": {
+        "expect": [
+          "nodepool.karpenter.sh/flex created",
+          "deployment.apps/flex-web created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get nodepools",
+      "result": "Lists flex beside the built-in pools, using the default NodeClass.",
+      "check": {
+        "pattern": "flex\\s+default"
+      }
+    },
+    {
+      "command": "kubectl get pods -l app=flex-web",
+      "result": "Pending at first. After a minute or two, a new machine joins and both Pods are Running.",
+      "check": {
+        "pattern": "flex-web-\\S+\\s+1/1\\s+Running[\\s\\S]*flex-web-\\S+\\s+1/1\\s+Running"
+      }
+    },
+    {
+      "command": "kubectl get nodes -L karpenter.sh/nodepool,node.kubernetes.io/instance-type,karpenter.sh/capacity-type",
+      "result": "One node shows flex, one of the two machine types, and on-demand.",
+      "check": {
+        "pattern": "flex\\s+(c7i|m7i)-flex\\.large\\s+on-demand"
+      }
+    },
+    {
+      "command": "kubectl delete -f node-pool.yaml",
+      "result": "Removes the NodePool and the Deployment. Auto Mode removes the pool’s machine too.",
+      "check": {
+        "expect": [
+          "nodepool.karpenter.sh \"flex\" deleted",
+          "deployment.apps \"flex-web\" deleted"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get nodes -l karpenter.sh/nodepool=flex",
+      "result": "After a minute or two: No resources found. The machine is gone, and so are its charges.",
+      "check": {
+        "run": "kubectl get nodes -l karpenter.sh/nodepool=flex -o name",
+        "lines": 0
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "How do the flex-web Pods end up on this pool’s machines?",
+        "answers": [
+          "Every Pod uses every pool",
+          "Their nodeSelector asks for karpenter.sh/nodepool: flex",
+          "They run in the flex namespace"
+        ],
+        "correct": 1,
+        "explain": "Auto Mode labels each node with its pool, and the nodeSelector asks for that label.",
+        "line": 40
+      },
+      {
+        "question": "Why only c7i-flex.large and m7i-flex.large?",
+        "answers": [
+          "They are the only types Auto Mode can launch on the AWS Free plan",
+          "Kubernetes needs them",
+          "They are the largest types"
+        ],
+        "correct": 0,
+        "explain": "Auto Mode skips small sizes, and the Free plan allows only a few types. These two are in both lists.",
+        "line": 15
+      },
+      {
+        "question": "What stops this pool from launching many machines?",
+        "answers": [
+          "limits: at most 8 CPUs in total",
+          "replicas: 2",
+          "consolidateAfter"
+        ],
+        "correct": 0,
+        "explain": "Once the pool’s nodes add up to 8 CPUs, Auto Mode launches no more from it.",
+        "line": 23
+      }
+    ],
+    "fix": {
+      "line": 20,
+      "text": "    consolidationPolicy: WhenUnderutilized",
+      "source": "apply",
+      "message": "spec.disruption.consolidationPolicy: Unsupported value: \"WhenUnderutilized\": supported values: \"WhenEmpty\", \"WhenEmptyOrUnderutilized\", \"Balanced\"",
+      "explain": "WhenUnderutilized comes from Karpenter’s older v1beta1 API. The karpenter.sh/v1 API renamed it.",
+      "fix": "Use a v1 value. WhenEmpty keeps this lesson’s meaning."
+    }
+  },
+  "sources": [
+    {
+      "title": "Create a Node Pool for EKS Auto Mode",
+      "url": "https://docs.aws.amazon.com/eks/latest/userguide/create-node-pool.html"
+    },
+    {
+      "title": "EKS Auto Mode supported instance reference",
+      "url": "https://docs.aws.amazon.com/eks/latest/userguide/automode-learn-instances.html"
+    },
+    {
+      "title": "nodeSelector",
+      "url": "https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector"
+    }
+  ]
+}

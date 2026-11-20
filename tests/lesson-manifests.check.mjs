@@ -32,7 +32,8 @@ test('every finished lesson step passes strict kubeconform', () => {
         for (let step = lesson.finishedAt; step < lesson.blocks.length; step++) {
           const file = join(folder, `${lesson.id}-${set}-${step + 1}.yaml`);
           const text = lessonText(renderLesson(lesson, step, values, true));
-          objects += text.split('\n').filter(line => line.startsWith('kind:')).length;
+          const kinds = text.split('\n').filter(line => line.startsWith('kind:')).map(line => line.slice(5).trim());
+          objects += kinds.length;
           writeFileSync(file, text);
           files.push(file);
         }

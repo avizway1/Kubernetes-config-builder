@@ -7,6 +7,10 @@ from pathlib import Path
 from urllib.request import urlopen
 
 SCHEMA_DIR = Path(__file__).resolve().parents[1] / ".runtime" / "schemas"
+# AWS publishes no CRDs for EKS Auto Mode's NodePool and IngressClassParams. These were exported with
+# tests/check-lessons-eks.sh from a dedicated EKS Auto Mode cluster on Kubernetes v1.37.1-eks-577a51e on 2026-11-20,
+# keeping only the name and spec. Refresh them from a new run when Auto Mode changes either kind.
+EKS_CRDS = Path(__file__).resolve().parent / "eks-crds"
 KUBERNETES_COMMITS = {
     "1.35.0": "66452049f3d692768c39c797b21b793dce80314e",
     "1.36.0": "ecf6decece6a6de25a57aad9ba90b6ce580f6f78",
@@ -22,6 +26,8 @@ NATIVE_SCHEMAS = (
     "daemonset-apps-v1",
     "deployment-apps-v1",
     "horizontalpodautoscaler-autoscaling-v2",
+    "ingress-networking-v1",
+    "ingressclass-networking-v1",
     "job-batch-v1",
     "limitrange-v1",
     "namespace-v1",
@@ -37,6 +43,7 @@ NATIVE_SCHEMAS = (
     "service-v1",
     "serviceaccount-v1",
     "statefulset-apps-v1",
+    "storageclass-storage-v1",
 )
 
 
@@ -84,10 +91,36 @@ def download_crd(version):
     save_schema(folder / "customresourcedefinition-apiextensions-v1.json", dict(root, definitions=reachable))
 
 
+def strict(node):
+    # Reject unknown fields, as kubeconform's strict schemas do, unless the CRD allows them.
+    if isinstance(node, dict):
+        if "properties" in node and "additionalProperties" not in node and not node.get("x-kubernetes-preserve-unknown-fields"):
+            node["additionalProperties"] = False
+        for value in node.values():
+            strict(value)
+    elif isinstance(node, list):
+        for value in node:
+            strict(value)
+    return node
+
+
+def convert_eks_crd(path):
+    crd = json.loads(path.read_text(encoding="utf-8"))["spec"]
+    for served in crd["versions"]:
+        if not served["served"]:
+            continue
+        schema = strict(served["schema"]["openAPIV3Schema"])
+        name = f'{crd["names"]["kind"].lower()}-{crd["group"].split(".")[0]}-{served["name"]}.json'
+        for version in KUBERNETES_COMMITS:
+            save_schema(SCHEMA_DIR / f"v{version}-standalone-strict" / name, schema)
+
+
 if __name__ == "__main__":
     with ThreadPoolExecutor(max_workers=8) as workers:
         downloads = [workers.submit(download_native, version, name) for version in KUBERNETES_COMMITS for name in NATIVE_SCHEMAS]
         downloads.extend(workers.submit(download_crd, version) for version in KUBERNETES_COMMITS)
         for download in downloads:
             download.result()
+    for path in sorted(EKS_CRDS.glob("*.json")):
+        convert_eks_crd(path)
     print(f"Prepared Kubernetes schemas in {SCHEMA_DIR}")

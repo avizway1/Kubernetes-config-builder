@@ -1,0 +1,250 @@
+{
+  "id": "ingress",
+  "kind": "Ingress",
+  "filename": "ingress.yaml",
+  "uses": [
+    "deployment",
+    "service"
+  ],
+  "finishedAt": 7,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "The first object holds AWS settings for a load balancer. It comes from the eks.amazonaws.com API.",
+      "why": "An Ingress routes web requests by host name and path. Auto Mode serves it with an Application Load Balancer.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "AWS settings for the load balancer, from EKS Auto Mode’s own API",
+      "term": "Ingress",
+      "yaml": "apiVersion: eks.amazonaws.com/v1\nkind: IngressClassParams\n"
+    },
+    {
+      "title": "Public, please",
+      "what": "The settings are called public-alb. scheme: internet-facing makes the load balancer reachable from the internet.",
+      "why": "Auto Mode reads AWS settings from here, not from annotations on the IngressClass.",
+      "ifRemoved": "Kubernetes rejects the object, because it needs a name.",
+      "comment": "A public load balancer",
+      "yaml": "apiVersion: eks.amazonaws.com/v1\nkind: IngressClassParams\nmetadata:\n  name: public-alb\nspec:\n  scheme: internet-facing\n"
+    },
+    {
+      "title": "Name a class of Ingress",
+      "what": "Three dashes start a second object: an IngressClass called public-alb.",
+      "why": "An IngressClass says which controller serves Ingresses that name it. A cluster can have several.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A second object: an IngressClass",
+      "term": "IngressClass",
+      "yaml": "apiVersion: eks.amazonaws.com/v1\nkind: IngressClassParams\nmetadata:\n  name: public-alb\nspec:\n  scheme: internet-facing\n---\napiVersion: networking.k8s.io/v1\nkind: IngressClass\nmetadata:\n  name: public-alb\n"
+    },
+    {
+      "title": "Auto Mode serves it",
+      "what": "controller: eks.amazonaws.com/alb hands this class to Auto Mode. parameters points to the AWS settings above.",
+      "why": "One class can serve many Ingresses, all with the same AWS settings.",
+      "ifRemoved": "No controller serves the class, so no load balancer is created.",
+      "comment": "Auto Mode creates load balancers for this class, using the settings above",
+      "yaml": "apiVersion: eks.amazonaws.com/v1\nkind: IngressClassParams\nmetadata:\n  name: public-alb\nspec:\n  scheme: internet-facing\n---\napiVersion: networking.k8s.io/v1\nkind: IngressClass\nmetadata:\n  name: public-alb\nspec:\n  controller: eks.amazonaws.com/alb\n  parameters:\n    apiGroup: eks.amazonaws.com\n    kind: IngressClassParams\n    name: public-alb\n"
+    },
+    {
+      "title": "Add the Ingress",
+      "what": "Three dashes start a third object: an Ingress called web.",
+      "why": "The Ingress holds the routing rules. Each team can write its own.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A third object: the routing rules",
+      "yaml": "apiVersion: eks.amazonaws.com/v1\nkind: IngressClassParams\nmetadata:\n  name: public-alb\nspec:\n  scheme: internet-facing\n---\napiVersion: networking.k8s.io/v1\nkind: IngressClass\nmetadata:\n  name: public-alb\nspec:\n  controller: eks.amazonaws.com/alb\n  parameters:\n    apiGroup: eks.amazonaws.com\n    kind: IngressClassParams\n    name: public-alb\n---\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: web\n"
+    },
+    {
+      "title": "Which class and which host?",
+      "what": "ingressClassName picks public-alb. The rule matches requests for the host shop.example.com.",
+      "why": "One load balancer can serve many sites, telling them apart by host name.",
+      "ifRemoved": "Kubernetes rejects the Ingress, because a rule needs somewhere to send requests.",
+      "comment": "Use the public-alb class, for requests to shop.example.com",
+      "yaml": "apiVersion: eks.amazonaws.com/v1\nkind: IngressClassParams\nmetadata:\n  name: public-alb\nspec:\n  scheme: internet-facing\n---\napiVersion: networking.k8s.io/v1\nkind: IngressClass\nmetadata:\n  name: public-alb\nspec:\n  controller: eks.amazonaws.com/alb\n  parameters:\n    apiGroup: eks.amazonaws.com\n    kind: IngressClassParams\n    name: public-alb\n---\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: web\nspec:\n  ingressClassName: public-alb\n  rules:\n    - host: shop.example.com\n"
+    },
+    {
+      "title": "Which paths?",
+      "what": "path: / with pathType: Prefix matches every path that starts with /, which is all of them.",
+      "why": "You could send /api to one Service and / to another.",
+      "ifRemoved": "Kubernetes rejects the rule, because it needs at least one path.",
+      "comment": "Every path on that host",
+      "yaml": "apiVersion: eks.amazonaws.com/v1\nkind: IngressClassParams\nmetadata:\n  name: public-alb\nspec:\n  scheme: internet-facing\n---\napiVersion: networking.k8s.io/v1\nkind: IngressClass\nmetadata:\n  name: public-alb\nspec:\n  controller: eks.amazonaws.com/alb\n  parameters:\n    apiGroup: eks.amazonaws.com\n    kind: IngressClassParams\n    name: public-alb\n---\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: web\nspec:\n  ingressClassName: public-alb\n  rules:\n    - host: shop.example.com\n      http:\n        paths:\n          - path: /\n            pathType: Prefix\n"
+    },
+    {
+      "title": "Send it to the Service",
+      "what": "Matching requests go to the web Service on port 80, from the ClusterIP lesson. This block makes the file ready.",
+      "why": "The load balancer reaches the Pods behind that Service directly, by their IP addresses.",
+      "ifRemoved": "Kubernetes rejects the path, because it needs a backend.",
+      "comment": "Send matching requests to the web Service on port 80",
+      "yaml": "apiVersion: eks.amazonaws.com/v1\nkind: IngressClassParams\nmetadata:\n  name: public-alb\nspec:\n  scheme: internet-facing\n---\napiVersion: networking.k8s.io/v1\nkind: IngressClass\nmetadata:\n  name: public-alb\nspec:\n  controller: eks.amazonaws.com/alb\n  parameters:\n    apiGroup: eks.amazonaws.com\n    kind: IngressClassParams\n    name: public-alb\n---\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: web\nspec:\n  ingressClassName: public-alb\n  rules:\n    - host: shop.example.com\n      http:\n        paths:\n          - path: /\n            pathType: Prefix\n            backend:\n              service:\n                name: web\n                port:\n                  number: 80\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version. IngressClassParams is Auto Mode’s own; the others are networking.k8s.io/v1.",
+    "metadata": "Details that identify the object, such as its name.",
+    "---": "Three dashes separate objects. One file can hold several objects.",
+    "IngressClassParams:kind": "AWS settings for every load balancer made for one IngressClass.",
+    "IngressClass:kind": "A class of Ingress, and the controller that serves it.",
+    "Ingress:kind": "Routing rules for web requests, by host name and path.",
+    "IngressClassParams:metadata.name": "The settings’ name. The IngressClass points to it.",
+    "IngressClass:metadata.name": "The class name. Ingresses choose it with ingressClassName.",
+    "Ingress:metadata.name": "The Ingress name. kubectl get ingress web shows its address.",
+    "IngressClassParams:spec": "The AWS settings.",
+    "IngressClass:spec": "Who serves this class, and with which settings.",
+    "Ingress:spec": "Which class serves it, and the routing rules.",
+    "spec.scheme": "internet-facing: reachable from the internet. internal: only from inside your VPC.",
+    "spec.controller": "eks.amazonaws.com/alb: EKS Auto Mode creates an Application Load Balancer.",
+    "spec.parameters": "Where the class’s AWS settings live.",
+    "spec.parameters.apiGroup": "The settings’ API group: eks.amazonaws.com.",
+    "spec.parameters.kind": "The settings’ kind: IngressClassParams.",
+    "spec.parameters.name": "The settings’ name: public-alb, the first object in this file.",
+    "spec.ingressClassName": "Which IngressClass serves this Ingress: public-alb.",
+    "spec.rules": "Routing rules. Each list item matches one host.",
+    "spec.rules[].host": "Requests for shop.example.com. A placeholder: use a domain you own.",
+    "spec.rules[].http": "Rules for web requests to this host.",
+    "spec.rules[].http.paths": "Paths to match. Each list item sends one path to one Service.",
+    "spec.rules[].http.paths[].path": "The path to match: /.",
+    "spec.rules[].http.paths[].pathType": "Prefix: any path starting with /. Exact matches one path only.",
+    "spec.rules[].http.paths[].backend": "Where matching requests go.",
+    "spec.rules[].http.paths[].backend.service": "A Service in the same namespace.",
+    "spec.rules[].http.paths[].backend.service.name": "The web Service from the ClusterIP lesson.",
+    "spec.rules[].http.paths[].backend.service.port": "Which Service port to use.",
+    "spec.rules[].http.paths[].backend.service.port.number": "Port 80, where the web Service listens."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f deployment.yaml",
+      "result": "Starts the two nginx Pods from the Deployment lesson.",
+      "check": {
+        "expect": [
+          "deployment.apps/web"
+        ]
+      }
+    },
+    {
+      "command": "kubectl apply -f service.yaml",
+      "result": "Creates the web Service from the ClusterIP lesson.",
+      "check": {
+        "expect": [
+          "service/web"
+        ]
+      }
+    },
+    {
+      "command": "kubectl apply -f ingress.yaml",
+      "result": "Creates the settings, the class, and the Ingress. Auto Mode starts creating an Application Load Balancer.",
+      "check": {
+        "expect": [
+          "ingressclassparams.eks.amazonaws.com/public-alb created",
+          "ingressclass.networking.k8s.io/public-alb created",
+          "ingress.networking.k8s.io/web created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get ingress web",
+      "result": "ADDRESS shows a name ending in elb.amazonaws.com after a few minutes.",
+      "check": {
+        "pattern": "web\\s+public-alb\\s+shop\\.example\\.com\\s+\\S+\\.elb\\.amazonaws\\.com"
+      }
+    },
+    {
+      "command": "curl -s -H \"Host: shop.example.com\" http://$(kubectl get ingress web -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')",
+      "result": "Prints the nginx welcome page. The Host header stands in for owning the domain.",
+      "check": {
+        "expect": [
+          "Welcome to nginx!"
+        ]
+      }
+    },
+    {
+      "command": "curl -s -o /dev/null -w \"%{http_code}\\n\" http://$(kubectl get ingress web -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')",
+      "result": "Prints 404. A request for any other host matches no rule.",
+      "check": {
+        "expect": [
+          "404"
+        ]
+      }
+    },
+    {
+      "command": "kubectl delete -f ingress.yaml",
+      "result": "Removes all three objects. Auto Mode deletes the load balancer too.",
+      "check": {
+        "expect": [
+          "ingress.networking.k8s.io \"web\" deleted",
+          "ingressclass.networking.k8s.io \"public-alb\" deleted",
+          "ingressclassparams.eks.amazonaws.com \"public-alb\" deleted"
+        ]
+      }
+    },
+    {
+      "command": "kubectl delete -f service.yaml",
+      "result": "Removes the web Service.",
+      "check": {
+        "expect": [
+          "service \"web\" deleted"
+        ]
+      }
+    },
+    {
+      "command": "kubectl delete -f deployment.yaml",
+      "result": "Removes the Deployment and its Pods.",
+      "check": {
+        "expect": [
+          "deployment.apps \"web\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "Which object makes the load balancer public?",
+        "answers": [
+          "The Ingress",
+          "The IngressClassParams",
+          "The web Service"
+        ],
+        "correct": 1,
+        "explain": "Auto Mode reads AWS settings, such as the scheme, from IngressClassParams.",
+        "line": 6
+      },
+      {
+        "question": "A request arrives for shop.example.com/cart. Where does it go?",
+        "answers": [
+          "To the web Service: Prefix / matches every path",
+          "Nowhere, because only / matches",
+          "To every Service"
+        ],
+        "correct": 0,
+        "explain": "Prefix / matches /cart and every other path.",
+        "line": 30
+      },
+      {
+        "question": "Who creates the Application Load Balancer?",
+        "answers": [
+          "EKS Auto Mode, named by controller",
+          "The web Service",
+          "You, in the AWS console"
+        ],
+        "correct": 0,
+        "explain": "The IngressClass hands its Ingresses to the eks.amazonaws.com/alb controller, which is Auto Mode.",
+        "line": 13
+      }
+    ],
+    "fix": {
+      "line": 24,
+      "text": "  kubernetes.io/ingress.class: public-alb",
+      "source": "apply",
+      "message": "Ingress in version \"v1\" cannot be handled as a Ingress: strict decoding error: unknown field \"spec.kubernetes.io/ingress.class\"",
+      "explain": "kubernetes.io/ingress.class is the old annotation, and it never belonged under spec. Kubernetes now uses spec.ingressClassName.",
+      "fix": "Write ingressClassName: public-alb."
+    }
+  },
+  "sources": [
+    {
+      "title": "Create an IngressClass to configure an Application Load Balancer",
+      "url": "https://docs.aws.amazon.com/eks/latest/userguide/auto-configure-alb.html"
+    },
+    {
+      "title": "Ingress",
+      "url": "https://kubernetes.io/docs/concepts/services-networking/ingress/"
+    }
+  ]
+}

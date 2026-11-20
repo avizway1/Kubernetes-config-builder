@@ -1,0 +1,261 @@
+{
+  "id": "efs",
+  "kind": "PersistentVolumeClaim",
+  "filename": "efs.yaml",
+  "needs": {
+    "text": "The Amazon EFS CSI driver add-on with its Pod Identity role, and an EFS file system with a mount target in each cluster subnet. Put the file system’s ID in fileSystemId.",
+    "url": "https://docs.aws.amazon.com/eks/latest/userguide/efs-csi.html"
+  },
+  "finishedAt": 11,
+  "blocks": [
+    {
+      "title": "What is this file?",
+      "what": "The first object is a StorageClass for Amazon EFS. It comes from storage.k8s.io/v1.",
+      "why": "EFS is a shared file system. Many Pods on many nodes can use it at once.",
+      "ifRemoved": "Kubernetes rejects the file, because it cannot tell what you want to create.",
+      "comment": "A recipe for shared storage on Amazon EFS",
+      "term": "Amazon EFS",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\n"
+    },
+    {
+      "title": "Who makes the storage?",
+      "what": "efs uses the Amazon EFS CSI driver, efs.csi.aws.com.",
+      "why": "Auto Mode includes EBS but not EFS, so you install this driver as an add-on.",
+      "ifRemoved": "Kubernetes rejects the StorageClass, because it needs a provisioner.",
+      "comment": "The EFS CSI driver makes the storage",
+      "term": "StorageClass",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: efs\nprovisioner: efs.csi.aws.com\n"
+    },
+    {
+      "title": "Which file system?",
+      "what": "efs-ap gives each claim its own access point: a private directory. fileSystemId is a placeholder for yours.",
+      "why": "aws efs describe-file-systems lists your IDs. directoryPerms: \"700\" lets only the owner use the directory.",
+      "ifRemoved": "The driver cannot tell which file system to use, so claims stay Pending.",
+      "comment": "A directory of its own in your EFS file system for each claim",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: efs\nprovisioner: efs.csi.aws.com\nparameters:\n  provisioningMode: efs-ap\n  fileSystemId: fs-0123456789abcdef0\n  directoryPerms: \"700\"\n"
+    },
+    {
+      "title": "Ask for shared storage",
+      "what": "Three dashes start a second object: a PersistentVolumeClaim called shared.",
+      "why": "Pods use storage through a claim.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A second object: a request for shared storage",
+      "term": "PersistentVolumeClaim",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: efs\nprovisioner: efs.csi.aws.com\nparameters:\n  provisioningMode: efs-ap\n  fileSystemId: fs-0123456789abcdef0\n  directoryPerms: \"700\"\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: shared\n"
+    },
+    {
+      "title": "Shared by many",
+      "what": "The claim uses the efs StorageClass. ReadWriteMany lets Pods on many nodes read and write at once.",
+      "why": "EBS allows one node at a time. EFS allows many, which this lesson needs.",
+      "ifRemoved": "The cluster’s default StorageClass is used, which may not share at all.",
+      "comment": "EFS, usable by Pods on many nodes at once",
+      "term": "access mode",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: efs\nprovisioner: efs.csi.aws.com\nparameters:\n  provisioningMode: efs-ap\n  fileSystemId: fs-0123456789abcdef0\n  directoryPerms: \"700\"\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: shared\nspec:\n  storageClassName: efs\n  accessModes:\n    - ReadWriteMany\n"
+    },
+    {
+      "title": "How big?",
+      "what": "The claim asks for 5Gi.",
+      "why": "Kubernetes requires a size. EFS grows as you write, and charges for what you store.",
+      "ifRemoved": "Kubernetes rejects the claim, because it must say how much storage it needs.",
+      "comment": "A size, which EFS requires but does not enforce",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: efs\nprovisioner: efs.csi.aws.com\nparameters:\n  provisioningMode: efs-ap\n  fileSystemId: fs-0123456789abcdef0\n  directoryPerms: \"700\"\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: shared\nspec:\n  storageClassName: efs\n  accessModes:\n    - ReadWriteMany\n  resources:\n    requests:\n      storage: 5Gi\n"
+    },
+    {
+      "title": "Pods to share it",
+      "what": "Three dashes start a third object: a Deployment called writers.",
+      "why": "Two Pods will write to the same file.",
+      "ifRemoved": "Kubernetes rejects the file, because every object needs a name.",
+      "comment": "A third object: two Pods that share the storage",
+      "term": "Deployment",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: efs\nprovisioner: efs.csi.aws.com\nparameters:\n  provisioningMode: efs-ap\n  fileSystemId: fs-0123456789abcdef0\n  directoryPerms: \"700\"\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: shared\nspec:\n  storageClassName: efs\n  accessModes:\n    - ReadWriteMany\n  resources:\n    requests:\n      storage: 5Gi\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: writers\n"
+    },
+    {
+      "title": "Two copies",
+      "what": "Keep two Pods, labelled app: writers.",
+      "why": "Two Pods show that both see the same file.",
+      "ifRemoved": "Kubernetes rejects the file, because apps/v1 Deployments must have a selector.",
+      "comment": "Two copies of the Pods with this label",
+      "term": "replica",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: efs\nprovisioner: efs.csi.aws.com\nparameters:\n  provisioningMode: efs-ap\n  fileSystemId: fs-0123456789abcdef0\n  directoryPerms: \"700\"\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: shared\nspec:\n  storageClassName: efs\n  accessModes:\n    - ReadWriteMany\n  resources:\n    requests:\n      storage: 5Gi\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: writers\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: writers\n"
+    },
+    {
+      "title": "Describe the Pods",
+      "what": "The template gives each Pod the label app: writers.",
+      "why": "The labels must match the selector.",
+      "ifRemoved": "The Deployment would have nothing to create, so Kubernetes rejects it.",
+      "comment": "Label each Pod app: writers",
+      "term": "Pod template",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: efs\nprovisioner: efs.csi.aws.com\nparameters:\n  provisioningMode: efs-ap\n  fileSystemId: fs-0123456789abcdef0\n  directoryPerms: \"700\"\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: shared\nspec:\n  storageClassName: efs\n  accessModes:\n    - ReadWriteMany\n  resources:\n    requests:\n      storage: 5Gi\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: writers\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: writers\n  template:\n    metadata:\n      labels:\n        app: writers\n"
+    },
+    {
+      "title": "Sign the visitors’ book",
+      "what": "Each Pod adds its own name to /shared/visitors, then sleeps.",
+      "why": "Reading the file shows a line from every Pod.",
+      "ifRemoved": "Kubernetes rejects the Deployment, because its Pods would have nothing to run.",
+      "comment": "Add this Pod’s name to /shared/visitors",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: efs\nprovisioner: efs.csi.aws.com\nparameters:\n  provisioningMode: efs-ap\n  fileSystemId: fs-0123456789abcdef0\n  directoryPerms: \"700\"\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: shared\nspec:\n  storageClassName: efs\n  accessModes:\n    - ReadWriteMany\n  resources:\n    requests:\n      storage: 5Gi\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: writers\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: writers\n  template:\n    metadata:\n      labels:\n        app: writers\n    spec:\n      containers:\n        - name: writer\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"echo $(hostname) was here >> /shared/visitors && sleep 3600\"]\n"
+    },
+    {
+      "title": "Where the storage appears",
+      "what": "The volume named shared appears at /shared.",
+      "why": "Both Pods mount the same directory.",
+      "ifRemoved": "Each Pod writes to its own storage, so the file holds one line.",
+      "comment": "The shared storage appears at /shared",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: efs\nprovisioner: efs.csi.aws.com\nparameters:\n  provisioningMode: efs-ap\n  fileSystemId: fs-0123456789abcdef0\n  directoryPerms: \"700\"\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: shared\nspec:\n  storageClassName: efs\n  accessModes:\n    - ReadWriteMany\n  resources:\n    requests:\n      storage: 5Gi\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: writers\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: writers\n  template:\n    metadata:\n      labels:\n        app: writers\n    spec:\n      containers:\n        - name: writer\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"echo $(hostname) was here >> /shared/visitors && sleep 3600\"]\n          volumeMounts:\n            - name: shared\n              mountPath: /shared\n"
+    },
+    {
+      "title": "Which claim?",
+      "what": "The volume named shared comes from the shared claim. This block makes the file ready.",
+      "why": "Every Pod using the claim sees the same files.",
+      "ifRemoved": "Kubernetes rejects the Deployment, because the mount names a volume that does not exist.",
+      "comment": "The volume is the shared claim",
+      "yaml": "apiVersion: storage.k8s.io/v1\nkind: StorageClass\nmetadata:\n  name: efs\nprovisioner: efs.csi.aws.com\nparameters:\n  provisioningMode: efs-ap\n  fileSystemId: fs-0123456789abcdef0\n  directoryPerms: \"700\"\n---\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: shared\nspec:\n  storageClassName: efs\n  accessModes:\n    - ReadWriteMany\n  resources:\n    requests:\n      storage: 5Gi\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: writers\nspec:\n  replicas: 2\n  selector:\n    matchLabels:\n      app: writers\n  template:\n    metadata:\n      labels:\n        app: writers\n    spec:\n      containers:\n        - name: writer\n          image: busybox:1.37.0\n          command: [\"sh\", \"-c\", \"echo $(hostname) was here >> /shared/visitors && sleep 3600\"]\n          volumeMounts:\n            - name: shared\n              mountPath: /shared\n      volumes:\n        - name: shared\n          persistentVolumeClaim:\n            claimName: shared\n"
+    }
+  ],
+  "notes": {
+    "apiVersion": "The API group and version: storage.k8s.io/v1, core v1, and apps/v1.",
+    "metadata": "Details that identify the object, such as its name.",
+    "---": "Three dashes separate objects. One file can hold several objects.",
+    "StorageClass:kind": "A recipe for making storage on demand.",
+    "PersistentVolumeClaim:kind": "A request for storage, which a StorageClass fulfils.",
+    "Deployment:kind": "A Deployment keeps identical Pods running.",
+    "StorageClass:metadata.name": "The recipe’s name. Claims choose it with storageClassName.",
+    "PersistentVolumeClaim:metadata.name": "The claim’s name. The Deployment’s Pods refer to it.",
+    "Deployment:metadata.name": "The Deployment’s name. Its Pods’ names start with it.",
+    "provisioner": "efs.csi.aws.com: the Amazon EFS CSI driver, installed as an EKS add-on.",
+    "parameters": "EFS settings for each claim. Values are text.",
+    "parameters.provisioningMode": "efs-ap: make an EFS access point, a private directory, for each claim.",
+    "parameters.fileSystemId": "A placeholder. Replace it with your file system’s ID, from aws efs describe-file-systems.",
+    "parameters.directoryPerms": "Permissions for each new directory. \"700\": only its owner. Quotes keep it text.",
+    "PersistentVolumeClaim:spec": "What storage the claim needs.",
+    "Deployment:spec": "The desired state of the Deployment.",
+    "spec.storageClassName": "Which StorageClass makes the storage: efs.",
+    "spec.accessModes": "How the storage can be used.",
+    "spec.accessModes[]": "ReadWriteMany: Pods on many nodes can read and write at once.",
+    "spec.resources": "How much storage the claim needs.",
+    "spec.resources.requests": "The amount to ask for.",
+    "spec.resources.requests.storage": "5Gi. Kubernetes requires a size, but EFS does not limit it.",
+    "spec.replicas": "How many Pods to keep running: two.",
+    "spec.selector": "Which Pods this Deployment manages.",
+    "spec.selector.matchLabels": "Pods must have all of these labels.",
+    "spec.selector.matchLabels.app": "Manage Pods labelled app: writers.",
+    "spec.template": "The Pod template: the blueprint for every Pod.",
+    "spec.template.metadata": "Details given to every Pod.",
+    "spec.template.metadata.labels": "Labels given to every Pod. They must match the selector.",
+    "spec.template.metadata.labels.app": "Every Pod gets the label app: writers.",
+    "spec.template.spec": "What each Pod runs, and which volumes it uses.",
+    "spec.template.spec.containers": "The containers in each Pod.",
+    "spec.template.spec.containers[].name": "The container’s name.",
+    "spec.template.spec.containers[].image": "A tiny image with basic shell tools, pinned to a version.",
+    "spec.template.spec.containers[].command": "Add this Pod’s name to /shared/visitors, then sleep.",
+    "spec.template.spec.containers[].volumeMounts": "Where volumes appear inside the container.",
+    "spec.template.spec.containers[].volumeMounts[].name": "Which volume: shared, defined under volumes.",
+    "spec.template.spec.containers[].volumeMounts[].mountPath": "The storage appears at /shared.",
+    "spec.template.spec.volumes": "Volumes each Pod can mount.",
+    "spec.template.spec.volumes[].name": "The volume’s name, used by volumeMounts.",
+    "spec.template.spec.volumes[].persistentVolumeClaim": "The volume comes from a claim.",
+    "spec.template.spec.volumes[].persistentVolumeClaim.claimName": "The claim to use: shared."
+  },
+  "tryIt": [
+    {
+      "command": "kubectl apply -f efs.yaml",
+      "result": "Creates the StorageClass, the claim, and the Deployment. Replace the fileSystemId placeholder first.",
+      "check": {
+        "run": "sed \"s/fs-0123456789abcdef0/$KCB_EFS_ID/\" efs.yaml | kubectl apply -f -",
+        "expect": [
+          "storageclass.storage.k8s.io/efs created",
+          "persistentvolumeclaim/shared created",
+          "deployment.apps/writers created"
+        ]
+      }
+    },
+    {
+      "command": "kubectl get pvc shared",
+      "result": "STATUS turns Bound within seconds: the driver has made an access point.",
+      "check": {
+        "pattern": "shared\\s+Bound"
+      }
+    },
+    {
+      "command": "kubectl get pods -l app=writers -o wide",
+      "result": "Both Pods are Running. They may be on different nodes.",
+      "check": {
+        "pattern": "writers-\\S+\\s+1/1\\s+Running[\\s\\S]*writers-\\S+\\s+1/1\\s+Running"
+      }
+    },
+    {
+      "command": "kubectl exec deployment/writers -- cat /shared/visitors",
+      "result": "Prints two lines, one from each Pod. They share one file.",
+      "check": {
+        "pattern": "writers-\\S+ was here\\s+writers-\\S+ was here",
+        "lines": 2
+      }
+    },
+    {
+      "command": "kubectl delete -f efs.yaml",
+      "result": "Removes all three and the access point. Delete the EFS file system yourself when you finish.",
+      "check": {
+        "expect": [
+          "storageclass.storage.k8s.io \"efs\" deleted",
+          "persistentvolumeclaim \"shared\" deleted",
+          "deployment.apps \"writers\" deleted"
+        ]
+      }
+    }
+  ],
+  "practice": {
+    "questions": [
+      {
+        "question": "Why does the claim use ReadWriteMany?",
+        "answers": [
+          "So Pods on different nodes can use it at once",
+          "So it is faster",
+          "Because EBS needs it"
+        ],
+        "correct": 0,
+        "explain": "Both Pods write to the same storage, possibly from different nodes.",
+        "line": 18
+      },
+      {
+        "question": "What does provisioningMode: efs-ap make for each claim?",
+        "answers": [
+          "A new file system",
+          "An access point: a private directory in your file system",
+          "An EBS volume"
+        ],
+        "correct": 1,
+        "explain": "The file system already exists. Each claim gets its own directory in it.",
+        "line": 7
+      },
+      {
+        "question": "What must you change before applying?",
+        "answers": [
+          "fileSystemId, to your own file system’s ID",
+          "The image",
+          "The claim size"
+        ],
+        "correct": 0,
+        "explain": "fs-0123456789abcdef0 is a placeholder. aws efs describe-file-systems lists your real IDs.",
+        "line": 8
+      }
+    ],
+    "fix": {
+      "line": 9,
+      "text": "  directoryPerms: 700",
+      "source": "apply",
+      "message": "StorageClass in version \"v1\" cannot be handled as a StorageClass: json: cannot unmarshal number into Go struct field StorageClass.parameters of type string",
+      "explain": "StorageClass parameters must be text. Without quotes, YAML reads 700 as a number.",
+      "fix": "Put the value in quotes: directoryPerms: \"700\"."
+    }
+  },
+  "sources": [
+    {
+      "title": "Use elastic file system storage with Amazon EFS",
+      "url": "https://docs.aws.amazon.com/eks/latest/userguide/efs-csi.html"
+    },
+    {
+      "title": "Access modes",
+      "url": "https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes"
+    }
+  ]
+}

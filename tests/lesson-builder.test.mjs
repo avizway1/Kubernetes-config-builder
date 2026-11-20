@@ -122,7 +122,11 @@ test('lesson text follows the style rules', () => {
       if (item.check.then) ok(item.check.then.run && tests(item.check.then), `${lesson.id}: "${item.command}" has an incomplete follow-up check`);
       if (item.command.includes('<')) ok(item.check.run, `${lesson.id}: "${item.command}" has a placeholder, so its check needs a command to run`);
     }
-    const official = lesson.kind ? ['https://kubernetes.io/docs/'] : ['https://kubernetes.io/docs/', 'https://yaml.org/spec/'];
+    const eks = levels.flatMap(level => level.lessons).find(item => item.id === lesson.id)?.runsOn === 'eks';
+    const official = !lesson.kind ? ['https://kubernetes.io/docs/', 'https://yaml.org/spec/']
+      : eks ? ['https://kubernetes.io/docs/', 'https://docs.aws.amazon.com/eks/', 'https://docs.aws.amazon.com/cli/latest/reference/'] : ['https://kubernetes.io/docs/'];
+    if (eks) ok(lesson.sources.some(source => source.url.startsWith('https://docs.aws.amazon.com/eks/')), `${lesson.id} cites the EKS docs`);
+    if (lesson.needs) ok(official.some(prefix => lesson.needs.url.startsWith(prefix)) && words(lesson.needs.text) <= 40, `${lesson.id}: needs`);
     for (const source of lesson.sources) ok(official.some(prefix => source.url.startsWith(prefix)), source.url);
   }
   for (const definition of Object.values(glossary)) ok(words(definition) <= 20, definition);
@@ -136,11 +140,13 @@ test('a choice changes only the line it controls', () => {
   deepEqual(two.filter((line, index) => line !== three[index]), ['  replicas: 2']);
 });
 
-test('built lessons appear in the catalogue and run anywhere', () => {
+test('built lessons appear in the catalogue and run anywhere or on EKS', () => {
   const catalogue = new Map(levels.flatMap(level => level.lessons).map(lesson => [lesson.id, lesson]));
   for (const lesson of lessons) {
     ok(catalogue.has(lesson.id), lesson.id);
-    equal(catalogue.get(lesson.id).runsOn, 'anywhere', lesson.id);
+    ok(['anywhere', 'eks'].includes(catalogue.get(lesson.id).runsOn), lesson.id);
+    // An Anywhere lesson cannot depend on an EKS only lesson.
+    if (catalogue.get(lesson.id).runsOn === 'anywhere') for (const id of lesson.uses ?? []) equal(catalogue.get(id).runsOn, 'anywhere', `${lesson.id} uses ${id}`);
     const lines = blockLines(lesson, lesson.blocks.length - 1, defaultLessonValues(lesson));
     if (lesson.kind) ok(lines.includes(`kind: ${lesson.kind}`), `${lesson.id} builds a ${lesson.kind}`);
     else ok(!lines.some(line => line.startsWith('kind:')), `${lesson.id} has no kind`);
@@ -195,7 +201,10 @@ test('every lesson has Read it and Fix it practice that follows the style rules'
     ok(fix.message.trim(), `${label} has no message`);
     if (lesson.kind) ok(['apply', 'command'].includes(fix.source), `${label}: a Kubernetes file shows what Kubernetes says`);
     else equal(fix.source, 'yaml', label);
-    if (fix.source === 'command') ok(fix.command?.startsWith('kubectl ') && fix.expect, `${label} needs a kubectl command and the pattern it shows`);
+    // An EKS lesson may ask AWS, since some mistakes show only in the AWS resources Kubernetes creates.
+    const eksOnly = levels.flatMap(level => level.lessons).find(item => item.id === lesson.id)?.runsOn === 'eks';
+    const tools = eksOnly ? /^(kubectl|aws) / : /^kubectl /;
+    if (fix.source === 'command') ok(tools.test(fix.command ?? '') && fix.expect, `${label} needs a kubectl command and the pattern it shows`);
     else ok(!fix.command && !fix.expect, label);
     short(label, fix.explain, 2);
     short(label, fix.fix, 2);
