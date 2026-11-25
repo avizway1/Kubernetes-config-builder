@@ -147,6 +147,18 @@ export const lessonContent: Record<string, LessonContent> = {
 
 export const glossary: Record<string, string> = glossaryData;
 
+// The first block to use a glossary term introduces it. Later blocks that use the same term remind the learner.
+// order is the catalogue's lesson order, from frontend/src/lessons.ts.
+export function termIntroductions(order: string[]): Record<string, { lesson: string; block: number }> {
+  const first: Record<string, { lesson: string; block: number }> = {};
+  for (const id of order) {
+    lessonContent[id]?.blocks.forEach((block, index) => {
+      if (block.term) first[block.term] ??= { lesson: id, block: index };
+    });
+  }
+  return first;
+}
+
 export function defaultLessonValues(lesson: LessonContent): LessonValues {
   return Object.fromEntries(Object.entries(lesson.choices ?? {}).map(([name, choice]) => [name, choice.default]));
 }

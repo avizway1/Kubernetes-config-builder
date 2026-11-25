@@ -387,6 +387,13 @@ On 2026-11-25 Charan asked to finish phase 1 and approved `nginxinc/nginx-unpriv
 - The EKS lesson cluster setup and teardown moved from the ignored `.runtime` folder to `tests/eks-lessons-cluster.sh`, with the cluster name and Region as inputs.
 - The start guide points to Lab 1 after Level 1, and no longer mentions lessons marked Coming soon.
 
+#### Closing the block and term criteria (2026-11-26)
+
+- A browser test opens every lesson and steps through all 248 blocks. At each step, the card shows that block, and the editor highlights exactly the YAML lines and comment the block adds. Long lines wrap, so the test counts YAML lines by their line numbers, not screen lines.
+- Many blocks name a term an earlier lesson already introduced, such as Deployment or replica. The card called every one a **New word**. Now only a term’s first block in catalogue order says **New word**; later blocks say **Word to remember**.
+- A unit test checks that each block names at most one term, that every term is in the glossary, and that every glossary term is introduced by exactly one block. The existing tests already keep notes, card sentences, and practice text to 20 words a sentence.
+- Verified on Node 26.13.1: `npm run lint`, `npm test` (42 passing), `npm run build`, and `tests/site-shell.browser.mjs` (12 passing in Chrome).
+
 Every milestone pins the schemas its kinds need.
 
 ## Progress
@@ -474,9 +481,9 @@ Every milestone pins the schemas its kinds need.
 ## Acceptance criteria
 
 - [x] A first-time visitor lands on Learn Kubernetes and can start a lesson with one click. The two front doors return with Build a config in phase 2.
-- [ ] Each lesson step adds one block of at most 6 new YAML lines, highlights it, and shows its card.
+- [x] Each lesson step adds one block of at most 6 new YAML lines, highlights it, and shows its card.
 - [x] Back, Next block, Show whole file, Copy, and Download work at every step and export exactly what is shown.
-- [ ] Every learner-facing note is at most 20 words and introduces at most one new term, which links to the glossary. A unit test enforces both.
+- [x] Every learner-facing note is at most 20 words and introduces at most one new term, which links to the glossary. A unit test enforces both.
 - [x] Beginner downloads contain one comment per block and no command header. Build a config downloads are unchanged.
 - [x] Every Level 1 manifest passes kubeconform for all three Kubernetes versions. EKS custom resources such as `IngressClassParams` use pinned schemas from an official AWS source.
 - [x] Every Anywhere lesson deploys on fresh K3s, and every EKS only lesson deploys on the dedicated EKS Auto Mode test cluster.

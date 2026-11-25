@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ExportActions } from './ExportActions';
 import { LessonEditor } from './LessonEditor';
 import {
-  brokenFile, glossary, lessonContent, lessonText, lineNote, matchLines, practiceFile, renderLesson, renderMistake,
+  brokenFile, glossary, lessonContent, termIntroductions, lessonText, lineNote, matchLines, practiceFile, renderLesson, renderMistake,
   type LessonContent, type LessonValues,
 } from './lesson-builder';
 import { fixFound, LessonPractice, newPractice, type PracticeProgress } from './LessonPractice';
@@ -10,6 +10,8 @@ import { levels, runsOnLabels, type Lesson } from './lessons';
 
 // `practising` shows Read it and Fix it after the last block. `practice` keeps their answers when learners go back.
 const lessonTitle = (id: string) => levels.flatMap(level => level.lessons).find(lesson => lesson.id === id)?.title ?? id;
+const firstTerms = termIntroductions(levels.flatMap(level => level.lessons).map(lesson => lesson.id));
+const isNewTerm = (lesson: string, block: number, term: string) => firstTerms[term]?.lesson === lesson && firstTerms[term]?.block === block;
 
 export type LessonProgress = {
   step: number;
@@ -103,7 +105,7 @@ export function LessonView({ lesson, content, progress, onProgress, next }: {
           <h3>What happens if I remove it?</h3>
           <p>{block.ifRemoved}</p>
           {block.term && (
-            <p className="lesson-term"><span className="lesson-term-label">New word</span> <dfn>{block.term}</dfn>: {glossary[block.term]}</p>
+            <p className="lesson-term"><span className="lesson-term-label">{isNewTerm(content.id, step, block.term) ? 'New word' : 'Word to remember'}</span> <dfn>{block.term}</dfn>: {glossary[block.term]}</p>
           )}
           {choice && block.tryChange && (
             <label className="lesson-try">

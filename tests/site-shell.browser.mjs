@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { brokenFile, lessonContent, lessonText, practiceFile, renderLesson } from '../frontend/src/lesson-builder.ts';
+import {
+  brokenFile, defaultLessonValues, lessonContent, lessonText, matchLines, practiceFile, renderLesson, termIntroductions,
+} from '../frontend/src/lesson-builder.ts';
+import { levels } from '../frontend/src/lessons.ts';
 
 const require = createRequire(new URL('../frontend/package.json', import.meta.url));
 const { chromium } = require('playwright-core');
@@ -148,6 +151,55 @@ test('a lesson builds the file one block at a time and exports exactly what is s
     await page.getByRole('link', { name: 'Start Run one container' }).click();
     assert.equal(await progress.textContent(), 'Block 4 of 4');
     assert.equal(await page.getByLabel('Show explanations').isChecked(), false);
+  } finally {
+    await browser.close();
+  }
+});
+
+// Every step of every lesson: the card shows that block, and the editor highlights exactly the lines it added,
+// its comment included. The unit tests keep each block to one to six YAML lines.
+test('every lesson step highlights the lines its block adds and shows that block on the card', { timeout: 300000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
+    page.setDefaultTimeout(8000);
+    const order = levels.flatMap(level => level.lessons).map(lesson => lesson.id);
+    const first = termIntroductions(order);
+    let steps = 0;
+    for (const id of order) {
+      const lesson = lessonContent[id];
+      const values = defaultLessonValues(lesson);
+      await page.goto(`${appUrl}#learn/${id}`);
+      for (let step = 0; step < lesson.blocks.length; step++) {
+        const label = `${id} block ${step + 1}`;
+        if (step) await page.getByRole('button', { name: 'Next block' }).click();
+        const block = lesson.blocks[step];
+        await page.locator('#block-title').filter({ hasText: block.title }).waitFor();
+        assert.equal(await page.locator('.lesson-progress').textContent(), `Block ${step + 1} of ${lesson.blocks.length}`, label);
+        const before = step ? renderLesson(lesson, step - 1, values, true).map(line => line.text) : [];
+        const added = matchLines(before, renderLesson(lesson, step, values, true).map(line => line.text)).filter(index => index < 0).length;
+        // Long lines wrap, so count the YAML lines behind the highlighted screen lines using their line numbers.
+        const highlighted = () => page.evaluate(() => {
+          const editor = document.querySelector('[data-testid="lesson-yaml"]');
+          const top = element => parseFloat(element.parentElement.style.top);
+          const numbers = [...editor.querySelectorAll('.line-numbers')].filter(element => element.textContent.trim())
+            .map(element => ({ top: top(element), line: element.textContent.trim() })).sort((a, b) => a.top - b.top);
+          return new Set([...editor.querySelectorAll('.comparison-value-line')]
+            .map(element => numbers.filter(number => number.top <= top(element)).at(-1)?.line)).size;
+        });
+        const deadline = Date.now() + 8000;
+        while ((await highlighted()) !== added && Date.now() < deadline) await page.waitForTimeout(100);
+        assert.equal(await highlighted(), added, `${label}: highlighted YAML lines`);
+        const term = page.locator('.lesson-term');
+        if (block.term) {
+          assert.equal(await term.locator('dfn').textContent(), block.term, label);
+          const isNew = first[block.term].lesson === id && first[block.term].block === step;
+          assert.equal(await term.locator('.lesson-term-label').textContent(), isNew ? 'New word' : 'Word to remember', label);
+        } else assert.equal(await term.count(), 0, label);
+        steps++;
+      }
+    }
+    assert.ok(steps > 200, `checked ${steps} steps`);
   } finally {
     await browser.close();
   }

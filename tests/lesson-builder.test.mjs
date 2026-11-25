@@ -1,7 +1,7 @@
 import { deepEqual, equal, ok } from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  blockLines, defaultLessonValues, glossary, brokenFile, lessonContent, lessonText, lineNote, matchLines, noteKey, practiceLines, renderLesson, renderMistake, yamlPaths,
+  blockLines, defaultLessonValues, glossary, termIntroductions, brokenFile, lessonContent, lessonText, lineNote, matchLines, noteKey, practiceLines, renderLesson, renderMistake, yamlPaths,
 } from '../frontend/src/lesson-builder.ts';
 import { levels } from '../frontend/src/lessons.ts';
 
@@ -130,6 +130,26 @@ test('lesson text follows the style rules', () => {
     for (const source of lesson.sources) ok(official.some(prefix => source.url.startsWith(prefix)), source.url);
   }
   for (const definition of Object.values(glossary)) ok(words(definition) <= 20, definition);
+});
+
+// Each block names at most one glossary term. Its first use in catalogue order is the block that introduces it, so no
+// block introduces more than one new term, and every glossary entry is introduced by some block.
+test('each block introduces at most one new term, and every glossary term is introduced once', () => {
+  const order = levels.flatMap(level => level.lessons).map(lesson => lesson.id);
+  const first = termIntroductions(order);
+  for (const lesson of lessons) {
+    for (const [index, block] of lesson.blocks.entries()) {
+      if (block.term === undefined) continue;
+      equal(typeof block.term, 'string', `${lesson.id} block ${index + 1} names more than one term`);
+      ok(glossary[block.term], `${lesson.id} block ${index + 1}: ${block.term} is not in the glossary`);
+    }
+  }
+  deepEqual(Object.keys(first).sort(), Object.keys(glossary).sort(), 'every glossary term is introduced by a block');
+  const introduced = Object.values(first).map(({ lesson, block }) => `${lesson} ${block}`);
+  equal(new Set(introduced).size, introduced.length, 'a block introduces two terms');
+  for (const { lesson, block } of Object.values(first)) {
+    ok(order.indexOf(lesson) >= 0 && lessonContent[lesson].blocks[block].term, `${lesson} block ${block + 1}`);
+  }
 });
 
 test('a choice changes only the line it controls', () => {
