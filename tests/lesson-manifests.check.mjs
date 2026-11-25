@@ -3,7 +3,7 @@
 // Run from the project root: node --test tests/lesson-manifests.check.mjs
 import { ok } from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -100,4 +100,21 @@ test('each YAML Fix it shows the exact message the YAML reader prints', () => {
     checked++;
   }
   ok(checked >= 1, 'no YAML Fix it was checked');
+});
+
+// eksctl reads the cluster file, not Kubernetes, so kubeconform has no schema for it.
+test('every lab file passes strict kubeconform', () => {
+  const labs = fileURLToPath(new URL('../templates/kubernetes/labs/', import.meta.url));
+  const files = readdirSync(labs).filter(name => name.endsWith('.yaml')).map(name => join(labs, name))
+    .filter(file => !readFileSync(file, 'utf8').includes('\napiVersion: eksctl.io/'));
+  ok(files.length >= 1, 'no lab files found');
+  const objects = files.reduce((count, file) => count + readFileSync(file, 'utf8').split('\n').filter(line => line.startsWith('kind:')).length, 0);
+  for (const version of versions) {
+    const output = execFileSync('kubeconform', [
+      '-strict', '-summary', '-kubernetes-version', version,
+      '-schema-location', `${schemas}/{{ .NormalizedKubernetesVersion }}-standalone{{ .StrictSuffix }}/{{ .ResourceKind }}{{ .KindSuffix }}.json`,
+      ...files,
+    ], { encoding: 'utf8' });
+    ok(output.includes(`Valid: ${objects}, Invalid: 0, Errors: 0, Skipped: 0`), `${version}: ${output}`);
+  }
 });

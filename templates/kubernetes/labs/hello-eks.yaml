@@ -1,0 +1,131 @@
+# Lab 2 · Your app on EKS. The EKS only pieces, added next to Lab 1's hello.yaml.
+# IngressClassParams holds the load balancer settings. internet-facing lets your browser reach it.
+apiVersion: eks.amazonaws.com/v1
+kind: IngressClassParams
+metadata:
+  name: public-alb
+spec:
+  scheme: internet-facing
+---
+# The IngressClass tells EKS Auto Mode to build Application Load Balancers with those settings.
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: public-alb
+spec:
+  controller: eks.amazonaws.com/alb
+  parameters:
+    apiGroup: eks.amazonaws.com
+    kind: IngressClassParams
+    name: public-alb
+---
+# The Ingress sends every request to the hello Service. The load balancer checks /healthz, which needs no login.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hello
+  namespace: hello
+  annotations:
+    alb.ingress.kubernetes.io/healthcheck-path: /healthz
+spec:
+  ingressClassName: public-alb
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: hello
+                port:
+                  number: 80
+---
+# The StorageClass tells EKS Auto Mode to make encrypted gp3 EBS volumes.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: auto-ebs
+provisioner: ebs.csi.eks.amazonaws.com
+volumeBindingMode: WaitForFirstConsumer
+parameters:
+  type: gp3
+  encrypted: "true"
+---
+# The PersistentVolumeClaim asks for a 1 GiB disk that outlives any Pod.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: notes-disk
+  namespace: hello
+spec:
+  storageClassName: auto-ebs
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# The ServiceAccount is the name Pod Identity links to an IAM role.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: notes
+  namespace: hello
+---
+# The script asks EKS for the Pod's temporary AWS keys, then asks AWS who the Pod is.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notes-scripts
+  namespace: hello
+data:
+  aws-whoami.sh: |
+    creds=$(curl -s -H "Authorization: $(cat "$AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE")" "$AWS_CONTAINER_CREDENTIALS_FULL_URI")
+    field() { echo "$creds" | sed -n "s/.*\"$1\":\"\([^\"]*\)\".*/\1/p"; }
+    curl -s --aws-sigv4 "aws:amz:us-east-1:sts" --user "$(field AccessKeyId):$(field SecretAccessKey)" \
+      -H "x-amz-security-token: $(field Token)" \
+      "https://sts.amazonaws.com/?Action=GetCallerIdentity&Version=2011-06-15" | sed -n "s:.*<Arn>\(.*\)</Arn>.*:\1:p"
+---
+# The notes Deployment runs one Pod with the disk at /data and the notes ServiceAccount.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notes
+  namespace: hello
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: notes
+  template:
+    metadata:
+      labels:
+        app: notes
+    spec:
+      serviceAccountName: notes
+      securityContext:
+        runAsNonRoot: true
+        fsGroup: 101
+      containers:
+        - name: notes
+          image: nginxinc/nginx-unprivileged:1.30.4@sha256:a5866218f05961c7651a4a4a18d9bd0e5e5b4b26aafffb334df3423948db3560
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+          volumeMounts:
+            - name: disk
+              mountPath: /data
+            - name: scripts
+              mountPath: /scripts
+      volumes:
+        - name: disk
+          persistentVolumeClaim:
+            claimName: notes-disk
+        - name: scripts
+          configMap:
+            name: notes-scripts

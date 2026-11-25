@@ -1,4 +1,5 @@
 import { deepEqual, equal, ok } from 'node:assert/strict';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { labs, levels, runsOnLabels } from '../frontend/src/lessons.ts';
 
@@ -38,5 +39,27 @@ test('nothing in Learn Kubernetes opens Build a config or is tested only on K3s 
   for (const item of [...levels.flatMap(level => level.lessons), ...labs]) {
     equal('open' in item, false, `${item.id} opens Build a config`);
     ok(item.runsOn !== 'k3s', `${item.id} belongs to phase 2`);
+  }
+});
+
+// Each lab guide lives in docs/ and is linked from the catalogue. Its YAML must match the files learners download.
+test('lab guides exist, and their YAML and downloads match the lab files', () => {
+  const repo = 'https://github.com/avizway1/Kubernetes-config-builder/blob/main/';
+  const raw = 'https://raw.githubusercontent.com/avizway1/Kubernetes-config-builder/main/';
+  const root = new URL('../', import.meta.url);
+  const labFiles = readdirSync(new URL('templates/kubernetes/labs/', root))
+    .map(name => readFileSync(new URL(`templates/kubernetes/labs/${name}`, root), 'utf8'));
+  for (const lab of labs.filter(lab => lab.link)) {
+    ok(lab.link.startsWith(repo), `${lab.id} links outside this repository`);
+    const guide = new URL(lab.link.slice(repo.length), root);
+    ok(existsSync(guide), `${lab.id}: missing ${guide.pathname}`);
+    const text = readFileSync(guide, 'utf8');
+    const yamlBlocks = [...text.matchAll(/^```yaml\n([\s\S]*?)^```$/gm)].map(match => match[1]);
+    ok(yamlBlocks.length > 0, `${lab.id} shows no YAML`);
+    for (const block of yamlBlocks) ok(labFiles.includes(block), `${lab.id}: a YAML block differs from every file in templates/kubernetes/labs`);
+    for (const [url] of text.matchAll(new RegExp(`${raw.replaceAll('.', '\\.')}[^\\s)]+`, 'g'))) {
+      ok(existsSync(new URL(url.slice(raw.length), root)), `${lab.id}: ${url} does not exist in this repository`);
+    }
+    for (const [comment] of text.matchAll(/<!--.*-->/g)) ok(/^<!-- (do|check): .+ -->$/.test(comment), `${lab.id}: unknown hidden step ${comment}`);
   }
 });

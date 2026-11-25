@@ -1,0 +1,111 @@
+# Lab 1 · Hello Kubernetes. One file with the five objects from Level 1.
+# A Namespace keeps the lab's objects together, so one delete removes them all.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hello
+---
+# The ConfigMap holds the page message and the web server's settings.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hello-page
+  namespace: hello
+data:
+  MESSAGE: "Hello Kubernetes"
+  default.conf.template: |
+    server {
+        listen 8080;
+        location = /healthz {
+            auth_basic off;
+            return 200 "ok\n";
+        }
+        location / {
+            auth_basic "Hello Kubernetes";
+            auth_basic_user_file /etc/nginx/login/htpasswd;
+            try_files /no-file @page;
+        }
+        location @page {
+            default_type text/html;
+            return 200 "<h1>${MESSAGE}</h1><p>Served by Pod $hostname</p>\n";
+        }
+    }
+---
+# The Secret holds the login. Sign in as learner with the password kubernetes.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hello-login
+  namespace: hello
+type: Opaque
+stringData:
+  htpasswd: "learner:$apr1$kcblab01$CQu3e0qDUa52ZSkHt8tv9/"
+---
+# The Deployment keeps two copies of the web server running.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello
+  namespace: hello
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hello
+  template:
+    metadata:
+      labels:
+        app: hello
+    spec:
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: web
+          image: nginxinc/nginx-unprivileged:1.30.4@sha256:a5866218f05961c7651a4a4a18d9bd0e5e5b4b26aafffb334df3423948db3560
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MESSAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: hello-page
+                  key: MESSAGE
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+          volumeMounts:
+            - name: settings
+              mountPath: /etc/nginx/templates
+            - name: login
+              mountPath: /etc/nginx/login
+              readOnly: true
+      volumes:
+        - name: settings
+          configMap:
+            name: hello-page
+            items:
+              - key: default.conf.template
+                path: default.conf.template
+        - name: login
+          secret:
+            secretName: hello-login
+---
+# The Service gives the Pods one stable name and port inside the cluster.
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello
+  namespace: hello
+spec:
+  selector:
+    app: hello
+  ports:
+    - port: 80
+      targetPort: 8080

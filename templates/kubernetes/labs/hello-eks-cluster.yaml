@@ -1,0 +1,12 @@
+# Lab 2 · Your app on EKS. An EKS Auto Mode cluster, created with eksctl.
+# Auto Mode launches, patches, and removes the machines for you.
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: hello-eks
+  region: us-east-1
+  version: "1.37"
+  tags:
+    lab: hello-eks
+autoModeConfig:
+  enabled: true

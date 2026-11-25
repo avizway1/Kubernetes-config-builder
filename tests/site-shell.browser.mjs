@@ -39,6 +39,12 @@ test('the dashboard opens into Learn Kubernetes and nothing links to Build a con
     assert.equal(await page.locator('section[aria-labelledby="level-0-title"] .lesson-start').count(), 2);
     assert.equal(await page.locator('section.level:not([aria-labelledby="labs-title"]) .badge-eks').count(), 7);
     assert.equal(await page.locator('section[aria-labelledby="labs-title"] .lesson').count(), 2);
+    // Every lesson and lab is built, and each lab opens its guide.
+    assert.equal(await page.getByText('Coming soon').count(), 0);
+    for (const [title, guide] of [['Lab 1 · Hello Kubernetes', 'lab-1-hello-kubernetes.md'], ['Lab 2 · Your app on EKS', 'lab-2-your-app-on-eks.md']]) {
+      const link = page.getByRole('link', { name: `Open guide for ${title}`, exact: true });
+      assert.equal(await link.getAttribute('href'), `https://github.com/avizway1/Kubernetes-config-builder/blob/main/docs/${guide}`);
+    }
 
     // Old #home links and the logo both land on Learn Kubernetes.
     await page.goto(`${appUrl}#home`);
