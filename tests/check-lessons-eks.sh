@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Check every EKS only lesson against a dedicated EKS Auto Mode test cluster, then save the two CRDs kubeconform still skips.
-# The cluster and the EFS file system are created separately, only with Charan's approval, and deleted after the run.
+# Check every EKS only lesson against a dedicated EKS Auto Mode test cluster, and save the cluster's NodePool and IngressClassParams CRDs.
+# Create the cluster and EFS file system first with tests/eks-lessons-cluster.sh, only with Charan's approval, and delete them after the run.
 # This script creates nothing in AWS except what the lessons' own Try it steps create and delete.
 # Usage: KCB_EKS_CLUSTER=kcb-lessons-<name> KCB_EKS_REGION=<region> KCB_EFS_ID=fs-<id> tests/check-lessons-eks.sh <1.35|1.36|1.37>
 # Needs the AWS CLI signed in to the test account, kubectl, curl, and Node.js. Run from the project root.
@@ -32,7 +32,7 @@ kubeconfig=$PWD/.runtime/kubeconfig-$KCB_EKS_CLUSTER
 trap 'rm -f "$kubeconfig"' EXIT
 aws eks update-kubeconfig --name "$KCB_EKS_CLUSTER" --kubeconfig "$kubeconfig" >/dev/null
 
-# kubeconform skips these two kinds until their schemas are pinned. Save the cluster's CRDs so they can be.
+# backend/eks-crds pins these two CRDs. Save the cluster's copies so a change in Auto Mode shows up as a diff.
 for crd in nodepools.karpenter.sh ingressclassparams.eks.amazonaws.com; do
   kubectl --kubeconfig "$kubeconfig" get crd "$crd" -o json > ".runtime/eks-crds/$crd.json"
 done
@@ -43,4 +43,4 @@ KCB_LESSON_PLATFORM=eks KCB_LESSON_KUBECONFIG=$kubeconfig KCB_LESSON_VERSION=$ve
   KCB_EKS_ACCOUNT=$account KCB_EKS_CLUSTER=$KCB_EKS_CLUSTER KCB_EFS_ID=$KCB_EFS_ID \
   node --test --test-concurrency=1 tests/lesson-cluster.check.mjs
 echo "EKS lessons passed on $KCB_EKS_CLUSTER (Kubernetes $version, $KCB_EKS_REGION) in $(( $(date +%s) - started )) seconds."
-echo "CRDs saved in .runtime/eks-crds. Delete the cluster and the EFS file system now to stop the charges."
+echo "CRDs saved in .runtime/eks-crds. Delete the cluster now to stop the charges: tests/eks-lessons-cluster.sh delete"

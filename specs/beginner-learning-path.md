@@ -362,6 +362,31 @@ On 2026-11-20 Charan asked to write the EKS only lessons first, then test them o
   - The cluster check runs a lesson’s own delete steps when the lesson fails partway, and `KCB_LESSON_ONLY` reruns chosen lessons.
   - The exported NodePool and IngressClassParams CRDs are kept in `backend/eks-crds`. `backend/download-schemas.py` builds strict schemas from them, and kubeconform now checks every lesson without skipping a kind.
 
+#### Milestone 3: Lab 1 · Hello Kubernetes (2026-11-25)
+
+On 2026-11-25 Charan asked to finish phase 1 and approved `nginxinc/nginx-unprivileged:1.30.4`, pinned by digest, as the lab image. It is the lessons’ nginx release, published by the NGINX Docker maintainers, running as user 101 on port 8080.
+
+- **Guide and file.** `docs/lab-1-hello-kubernetes.md`, opened from the catalogue’s **Open guide**. The app is one file, `templates/kubernetes/labs/hello.yaml`, with a Namespace, a ConfigMap, a Secret, a Deployment, and a Service. The ConfigMap holds the page message as an environment variable and the web server settings as a file. The Secret holds the login file, so the browser asks for a username and password. The page names the Pod that served it, so scaling and replacement are visible.
+- **Steps.** Create a k3d cluster, download or copy the file, apply it, open it with `kubectl port-forward` on port 8090 (the dashboard uses 8080), scale to three by editing the file, delete a Pod and watch it return, change the message and see it apply only after `kubectl rollout restart`, then delete the cluster.
+- **Found while building.** nginx runs `return` before it checks the login, so the page now comes from a named location reached with `try_files`. `kubectl apply` always reports a Secret written with `stringData` as `configured`, so the guide says only that the Deployment changes.
+- **The guide is the test.** `tests/lab-guide.check.mjs` runs every command in a guide’s `bash` blocks in one shell, in order, plus hidden `<!-- do: -->` steps for edits a learner makes in an editor and `<!-- check: -->` steps for what a learner sees. `kubectl port-forward` runs in the background and restarts before each check, `--watch` commands are skipped, downloads from this repository copy the local file, and the check uses its own kubeconfig. A unit test keeps every YAML block in a guide equal to a lab file and every download pointing at a file that exists. Strict kubeconform checks the lab files.
+- **Verified 2026-11-25:** the Lab 1 check passed on fresh K3s 1.37.2 in 49 seconds from cluster creation to deletion, on Darwin arm64 with Docker 29.8.2, k3d 5.9.0, and kubectl 1.36.1. The 15-minute target allows for reading and typing.
+
+#### Lab 2 · Your app on EKS (2026-11-25)
+
+- **Guide and files.** `docs/lab-2-your-app-on-eks.md` starts with what costs money and links each AWS pricing page. eksctl creates `hello-eks` from `templates/kubernetes/labs/hello-eks-cluster.yaml`, after one `sed` command puts the learner’s Region into it. Lab 1’s `hello.yaml` runs unchanged. A second file, `hello-eks.yaml`, adds an internet-facing ALB Ingress with its health check on `/healthz`, an encrypted gp3 claim, and a one-Pod `notes` Deployment with `Recreate`, `fsGroup: 101`, and a Pod Identity ServiceAccount.
+- **Pod Identity shows a real AWS answer.** The image has `curl`, so a short script in a ConfigMap reads the Pod’s temporary keys and calls STS `GetCallerIdentity` with `curl --aws-sigv4`. It prints `assumed-role/hello-notes/...`. The role has no permissions, and `GetCallerIdentity` needs none.
+- **Clean-up checks ask each service directly.** The first run used the Resource Groups Tagging API to look for anything tagged with the cluster. After deletion it still listed the terminated instance, the deleted volumes, and the deleted network interface, so it cannot prove that nothing is left. The guide now checks the cluster, load balancers named `k8s-hello-`, the claim’s volume, running Auto Mode instances (which need `--include-managed-resources`), the eksctl VPC, and the IAM role. The same checks run while the lab is up, to prove each filter finds what it looks for.
+- **Verified 2026-11-25** in ap-south-1 on the approved Free plan account. The final guide passed all 17 checks in 1,319 seconds from cluster creation to deletion. The cluster was ready after 12 minutes. Auto Mode launched its own nodes. eksctl created one NAT gateway with an Elastic IP, as the cost table says. Afterwards the account had no cluster, load balancer, EBS volume, NAT gateway, Elastic IP, or lab role, and only its default VPC. The first run passed every step in 25 minutes before its tagging check was replaced.
+- **EKS lessons rechecked.** The same day, `tests/eks-lessons-cluster.sh` created `kcb-lessons-137` with EFS in 19 minutes, all seven EKS only lessons passed again (15 tests in 955 seconds), and its delete step left nothing. The exported NodePool and IngressClassParams CRDs match `backend/eks-crds`.
+
+#### Milestone 11: README and docs (2026-11-25)
+
+- The README leads with **Start learning**, then the levels and the labs, then Build a config as phase 2. The heading leaves out “in 2 minutes”, because the first source build takes longer than that.
+- Running from source, tests, cluster checks, and security checks moved to `docs/contributing.md`. Build a config’s usage and installation notes moved to `docs/build-a-config.md`. Release notes moved to `docs/releases`, with an index that also describes the older prebuilt v0.4.0 image.
+- The EKS lesson cluster setup and teardown moved from the ignored `.runtime` folder to `tests/eks-lessons-cluster.sh`, with the cluster name and Region as inputs.
+- The start guide points to Lab 1 after Level 1, and no longer mentions lessons marked Coming soon.
+
 Every milestone pins the schemas its kinds need.
 
 ## Progress
@@ -448,16 +473,16 @@ Every milestone pins the schemas its kinds need.
 
 ## Acceptance criteria
 
-- [ ] A first-time visitor sees the two front doors and can start a lesson with one click.
+- [x] A first-time visitor lands on Learn Kubernetes and can start a lesson with one click. The two front doors return with Build a config in phase 2.
 - [ ] Each lesson step adds one block of at most 6 new YAML lines, highlights it, and shows its card.
 - [x] Back, Next block, Show whole file, Copy, and Download work at every step and export exactly what is shown.
 - [ ] Every learner-facing note is at most 20 words and introduces at most one new term, which links to the glossary. A unit test enforces both.
 - [x] Beginner downloads contain one comment per block and no command header. Build a config downloads are unchanged.
 - [x] Every Level 1 manifest passes kubeconform for all three Kubernetes versions. EKS custom resources such as `IngressClassParams` use pinned schemas from an official AWS source.
-- [ ] Every Anywhere lesson deploys on fresh K3s, and every lesson deploys on the dedicated EKS Auto Mode test cluster.
-- [ ] Lab 1 runs end to end on fresh K3s in under 15 minutes, timed from cluster creation with the environment recorded.
-- [ ] Lab 2 runs end to end on a fresh EKS Auto Mode cluster in under 40 minutes. Its cleanup leaves no cluster, load balancer, or EBS volume, verified with AWS CLI commands.
-- [ ] Each lesson shows its Anywhere or EKS only badge, and Level 2 and 3 content shows **Tested on K3s**.
+- [x] Every Anywhere lesson deploys on fresh K3s, and every EKS only lesson deploys on the dedicated EKS Auto Mode test cluster.
+- [x] Lab 1 runs end to end on fresh K3s in under 15 minutes, timed from cluster creation with the environment recorded.
+- [x] Lab 2 runs end to end on a fresh EKS Auto Mode cluster in under 40 minutes. Its cleanup leaves no cluster, load balancer, or EBS volume, verified with AWS CLI commands.
+- [x] Each lesson and lab shows its Anywhere or EKS only badge. **Tested on K3s** content returns with Build a config in phase 2.
 - [x] Brand header, colours, favicon, and footer appear on desktop and narrow screens, and text meets WCAG AA contrast.
 - [ ] Existing usage and installation browser tests still pass, with only their start URL changed to `#build`.
 
