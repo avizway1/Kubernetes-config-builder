@@ -395,6 +395,10 @@ On 2026-11-25 Charan asked to finish phase 1 and approved `nginxinc/nginx-unpriv
 - Verified on Node 26.13.1: `npm run lint`, `npm test` (42 passing), `npm run build`, and `tests/site-shell.browser.mjs` (12 passing in Chrome).
 - The final phase 1 CI run on commit `817f712` passed every test, including the existing usage and installation browser tests at `#build`. Its image scan found a new Dex advisory, which Charan accepted through 2026-12-11.
 
+#### Before phase 2: setup check and lab lessons (2026-11-26)
+
+Charan added two pieces before phase 2. [Set up your laptop](setup-check.md) checks the tools each lab needs and unlocks its hands-on part. [Lab lessons](lab-lessons.md) open each lab in the dashboard, with a walk-through of its files before its steps. Charan approved the mock-ups on 2026-11-26.
+
 Every milestone pins the schemas its kinds need.
 
 ## Progress
