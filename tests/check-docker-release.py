@@ -3,6 +3,7 @@
 import json
 import re
 import time
+from pathlib import Path
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
@@ -27,7 +28,23 @@ for attempt in range(30):
         time.sleep(1)
 
 asset = re.search(r'<script[^>]+src="(/assets/[^"]+\.js)"', index)
-assert asset and request(asset[1]), "Built frontend script is missing"
+bundle = request(asset[1]) if asset else ""
+assert bundle, "Built frontend script is missing"
+
+# The page is Kubernetes Made Simple, and its lab pages include both guides, which are read when the image is built.
+assert "<title>Kubernetes Made Simple</title>" in index, "The page is not Kubernetes Made Simple"
+root = Path(__file__).resolve().parent.parent
+for guide in ("docs/lab-1-hello-kubernetes.md", "docs/lab-2-your-app-on-eks.md"):
+    text = (root / guide).read_text(encoding="utf-8")
+    # Command lines with no quotes, backslashes, or dollar signs appear unchanged in the built script.
+    commands = [
+        line for block in re.findall(r"^```bash\n(.*?)\n```$", text, re.M | re.S)
+        for line in block.split("\n") if line.strip() and not re.search(r"[\"'`$\\]", line)
+    ]
+    assert len(commands) >= 3, f"{guide}: too few plain commands to check"
+    missing = [line for line in commands if line not in bundle]
+    assert not missing, f"{guide} is missing from the built lab page: {missing[:3]}"
+    print(f"{guide}: all {len(commands)} plain commands are in the built lab page")
 
 for version in ("1.35", "1.36", "1.37"):
     for tool in ("prometheus", "argo-cd"):

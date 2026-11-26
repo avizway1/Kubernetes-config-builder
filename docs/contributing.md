@@ -30,6 +30,16 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173) or the URL printed by Vite. The renderer listens on loopback port 8080. [Local chart rendering](local-rendering.md) has more on the renderer.
 
+## Build the Docker image from source
+
+The README starts the published image. To build the same image from your checkout instead, give Docker at least 8 GB of memory (Docker Desktop: **Settings → Resources → Advanced → Memory limit**), then run this from the project root:
+
+```sh
+docker compose -f compose.yaml -f compose.build.yaml up -d --build
+```
+
+The first build downloads and compiles everything, so it often takes 20 minutes or more. It stops with “cannot allocate memory” if Docker has less than 8 GB. Stop it with `docker compose -f compose.yaml -f compose.build.yaml down`. The same build runs in CI's package job.
+
 ## Lessons and labs
 
 Lessons live in `templates/kubernetes/lessons`, one JSON file per lesson, listed in `templates/kubernetes/lessons.json`. Each file holds the whole YAML after every block, the notes, Try it commands with the results to check, and Read it and Fix it practice. The [beginner learning path](../specs/beginner-learning-path.md) sets the writing rules.
@@ -105,3 +115,7 @@ The script prints findings and writes per-image JSON reports to the directory yo
 ## Releases
 
 Release notes are in [docs/releases](releases/). Tag a release only after Charan confirms the final review.
+
+1. Write the release notes and point `compose.yaml` at the new version on a branch. Merge it into `main` once CI passes and Charan confirms the final review.
+2. Create the GitHub release from that commit, for example `gh release create v1.0.0 --target main --title v1.0.0 --notes-file docs/releases/v1.0.0.md`. Publishing the release starts `release-image.yml`, which builds, tests, and scans both architectures, then publishes `ghcr.io/avizway1/kubernetes-config-builder:<version>`.
+3. A new GHCR package starts private, so the anonymous start jobs fail the first time. Set the package to public in its GitHub package settings, then rerun the failed jobs. The last job attaches the verified `compose.yaml` to the release.

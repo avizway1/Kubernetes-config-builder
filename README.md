@@ -8,15 +8,17 @@
 
 **New to Docker or the terminal?** Use the [start guide](docs/getting-started.html). It goes from a laptop with nothing installed to your first lesson, with copy-paste commands for macOS, Windows, and Linux. GitHub shows HTML files as code, so save the [raw file](https://raw.githubusercontent.com/avizway1/Kubernetes-config-builder/main/docs/getting-started.html) (right-click, then **Save Link As**) and open it in your browser.
 
-If you already have Docker and Git, give Docker at least 8 GB of memory (Docker Desktop: Settings, then Resources), then run:
+If you already have Docker and Git, run:
 
 ```sh
 git clone https://github.com/avizway1/Kubernetes-config-builder.git
 cd Kubernetes-config-builder
-docker compose -f compose.yaml -f compose.build.yaml up -d --build
+docker compose up -d
 ```
 
-Open [localhost:8080](http://localhost:8080) and start with **Level 0 · Reading YAML**. The first build takes a while, because Docker checks and builds everything from source. After that, the dashboard starts in seconds. To stop it, run `docker compose -f compose.yaml -f compose.build.yaml down` from the same folder.
+Open [localhost:8080](http://localhost:8080) and start with **Level 0 · Reading YAML**. Docker downloads the v1.0.0 dashboard image the first time, then starts it in seconds. To stop it, run `docker compose down` from the same folder. To get new lessons later, run `git pull` and `docker compose up -d` again.
+
+The image runs on Linux AMD64 and ARM64, which covers Docker Desktop on Intel and Apple silicon Macs and on Windows. To build it from source instead, see [Contributing](docs/contributing.md#build-the-docker-image-from-source).
 
 ## What you'll learn
 

@@ -1,6 +1,6 @@
 services:
   dashboard:
-    image: ${KCB_IMAGE:-ghcr.io/cavula/kubernetes-config-builder:v0.4.0}
+    image: ${KCB_IMAGE:-ghcr.io/avizway1/kubernetes-config-builder:v1.0.0}
     ports:
       - "127.0.0.1:8080:8080"
     read_only: true

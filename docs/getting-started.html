@@ -190,7 +190,7 @@ footer .wrap { padding-block: 0 40px; }
     <h1>Run Kubernetes Made Simple on your laptop</h1>
     <p>This guide takes you from a laptop with nothing installed to the Learn Kubernetes lessons open in your browser. Copy each command, paste it into your terminal, and press Enter.</p>
     <div class="facts">
-      <span><b>16 GB</b> laptop memory</span>
+      <span><b>8 GB</b> laptop memory</span>
       <span><b>3</b> free tools to install</span>
       <span><b>4</b> commands to start</span>
     </div>
@@ -213,15 +213,15 @@ footer .wrap { padding-block: 0 40px; }
 
     <section class="intro" aria-label="What you are setting up">
       <p><strong>What this is.</strong> Kubernetes Made Simple is a website that runs on your own laptop. It teaches Kubernetes one small block at a time and explains every line in plain English.</p>
-      <p><strong>Why Docker.</strong> Docker runs the website inside a sealed box called a container, so you don't have to install its programming tools yourself. You install Docker once, and one command builds and starts everything.</p>
+      <p><strong>Why Docker.</strong> Docker runs the website inside a sealed box called a container, so you don't have to install its programming tools yourself. You install Docker once, and one command downloads and starts everything.</p>
     </section>
 
     <section class="step" aria-labelledby="s0">
       <div class="step-head"><span class="num" aria-hidden="true">✓</span><h2 id="s0">Check your laptop<small>Two minutes</small></h2></div>
       <ul>
-        <li><strong>Memory:</strong> 16 GB of RAM or more. The first build needs 8 GB just for Docker.</li>
+        <li><strong>Memory:</strong> 8 GB of RAM or more. Docker uses half of it, which is enough for the dashboard and a practice cluster.</li>
         <li><strong>Disk:</strong> about 10 GB free, to be safe.</li>
-        <li><strong>Internet:</strong> a steady connection. The first build downloads all the tools it needs.</li>
+        <li><strong>Internet:</strong> a steady connection. The first start downloads the dashboard, and the practice cluster downloads Kubernetes.</li>
         <li><strong>Permission to install apps.</strong> On a work laptop you may need IT's help.</li>
       </ul>
       <div data-os-only="mac" class="note"><p>To check your memory, open the Apple menu, then <span class="path">About This Mac</span>. The <span class="path">Chip</span> line also tells you which Docker download you need: <em>Apple M…</em> means Apple silicon, <em>Intel</em> means Intel.</p></div>
@@ -273,27 +273,8 @@ docker compose version</code></pre></div>
     </section>
 
     <section class="step" aria-labelledby="s2">
-      <div class="step-head"><span class="num" aria-hidden="true">2</span><h2 id="s2">Give Docker 8 GB of memory<small>Two minutes</small></h2></div>
-      <p>The first build compiles a large program and stops with “cannot allocate memory” if Docker has less than 8 GB.</p>
-
-      <div data-os-only="mac">
-        <ol>
-          <li>Click the Docker whale in the menu bar and open <span class="path">Settings</span>.</li>
-          <li>Go to <span class="path">Resources → Advanced</span>.</li>
-          <li>Set <span class="path">Memory limit</span> to <strong>8 GB</strong> or more, then select <span class="path">Apply &amp; restart</span>.</li>
-        </ol>
-      </div>
-      <div data-os-only="win" hidden>
-        <p>On Windows, Docker uses the memory that WSL allows, which is half your laptop's memory by default. A 16 GB laptop already gives it 8 GB. To give it more:</p>
-        <ol>
-          <li>Open <span class="path">WSL Settings</span> from the Start menu and set the memory size to <strong>8 GB</strong> or more.</li>
-          <li>Quit Docker Desktop, run the command below in PowerShell, then open Docker Desktop again.</li>
-        </ol>
-        <div class="cmd"><div class="code"><pre><code>wsl --shutdown</code></pre></div></div>
-      </div>
-      <div data-os-only="linux" hidden>
-        <p>Docker Engine can use all of your laptop's memory, so there is nothing to change. If you use Docker Desktop for Linux, set <span class="path">Settings → Resources → Advanced → Memory limit</span> to 8 GB or more.</p>
-      </div>
+      <div class="step-head"><span class="num" aria-hidden="true">2</span><h2 id="s2">Check Docker's memory<small>One minute</small></h2></div>
+      <p>The dashboard and a practice cluster use about 2 GB together, so Docker needs 4 GB or more. Docker gets half your laptop's memory by default, so an 8 GB laptop is already enough.</p>
 
       <div class="cmd">
         <span class="cmd-label">Check how much memory Docker has</span>
@@ -301,7 +282,26 @@ docker compose version</code></pre></div>
         <div class="code" data-os-only="win" hidden><pre><code>docker info | Select-String "Total Memory"</code></pre></div>
         <div class="code" data-os-only="linux" hidden><pre><code>docker info | grep "Total Memory"</code></pre></div>
       </div>
-      <p class="expect"><b>You should see</b> about <code class="inline">Total Memory: 7.5GiB</code> or more. Docker shows memory in GiB, which reads a little lower than GB.</p>
+      <p class="expect"><b>You should see</b> <code class="inline">Total Memory: 3.5GiB</code> or more. Docker shows memory in GiB, which reads a little lower than GB. If it's lower, give Docker more:</p>
+
+      <div data-os-only="mac">
+        <ol>
+          <li>Click the Docker whale in the menu bar and open <span class="path">Settings</span>.</li>
+          <li>Go to <span class="path">Resources → Advanced</span>.</li>
+          <li>Set <span class="path">Memory limit</span> to <strong>4 GB</strong> or more, then select <span class="path">Apply &amp; restart</span>.</li>
+        </ol>
+      </div>
+      <div data-os-only="win" hidden>
+        <p>On Windows, Docker uses the memory that WSL allows, which is half your laptop's memory by default.</p>
+        <ol>
+          <li>Open <span class="path">WSL Settings</span> from the Start menu and set the memory size to <strong>4 GB</strong> or more.</li>
+          <li>Quit Docker Desktop, run the command below in PowerShell, then open Docker Desktop again.</li>
+        </ol>
+        <div class="cmd"><div class="code"><pre><code>wsl --shutdown</code></pre></div></div>
+      </div>
+      <div data-os-only="linux" hidden>
+        <p>Docker Engine can use all of your laptop's memory, so there is nothing to change. If you use Docker Desktop for Linux, set <span class="path">Settings → Resources → Advanced → Memory limit</span> to 4 GB or more.</p>
+      </div>
     </section>
 
     <section class="step" aria-labelledby="s3">
@@ -330,20 +330,20 @@ docker compose version</code></pre></div>
     </section>
 
     <section class="step" aria-labelledby="s4">
-      <div class="step-head"><span class="num" aria-hidden="true">4</span><h2 id="s4">Download and start the dashboard<small>The first build takes a while</small></h2></div>
+      <div class="step-head"><span class="num" aria-hidden="true">4</span><h2 id="s4">Download and start the dashboard<small>A few minutes</small></h2></div>
       <p>Make sure Docker Desktop is running, then paste these four lines into your terminal. They are the same on every laptop.</p>
       <div class="cmd">
         <div class="code"><pre><code>cd ~
 git clone https://github.com/avizway1/Kubernetes-config-builder.git
 cd Kubernetes-config-builder
-docker compose -f compose.yaml -f compose.build.yaml up -d --build</code></pre></div>
+docker compose up -d</code></pre></div>
       </div>
       <ul>
         <li><code class="inline">cd ~</code> goes to your home folder.</li>
         <li><code class="inline">git clone</code> downloads the project into a new <span class="path">Kubernetes-config-builder</span> folder.</li>
-        <li><code class="inline">docker compose … up -d --build</code> builds the dashboard and starts it in the background.</li>
+        <li><code class="inline">docker compose up -d</code> downloads the dashboard and starts it in the background.</li>
       </ul>
-      <p class="expect"><b>You should see</b> many build lines scroll past, ending with a line that says <code class="inline">Started</code>. The first build downloads and compiles everything, so it often takes 20 minutes or more, and up to an hour on a slower laptop or connection. Leave the terminal open until it finishes.</p>
+      <p class="expect"><b>You should see</b> Docker download the dashboard, then a line that says <code class="inline">Started</code>. The download happens only the first time.</p>
     </section>
 
     <section class="step" aria-labelledby="s5">
@@ -430,33 +430,33 @@ kubectl get nodes</code></pre></div>
       <div class="cmd">
         <span class="cmd-label">Start it again, for example after restarting your laptop</span>
         <div class="code"><pre><code>cd ~/Kubernetes-config-builder
-docker compose -f compose.yaml -f compose.build.yaml up -d --build</code></pre></div>
+docker compose up -d</code></pre></div>
       </div>
-      <p class="expect">This is much faster than the first time, because Docker reuses what it already built.</p>
+      <p class="expect">It starts in seconds, because Docker keeps the dashboard it downloaded.</p>
 
       <div class="cmd">
         <span class="cmd-label">Get the latest lessons</span>
         <div class="code"><pre><code>cd ~/Kubernetes-config-builder
 git pull
-docker compose -f compose.yaml -f compose.build.yaml up -d --build</code></pre></div>
+docker compose up -d</code></pre></div>
       </div>
-      <p class="expect">Then reload the page with <span data-os-only="mac"><kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd></span><span data-os-only="win" hidden><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd></span><span data-os-only="linux" hidden><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd></span>.</p>
+      <p class="expect">If there's a new release, Docker downloads it first. Then reload the page with <span data-os-only="mac"><kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd></span><span data-os-only="win" hidden><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd></span><span data-os-only="linux" hidden><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd></span>.</p>
 
       <div class="cmd">
         <span class="cmd-label">Check whether it's running</span>
-        <div class="code"><pre><code>docker compose -f compose.yaml -f compose.build.yaml ps</code></pre></div>
+        <div class="code"><pre><code>docker compose ps</code></pre></div>
       </div>
 
       <div class="cmd">
         <span class="cmd-label">Stop it</span>
-        <div class="code"><pre><code>docker compose -f compose.yaml -f compose.build.yaml down</code></pre></div>
+        <div class="code"><pre><code>docker compose down</code></pre></div>
       </div>
 
       <div class="cmd">
         <span class="cmd-label">Remove it completely</span>
-        <div class="code"><pre><code>docker compose -f compose.yaml -f compose.build.yaml down --rmi all</code></pre></div>
+        <div class="code"><pre><code>docker compose down --rmi all</code></pre></div>
       </div>
-      <p class="expect">This stops the dashboard and deletes the image it built. Then delete the <span class="path">Kubernetes-config-builder</span> folder from your home folder.</p>
+      <p class="expect">This stops the dashboard and deletes the image it downloaded. Then delete the <span class="path">Kubernetes-config-builder</span> folder from your home folder.</p>
     </section>
 
     <section class="step" aria-labelledby="s8">
@@ -467,10 +467,6 @@ docker compose -f compose.yaml -f compose.build.yaml up -d --build</code></pre><
         <div><p>Docker isn't installed or isn't running. Open Docker Desktop, wait until it says it's running, then try again. On Windows, close PowerShell and open a new one after installing.</p></div>
       </details>
 
-      <details>
-        <summary>The build stops with “cannot allocate memory”</summary>
-        <div><p>Docker has less than 8 GB. Follow step 2, check with the memory command, and run the start command again. Docker continues from where it stopped.</p></div>
-      </details>
 
       <details>
         <summary>“no configuration file provided: not found”</summary>
@@ -494,7 +490,7 @@ docker compose -f compose.yaml -f compose.build.yaml up -d --build</code></pre><
 
       <details>
         <summary>localhost:8080 doesn't load</summary>
-        <div><p>Run the <strong>Check whether it's running</strong> command. If nothing is listed, start it again. If the first build is still running in your terminal, wait for it to finish.</p></div>
+        <div><p>Run the <strong>Check whether it's running</strong> command. If nothing is listed, start it again. If the first download is still running in your terminal, wait for it to finish.</p></div>
       </details>
 
       <details>
