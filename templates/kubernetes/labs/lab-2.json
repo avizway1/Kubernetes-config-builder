@@ -1,0 +1,272 @@
+{
+  "id": "lab-2",
+  "guide": "lab-2-your-app-on-eks.md",
+  "files": [
+    "hello-eks-cluster.yaml",
+    "hello-eks.yaml"
+  ],
+  "steps": [
+    {
+      "file": "hello-eks-cluster.yaml",
+      "object": {
+        "kind": "ClusterConfig",
+        "name": "hello-eks"
+      },
+      "title": "An EKS Auto Mode cluster",
+      "what": "It tells eksctl to create a Kubernetes 1.37 cluster named hello-eks, with Auto Mode turned on.",
+      "why": "Auto Mode launches, patches, and removes the machines for you. It is not a Kubernetes object, so you never apply it.",
+      "lessons": []
+    },
+    {
+      "file": "hello-eks.yaml",
+      "object": {
+        "kind": "IngressClassParams",
+        "name": "public-alb"
+      },
+      "title": "Load balancer settings",
+      "what": "It holds settings for the load balancers EKS builds. internet-facing gives them a public address.",
+      "why": "Without it, the load balancer would be internal, and your browser could not reach it.",
+      "lessons": [
+        "ingress"
+      ],
+      "term": "load balancer"
+    },
+    {
+      "file": "hello-eks.yaml",
+      "object": {
+        "kind": "IngressClass",
+        "name": "public-alb"
+      },
+      "title": "Who builds the load balancer",
+      "what": "It tells EKS Auto Mode to build Application Load Balancers for Ingresses that name public-alb.",
+      "why": "It links each Ingress to the settings in IngressClassParams.",
+      "lessons": [
+        "ingress"
+      ],
+      "term": "IngressClass"
+    },
+    {
+      "file": "hello-eks.yaml",
+      "object": {
+        "kind": "Ingress",
+        "name": "hello"
+      },
+      "title": "A public address for the app",
+      "what": "It sends every request to the hello Service on port 80. The load balancer checks /healthz, which needs no login.",
+      "why": "Lab 1 used kubectl port-forward. The Ingress gives the app a real web address instead.",
+      "lessons": [
+        "ingress"
+      ],
+      "term": "Ingress"
+    },
+    {
+      "file": "hello-eks.yaml",
+      "object": {
+        "kind": "StorageClass",
+        "name": "auto-ebs"
+      },
+      "title": "What kind of disk to make",
+      "what": "It tells EKS Auto Mode to make encrypted gp3 EBS volumes.",
+      "why": "WaitForFirstConsumer waits for a Pod before making the disk. The disk then lands in the same zone as the Pod.",
+      "lessons": [
+        "storage"
+      ],
+      "term": "StorageClass"
+    },
+    {
+      "file": "hello-eks.yaml",
+      "object": {
+        "kind": "PersistentVolumeClaim",
+        "name": "notes-disk"
+      },
+      "title": "Ask for a disk",
+      "what": "It asks for a 1 GiB disk from the auto-ebs StorageClass. ReadWriteOnce lets one machine use it at a time.",
+      "why": "The disk outlives any Pod. In lab step 6, the note survives when its Pod is deleted.",
+      "lessons": [
+        "storage"
+      ],
+      "term": "PersistentVolumeClaim"
+    },
+    {
+      "file": "hello-eks.yaml",
+      "object": {
+        "kind": "ServiceAccount",
+        "name": "notes"
+      },
+      "title": "A name for Pod Identity",
+      "what": "It creates the notes ServiceAccount in the hello Namespace.",
+      "why": "Lab step 3 links this name to the hello-notes IAM role. Pods that use it get that role's temporary keys.",
+      "lessons": [
+        "pod-identity"
+      ],
+      "term": "ServiceAccount"
+    },
+    {
+      "file": "hello-eks.yaml",
+      "object": {
+        "kind": "ConfigMap",
+        "name": "notes-scripts"
+      },
+      "title": "A script that asks AWS who the Pod is",
+      "what": "It holds a short script. The script reads the Pod's temporary AWS keys and calls STS GetCallerIdentity.",
+      "why": "Lab step 7 runs it to prove the Pod acts as the hello-notes role, with no keys stored in Kubernetes.",
+      "lessons": [
+        "configmap",
+        "pod-identity"
+      ],
+      "term": "Pod Identity"
+    },
+    {
+      "file": "hello-eks.yaml",
+      "object": {
+        "kind": "Deployment",
+        "name": "notes"
+      },
+      "title": "One Pod with the disk and the role",
+      "what": "It runs one Pod with the disk at /data and the script at /scripts, as the notes ServiceAccount.",
+      "why": "Recreate stops the old Pod first, because an EBS disk attaches to one machine at a time.",
+      "lessons": [
+        "recreate",
+        "storage",
+        "pod-identity",
+        "deployment",
+        "configmap",
+        "resources"
+      ],
+      "term": "Recreate"
+    }
+  ],
+  "notes": {
+    "metadata.namespace": "The Namespace this object lives in: hello, from Lab 1.",
+    "ClusterConfig:apiVersion": "The eksctl file format. eksctl reads this file, and Kubernetes never sees it.",
+    "ClusterConfig:kind": "ClusterConfig describes a whole cluster for eksctl to create.",
+    "ClusterConfig:metadata": "The cluster's name, Region, version, and tags.",
+    "ClusterConfig:metadata.name": "The cluster's name in EKS. The clean-up step deletes the cluster by this name.",
+    "ClusterConfig:metadata.region": "The AWS Region to build the cluster in. The sed command in lab step 1 sets yours.",
+    "ClusterConfig:metadata.version": "The Kubernetes version. The quotes keep it text, so a version like 1.30 is not read as 1.3.",
+    "ClusterConfig:metadata.tags": "Tags eksctl adds to the AWS resources it creates.",
+    "ClusterConfig:metadata.tags.lab": "A tag that marks the AWS resources eksctl creates for this lab.",
+    "ClusterConfig:autoModeConfig": "Settings for EKS Auto Mode.",
+    "ClusterConfig:autoModeConfig.enabled": "Turns on Auto Mode. EKS then manages the machines, load balancers, and block storage for you.",
+    "Ingress:metadata.annotations": "Extra settings the load balancer reads.",
+    "Ingress:metadata.annotations.alb.ingress.kubernetes.io/healthcheck-path": "The path the load balancer checks on each Pod. /healthz answers without a login.",
+    "ConfigMap:data.aws-whoami.sh": "A short script. It reads the Pod's temporary AWS keys and asks AWS STS who the Pod is.",
+    "Deployment:spec.template.spec.serviceAccountName": "The ServiceAccount the Pod runs as. Pod Identity gives it the hello-notes role's temporary keys.",
+    "Deployment:spec.template.spec.securityContext": "Security settings for every container in the Pod.",
+    "Deployment:spec.template.spec.securityContext.runAsNonRoot": "Kubernetes refuses to start a container that would run as root. This image runs as user 101.",
+    "Deployment:spec.template.spec.securityContext.fsGroup": "Gives the disk's files to group 101, so the image's normal user can write to it.",
+    "IngressClassParams:apiVersion": "The API group and version: eks.amazonaws.com/v1, Auto Mode's own.",
+    "IngressClass:apiVersion": "The API group and version: networking.k8s.io/v1.",
+    "Ingress:apiVersion": "The API group and version: networking.k8s.io/v1.",
+    "Ingress:metadata.name": "The Ingress name. kubectl get ingress hello -n hello shows its address.",
+    "Ingress:spec.rules[].http.paths[].backend.service.name": "The hello Service from Lab 1.",
+    "Ingress:spec.rules[].http.paths[].backend.service.port.number": "Port 80, where the hello Service listens.",
+    "StorageClass:apiVersion": "The API group and version: storage.k8s.io/v1.",
+    "PersistentVolumeClaim:apiVersion": "The core v1 API, where PersistentVolumeClaims live.",
+    "ServiceAccount:metadata.name": "The ServiceAccount's name: notes. The Pod Identity link in lab step 3 uses this name.",
+    "Deployment:spec.replicas": "How many Pods to keep running: one, because the disk attaches to one machine at a time.",
+    "Deployment:spec.selector.matchLabels.app": "Match Pods whose app label is notes.",
+    "Deployment:spec.template.metadata.labels.app": "Every Pod gets the label app: notes, so the selector finds it.",
+    "Deployment:spec.template.spec.containers[].image": "The same web server image as Lab 1. It includes curl, which the script uses.",
+    "Deployment:spec.template.spec.containers[].resources.requests.cpu": "CPU the container needs. 1000m equals one CPU, so 50m is a twentieth.",
+    "Deployment:spec.template.spec.containers[].volumeMounts[].name": "The volume to mount. It matches a name under volumes.",
+    "Deployment:spec.template.spec.containers[].volumeMounts[].mountPath": "The folder inside the container where the volume appears.",
+    "Deployment:spec.template.spec.volumes[].configMap.name": "The ConfigMap to read: notes-scripts."
+  },
+  "questions": [
+    {
+      "file": "hello-eks-cluster.yaml",
+      "question": "What does autoModeConfig.enabled: true change?",
+      "answers": [
+        "EKS starts and manages the machines for you",
+        "The cluster gets a public address",
+        "kubectl updates itself"
+      ],
+      "correct": 0,
+      "explain": "Auto Mode starts machines when Pods need them. That is why a new cluster has no nodes yet.",
+      "line": 12
+    },
+    {
+      "file": "hello-eks-cluster.yaml",
+      "question": "Which line does the sed command in lab step 1 change?",
+      "answers": [
+        "name: hello-eks",
+        "region: us-east-1",
+        "version: \"1.37\""
+      ],
+      "correct": 1,
+      "explain": "sed puts the Region you chose into the file, so eksctl builds the cluster there.",
+      "line": 7
+    },
+    {
+      "file": "hello-eks-cluster.yaml",
+      "question": "Why is the version written as \"1.37\", in quotes?",
+      "answers": [
+        "eksctl needs every value in quotes",
+        "Quotes keep it text, so 1.30 would not become 1.3",
+        "Quotes make it the newest version"
+      ],
+      "correct": 1,
+      "explain": "Without quotes, YAML reads 1.30 as the number 1.3. The quotes keep every version exactly as written.",
+      "line": 8
+    },
+    {
+      "file": "hello-eks.yaml",
+      "question": "What makes the load balancer reachable from the internet?",
+      "answers": [
+        "scheme: internet-facing",
+        "pathType: Prefix",
+        "number: 80"
+      ],
+      "correct": 0,
+      "explain": "internet-facing gives the load balancer a public address. Without it, the load balancer is internal.",
+      "line": 8
+    },
+    {
+      "file": "hello-eks.yaml",
+      "question": "Why does the notes Deployment use Recreate?",
+      "answers": [
+        "It starts Pods faster",
+        "An EBS disk attaches to one machine at a time",
+        "The Ingress needs it"
+      ],
+      "correct": 1,
+      "explain": "Recreate stops the old Pod before starting the new one, so the disk is free to move.",
+      "line": 98
+    },
+    {
+      "file": "hello-eks.yaml",
+      "question": "Which line lets the notes Pod act as an IAM role?",
+      "answers": [
+        "serviceAccountName: notes",
+        "fsGroup: 101",
+        "claimName: notes-disk"
+      ],
+      "correct": 0,
+      "explain": "Pod Identity links the notes ServiceAccount to the hello-notes role. Pods that use it get that role's keys.",
+      "line": 107
+    }
+  ],
+  "sources": [
+    {
+      "title": "EKS Auto Mode with eksctl",
+      "url": "https://docs.aws.amazon.com/eks/latest/eksctl/auto-mode.html"
+    },
+    {
+      "title": "Create an IngressClass to configure an Application Load Balancer",
+      "url": "https://docs.aws.amazon.com/eks/latest/userguide/auto-configure-alb.html"
+    },
+    {
+      "title": "Create a storage class",
+      "url": "https://docs.aws.amazon.com/eks/latest/userguide/create-storage-class.html"
+    },
+    {
+      "title": "Learn how EKS Pod Identity grants pods access to AWS services",
+      "url": "https://docs.aws.amazon.com/eks/latest/userguide/pod-identities.html"
+    },
+    {
+      "title": "Deployments: strategy",
+      "url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/"
+    }
+  ]
+}

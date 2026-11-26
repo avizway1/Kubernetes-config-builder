@@ -1,0 +1,174 @@
+{
+  "id": "lab-1",
+  "guide": "lab-1-hello-kubernetes.md",
+  "files": [
+    "hello.yaml"
+  ],
+  "steps": [
+    {
+      "file": "hello.yaml",
+      "object": {
+        "kind": "Namespace",
+        "name": "hello"
+      },
+      "title": "A Namespace for the lab",
+      "what": "It creates the hello Namespace. Every other object in the file lives in it.",
+      "why": "It keeps the lab apart from anything else on your cluster. One delete would remove the whole app.",
+      "lessons": [
+        "namespace"
+      ],
+      "term": "namespace"
+    },
+    {
+      "file": "hello.yaml",
+      "object": {
+        "kind": "ConfigMap",
+        "name": "hello-page"
+      },
+      "title": "Settings in a ConfigMap",
+      "what": "It holds the page message and the web server's settings file.",
+      "why": "Lab step 7 changes the message without rebuilding the image. Pods read it again when they restart.",
+      "lessons": [
+        "configmap"
+      ],
+      "term": "ConfigMap"
+    },
+    {
+      "file": "hello.yaml",
+      "object": {
+        "kind": "Secret",
+        "name": "hello-login"
+      },
+      "title": "A login in a Secret",
+      "what": "It holds the login file the web server checks. Sign in as learner with the password kubernetes.",
+      "why": "Passwords belong in a Secret, apart from normal settings. You can then limit who reads them.",
+      "lessons": [
+        "secret"
+      ],
+      "term": "Secret"
+    },
+    {
+      "file": "hello.yaml",
+      "object": {
+        "kind": "Deployment",
+        "name": "hello"
+      },
+      "title": "The Deployment runs the web server",
+      "what": "It keeps two copies of the web server running. Each copy reads its message from the ConfigMap and its login from the Secret.",
+      "why": "With two copies, you can delete one Pod and still open the app. Lab step 6 shows this.",
+      "lessons": [
+        "deployment",
+        "configmap",
+        "secret",
+        "resources",
+        "probes"
+      ],
+      "term": "replica"
+    },
+    {
+      "file": "hello.yaml",
+      "object": {
+        "kind": "Service",
+        "name": "hello"
+      },
+      "title": "One address for both Pods",
+      "what": "It gives the two Pods one stable name and port, 80, inside the cluster.",
+      "why": "Pods come and go with new addresses. In lab step 4, kubectl port-forward reaches the app through this Service.",
+      "lessons": [
+        "service"
+      ],
+      "term": "Service"
+    }
+  ],
+  "notes": {
+    "metadata.namespace": "The Namespace this object lives in. Every lab object uses hello.",
+    "ConfigMap:data.MESSAGE": "The page message. The Deployment passes it to the web server as the MESSAGE environment variable.",
+    "ConfigMap:data.default.conf.template": "The web server's settings file. When the container starts, nginx fills in ${MESSAGE} from the environment.",
+    "Secret:stringData.htpasswd": "The login file the web server checks. It holds the user learner and a hashed password, not the plain one.",
+    "Deployment:spec.template.spec.securityContext": "Security settings for every container in the Pod.",
+    "Deployment:spec.template.spec.securityContext.runAsNonRoot": "Kubernetes refuses to start a container that would run as root. This image runs as user 101.",
+    "Deployment:spec.template.spec.containers[].env[].valueFrom.configMapKeyRef": "Takes the variable's value from one key of a ConfigMap.",
+    "Deployment:spec.template.spec.containers[].env[].valueFrom.configMapKeyRef.name": "The ConfigMap to read: hello-page.",
+    "Deployment:spec.template.spec.containers[].env[].valueFrom.configMapKeyRef.key": "The key to read: MESSAGE.",
+    "Deployment:spec.template.spec.containers[].volumeMounts[].readOnly": "The container can read the login file but cannot change it.",
+    "Deployment:spec.template.spec.volumes[].configMap.items": "Picks which ConfigMap keys become files. Only the settings template is mounted.",
+    "Deployment:spec.template.spec.volumes[].configMap.items[].key": "The ConfigMap key to turn into a file.",
+    "Deployment:spec.template.spec.volumes[].configMap.items[].path": "The file's name inside the mount folder.",
+    "Deployment:spec.template.spec.volumes[].secret": "Mounts a Secret as files. Each key becomes one file.",
+    "Deployment:spec.template.spec.volumes[].secret.secretName": "The Secret to mount: hello-login.",
+    "Deployment:spec.selector.matchLabels.app": "Match Pods whose app label is hello.",
+    "Deployment:spec.template.metadata.labels.app": "Every Pod gets the label app: hello, so the selector and the Service find it.",
+    "Deployment:spec.template.spec.containers[].image": "The image to run: nginx's web server for non-root users, pinned by tag and digest.",
+    "Deployment:spec.template.spec.containers[].env[].name": "The variable's name inside the container: MESSAGE.",
+    "Deployment:spec.template.spec.containers[].resources.requests.cpu": "CPU the container needs. 1000m equals one CPU, so 50m is a twentieth.",
+    "Deployment:spec.template.spec.containers[].readinessProbe.httpGet.path": "The page to ask for: /healthz, which answers without a login.",
+    "Deployment:spec.template.spec.containers[].readinessProbe.httpGet.port": "The port the web server listens on: 8080.",
+    "Deployment:spec.template.spec.volumes[].configMap.name": "The ConfigMap to read: hello-page.",
+    "Service:spec.selector.app": "Send traffic to Pods labelled app: hello, the Pods from the Deployment above.",
+    "Service:spec.ports[].targetPort": "The port on the Pods where the Service forwards each request. The web server listens on 8080."
+  },
+  "questions": [
+    {
+      "file": "hello.yaml",
+      "question": "How many copies of the web server does the Deployment keep running?",
+      "answers": [
+        "One",
+        "Two",
+        "Three"
+      ],
+      "correct": 1,
+      "explain": "replicas: 2 asks for two Pods. Lab step 5 changes it to three.",
+      "line": 51
+    },
+    {
+      "file": "hello.yaml",
+      "question": "Where does the page message come from?",
+      "answers": [
+        "The container image",
+        "The MESSAGE key in the hello-page ConfigMap",
+        "The hello-login Secret"
+      ],
+      "correct": 1,
+      "explain": "configMapKeyRef reads MESSAGE from hello-page. That is why lab step 7 changes the ConfigMap, not the image.",
+      "line": 72
+    },
+    {
+      "file": "hello.yaml",
+      "question": "Which port does the Service send traffic to on each Pod?",
+      "answers": [
+        "80",
+        "8080",
+        "8090"
+      ],
+      "correct": 1,
+      "explain": "targetPort: 8080 is where the web server listens. Port 80 is the Service's own port.",
+      "line": 111
+    }
+  ],
+  "sources": [
+    {
+      "title": "Namespaces",
+      "url": "https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/"
+    },
+    {
+      "title": "ConfigMaps",
+      "url": "https://kubernetes.io/docs/concepts/configuration/configmap/"
+    },
+    {
+      "title": "Secrets",
+      "url": "https://kubernetes.io/docs/concepts/configuration/secret/"
+    },
+    {
+      "title": "Deployments",
+      "url": "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/"
+    },
+    {
+      "title": "Service",
+      "url": "https://kubernetes.io/docs/concepts/services-networking/service/"
+    },
+    {
+      "title": "nginx-unprivileged image",
+      "url": "https://github.com/nginx/docker-nginx-unprivileged"
+    }
+  ]
+}

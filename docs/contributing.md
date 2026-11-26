@@ -34,7 +34,7 @@ Open [http://localhost:5173](http://localhost:5173) or the URL printed by Vite. 
 
 Lessons live in `templates/kubernetes/lessons`, one JSON file per lesson, listed in `templates/kubernetes/lessons.json`. Each file holds the whole YAML after every block, the notes, Try it commands with the results to check, and Read it and Fix it practice. The [beginner learning path](../specs/beginner-learning-path.md) sets the writing rules.
 
-Lab guides are Markdown files in `docs`, and their YAML files are in `templates/kubernetes/labs`. The guide is also the test: `tests/lab-guide.check.mjs` runs every command in its `bash` blocks in order, plus hidden `<!-- do: ... -->` and `<!-- check: ... -->` steps. A unit test checks that every YAML block in a guide matches a lab file.
+Lab guides are Markdown files in `docs`, and their YAML files are in `templates/kubernetes/labs`. The guide is also the test: `tests/lab-guide.check.mjs` runs every command in its `bash` blocks in order, plus hidden `<!-- do: ... -->` and `<!-- check: ... -->` steps. A unit test checks that every YAML block in a guide matches a lab file. The dashboard's lab pages read the same guides when the dashboard is built, so a guide change appears there after a rebuild. `tests/lab-lessons.test.mjs` fails if a guide uses Markdown the lab page cannot show, or if the page would drop any of its text. Each lab's **Understand the files** steps are in `templates/kubernetes/labs/lab-1.json` and `lab-2.json`.
 
 ## Test
 

@@ -4,6 +4,8 @@ COPY frontend/package*.json frontend/.npmrc ./
 RUN npm ci
 COPY frontend/ ./
 COPY templates/ /src/templates/
+# The lab pages read the lab guides when the dashboard is built.
+COPY docs/lab-1-hello-kubernetes.md docs/lab-2-your-app-on-eks.md /src/docs/
 COPY security/accepted-risks.json /src/security/
 COPY backend/prometheus-arm64-values.json backend/export-guides.json backend/deployment-commands.json /src/backend/
 RUN npm run build
