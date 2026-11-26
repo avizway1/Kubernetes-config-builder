@@ -85,7 +85,8 @@ eksctl 0.231.0
 
 - **Unit:** the report reader with real output from macOS, Linux, and WSL 2, and with each failure: Docker stopped, each tool missing, kubectl 1.35 and 1.39, k3d 5.8.3, AWS CLI version 1, signed out, and eksctl 0.230.0. Unknown lines are ignored.
 - **Browser:** labs locked, a passing report pasted, labs unlocked, still unlocked after reload. A report with k3d missing unlocks only Lab 2.
-- **Real systems:** run the check command on macOS and Linux. WSL 2 needs a Windows tester, and is reported as not verified until one runs it.
+- **Real systems:** run the check command on macOS and Linux.
+- **WSL 2 in CI:** `tests/setup-check-wsl.check.mjs` runs on a GitHub-hosted `windows-2025` runner, whose image lists WSL 2 as the default. It installs Ubuntu with `wsl --install -d Ubuntu`, then runs the Windows card's commands for kubectl, k3d, AWS CLI, and eksctl in Ubuntu as a normal user, then the check command in bash. The dashboard's report reader must read the output as Windows (WSL 2) with all four tools ready. The runner has no Docker Desktop and no AWS sign-in, so Docker must read as not running and AWS as signed out. Docker's WSL integration, the restart after `wsl --install`, and Lab 1 on Windows still need a Windows tester.
 
 ## Acceptance criteria
 

@@ -151,3 +151,26 @@ jobs:
         run: |
           docker compose -f compose.yaml -f compose.build.yaml logs --no-color
           docker compose -f compose.yaml -f compose.build.yaml down
+
+  wsl:
+    # The setup page's Windows path: Ubuntu on WSL 2, the Windows card's install commands, and the check command.
+    # The runner has no Docker Desktop or AWS sign-in, so those two read as not ready. See specs/setup-check.md.
+    runs-on: windows-2025
+    timeout-minutes: 30
+    env:
+      WSL_UTF8: '1'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+      - name: Install Ubuntu on WSL 2
+        timeout-minutes: 15
+        # The Windows card's command. --no-launch skips the user name prompt, and --web-download works without the Microsoft Store.
+        run: |
+          wsl --install -d Ubuntu --no-launch --web-download
+          wsl --list --verbose
+      - name: Follow the Windows card and run the check in Ubuntu
+        run: node tests/setup-check-wsl.check.mjs
