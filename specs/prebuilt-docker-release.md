@@ -14,7 +14,7 @@ Charan chose on 2026-11-26 to release phase 1, Learn Kubernetes, as **v1.0.0** f
 
 **Outputs.**
 
-- `release-image.yml` publishes `ghcr.io/avizway1/kubernetes-config-builder:v1.0.0` for Linux AMD64 and ARM64. The workflow already names the image after the repository, so it needs no change. New GHCR packages start private, so Charan sets the package to public in its GitHub settings when the first build job finishes, and the failed anonymous start jobs are rerun.
+- `release-image.yml` publishes `ghcr.io/avizway1/kubernetes-config-builder:v1.0.0` for Linux AMD64 and ARM64. The workflow already names the image after the repository, so it needs no change. The package was public from its first push, so no GitHub setting had to change. If a later package starts private, set it to public in its GitHub package settings and rerun the failed anonymous start jobs.
 - `compose.yaml` pulls `ghcr.io/avizway1/kubernetes-config-builder:v1.0.0` by default. `compose.build.yaml` stays for building from source.
 - The README and the [start guide](../docs/getting-started.html) start the dashboard with `git clone` and `docker compose up -d`, and use plain `docker compose` for the everyday commands. Building from source moves to [Contributing](../docs/contributing.md), with its 8 GB memory note.
 - The start guide asks for a laptop with 8 GB of memory and at least 4 GB for Docker, instead of 16 GB and 8 GB. On 2026-11-26, the pulled dashboard plus a three-node k3d practice cluster (K3s 1.37.2) running Lab 1's app scaled to three Pods raised the Docker VM's used memory by about 1.1 GiB, from 767 MiB to a peak of 1,852 MiB that includes two unrelated containers. Docker Desktop's [memory limit](https://docs.docker.com/desktop/settings-and-maintenance/settings/) and WSL 2's [memory setting](https://learn.microsoft.com/windows/wsl/wsl-config) both default to half the laptop's memory.
@@ -23,8 +23,10 @@ Charan chose on 2026-11-26 to release phase 1, Learn Kubernetes, as **v1.0.0** f
 
 **Acceptance criteria**
 
-- [ ] CI passes on the release commit, including the Docker package check.
-- [ ] Charan confirms the final review before the `v1.0.0` release and tag are created.
-- [ ] The release workflow publishes `v1.0.0` for Linux AMD64 and ARM64 under `ghcr.io/avizway1`, and the anonymous cold start passes on both.
-- [ ] On the project Mac, with no dashboard image cached, the start guide's commands pull the image and open Learn Kubernetes. Record the time from `docker compose up -d` to the first page.
-- [ ] The `v1.0.0` release has the verified `compose.yaml` attached.
+- [x] CI passes on the release commit, including the Docker package check.
+- [x] Charan confirms the final review before the `v1.0.0` release and tag are created.
+- [x] The release workflow publishes `v1.0.0` for Linux AMD64 and ARM64 under `ghcr.io/avizway1`, and the anonymous cold start passes on both.
+- [x] On the project Mac, with no dashboard image cached, the start guide's commands pull the image and open Learn Kubernetes. Record the time from `docker compose up -d` to the first page.
+- [x] The `v1.0.0` release has the verified `compose.yaml` attached.
+
+**Results, 2026-11-26.** Charan confirmed the final review, and [v1.0.0](https://github.com/avizway1/Kubernetes-config-builder/releases/tag/v1.0.0) was released from `12fb127`. CI passed on that commit on the branch, and on `main` after a rerun: the first `main` run stopped when GitHub answered the pinned Trivy download with HTTP 403, and the rerun passed every job. The release workflow built, tested, and scanned both architectures, published the multi-architecture tag, and attached `compose.yaml`. Its anonymous cold starts took 7.16 seconds on AMD64 and 7.55 seconds on ARM64. On the project Mac (Apple silicon, Docker Desktop), a fresh `git clone` took 1.2 seconds, and `docker compose up -d` reached the first page in 13.6 seconds with no cached image and no registry credentials. The page opened on Learn Kubernetes, `tests/check-docker-release.py` passed against it, and `docker compose down --rmi all` removed the image. That command also removes any image built from source in a folder with the same name, because Compose labels built images with the folder's project name.

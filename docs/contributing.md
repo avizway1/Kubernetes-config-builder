@@ -118,4 +118,4 @@ Release notes are in [docs/releases](releases/). Tag a release only after Charan
 
 1. Write the release notes and point `compose.yaml` at the new version on a branch. Merge it into `main` once CI passes and Charan confirms the final review.
 2. Create the GitHub release from that commit, for example `gh release create v1.0.0 --target main --title v1.0.0 --notes-file docs/releases/v1.0.0.md`. Publishing the release starts `release-image.yml`, which builds, tests, and scans both architectures, then publishes `ghcr.io/avizway1/kubernetes-config-builder:<version>`.
-3. A new GHCR package starts private, so the anonymous start jobs fail the first time. Set the package to public in its GitHub package settings, then rerun the failed jobs. The last job attaches the verified `compose.yaml` to the release.
+3. The workflow's last jobs start the image without credentials on both architectures, then attach the verified `compose.yaml` to the release. The v1.0.0 package was public from its first push. If a new package starts private, those start jobs fail: set the package to public in its GitHub package settings, then rerun the failed jobs.
