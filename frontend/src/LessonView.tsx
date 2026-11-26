@@ -7,6 +7,7 @@ import {
 } from './lesson-builder';
 import { fixFound, LessonPractice, newPractice, type PracticeProgress } from './LessonPractice';
 import { levels, runsOnLabels, type Lesson } from './lessons';
+import { labReady, readReport, type SavedCheck } from './setup-check';
 
 // `practising` shows Read it and Fix it after the last block. `practice` keeps their answers when learners go back.
 const lessonTitle = (id: string) => levels.flatMap(level => level.lessons).find(lesson => lesson.id === id)?.title ?? id;
@@ -21,12 +22,13 @@ export type LessonProgress = {
   practice?: PracticeProgress;
 };
 
-export function LessonView({ lesson, content, progress, onProgress, next }: {
+export function LessonView({ lesson, content, progress, onProgress, next, check }: {
   lesson: Lesson;
   content: LessonContent;
   progress: LessonProgress;
   onProgress: (progress: LessonProgress) => void;
   next?: Lesson;
+  check?: SavedCheck;
 }) {
   const { step, values, explanations } = progress;
   const last = content.blocks.length - 1;
@@ -195,6 +197,12 @@ export function LessonView({ lesson, content, progress, onProgress, next }: {
                 </p>
               ) : (
                 <p>Save the file, then run these commands against your practice cluster.</p>
+              )}
+              {/* Anywhere lessons run on the Lab 1 tools, and EKS only lessons on the Lab 2 tools. */}
+              {!labReady(check ? readReport(check.report) : undefined, lesson.runsOn === 'eks' ? 'lab-2' : 'lab-1') && (
+                <p className="lesson-setup">
+                  These commands need tools on your laptop. <a href="#learn/setup">Set up your laptop</a> shows how to install them.
+                </p>
               )}
               {content.needs && (
                 <p className="lesson-needs">

@@ -1,5 +1,6 @@
 import { lessonContent } from './lesson-builder';
 import { labs, levels, runsOnLabels, type RunsOn } from './lessons';
+import { labReady, readReport, type LabId, type SavedCheck } from './setup-check';
 
 export type View = 'home' | 'learn' | 'build';
 
@@ -65,7 +66,8 @@ function Badge({ runsOn }: { runsOn: RunsOn }) {
   return <span className={`badge badge-${runsOn}`}>{runsOnLabels[runsOn]}</span>;
 }
 
-export function Learn() {
+export function Learn({ check }: { check?: SavedCheck }) {
+  const report = check ? readReport(check.report) : undefined;
   return (
     <section className="learn" aria-labelledby="learn-title">
       <h1 id="learn-title">Learn Kubernetes</h1>
@@ -98,19 +100,38 @@ export function Learn() {
       ))}
       <section className="level" aria-labelledby="labs-title">
         <h2 id="labs-title">Hands-on labs</h2>
+        <p>Do <strong>Set up your laptop</strong> once. Each lab starts with a lesson on its files, then you run it on your laptop.</p>
         <ol className="lesson-list">
+          <li className="lesson setup-card">
+            <div className="lesson-text">
+              <h3>Set up your laptop</h3>
+              <p className="lesson-objects">Do this once, before the labs</p>
+              <p>Install the tools each lab needs, then run one check. Each lab unlocks when its tools are ready.</p>
+              <p className="setup-status">
+                {labs.map(lab => (
+                  <span key={lab.id} className={labReady(report, lab.id as LabId) ? 'setup-chip setup-chip-ready' : 'setup-chip'}>
+                    {labReady(report, lab.id as LabId) ? '✓ ' : ''}{lab.title.split(' · ')[0]} tools {labReady(report, lab.id as LabId) ? 'ready' : 'not ready'}
+                  </span>
+                ))}
+              </p>
+            </div>
+            <div className="lesson-meta">
+              <a className="lesson-start" href="#learn/setup">Set up<span className="visually-hidden"> your laptop</span></a>
+            </div>
+          </li>
           {labs.map(lab => (
             <li key={lab.id} className="lesson">
               <div className="lesson-text">
                 <h3>{lab.title}</h3>
                 <p className="lesson-objects">{lab.cost}</p>
                 <p>{lab.summary}</p>
+                {!labReady(report, lab.id as LabId) && (
+                  <p className="lab-lock-note"><span aria-hidden="true">🔒 </span>The hands-on part unlocks when your {lab.title.split(' · ')[0]} tools are ready.</p>
+                )}
               </div>
               <div className="lesson-meta">
                 <Badge runsOn={lab.runsOn} />
-                {lab.link
-                  ? <a className="lab-link" href={lab.link} target="_blank" rel="noopener">Open guide<span className="visually-hidden"> for {lab.title}</span></a>
-                  : <span className="coming-soon">Coming soon</span>}
+                <a className="lab-link" href={`#learn/${lab.id}`}>Open lab<span className="visually-hidden"> {lab.title}</span></a>
               </div>
             </li>
           ))}

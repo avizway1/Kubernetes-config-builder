@@ -5,9 +5,13 @@ import { UsageBuilder, type UsageDraft } from './UsageBuilder';
 import { Builder, type InstallDraft } from './Builder';
 import { kubernetesVersions, platform, selectConfiguration, tools } from './selection';
 import { Home, Learn, showBuildAConfig, SiteFooter, SiteHeader, type View } from './Site';
-import { levels } from './lessons';
+import { labs, levels } from './lessons';
 import { defaultLessonValues, lessonContent } from './lesson-builder';
 import { LessonView, type LessonProgress } from './LessonView';
+import { labLessons } from './lab-lessons';
+import { LabView, newLabProgress, type LabProgress } from './LabView';
+import { loadCheck, saveCheck, type SavedCheck } from './setup-check';
+import { SetupView } from './SetupView';
 import { defaultUsageValues, usageTemplateIds, type UsageTemplateId, type UsageTool } from './usage-values';
 import './style.css';
 
@@ -18,10 +22,10 @@ const allLessons = levels.flatMap(level => level.lessons);
 // While Build a config is hidden there is no choice to make, so the home page is Learn Kubernetes.
 const homeView: View = showBuildAConfig ? 'home' : 'learn';
 
-// #learn/pod opens a lesson inside Learn Kubernetes.
+// #learn/pod opens a lesson inside Learn Kubernetes, #learn/setup the setup page, and #learn/lab-1 a lab.
 function routeFromHash(): { view?: View; lesson?: string } {
   const [view, lesson] = window.location.hash.slice(1).split('/');
-  if (view === 'learn' && lesson && lessonContent[lesson]) return { view, lesson };
+  if (view === 'learn' && lesson && (lessonContent[lesson] || labLessons[lesson] || lesson === 'setup')) return { view, lesson };
   if (view === 'home') return { view: homeView };
   return view === 'learn' || view === 'build' ? { view } : {};
 }
@@ -44,6 +48,13 @@ function App() {
   });
   const view = route.view;
   const [lessonProgress, setLessonProgress] = useState<Record<string, LessonProgress>>({});
+  const [labProgress, setLabProgress] = useState<Record<string, LabProgress>>({});
+  // The last setup check. Storage can be blocked, so the page keeps its own copy for the visit.
+  const [check, setCheck] = useState<SavedCheck | undefined>(loadCheck);
+  const onCheck = (next: SavedCheck) => {
+    saveCheck(next);
+    setCheck(next);
+  };
 
   useEffect(() => {
     const onHashChange = () => {
@@ -84,15 +95,26 @@ function App() {
     <>
       <SiteHeader view={view} />
       {view === 'home' && <main><Home /></main>}
-      {view === 'learn' && !route.lesson && <main><Learn /></main>}
-      {view === 'learn' && route.lesson && (() => {
+      {view === 'learn' && !route.lesson && <main><Learn check={check} /></main>}
+      {view === 'learn' && route.lesson === 'setup' && <main><SetupView check={check} onCheck={onCheck} /></main>}
+      {view === 'learn' && route.lesson && labLessons[route.lesson] && (() => {
+        const id = route.lesson;
+        return (
+          <main>
+            <LabView key={id} lab={labs.find(lab => lab.id === id)!} content={labLessons[id]} check={check}
+              progress={labProgress[id] ?? newLabProgress()}
+              onProgress={progress => setLabProgress(all => ({ ...all, [id]: progress }))} />
+          </main>
+        );
+      })()}
+      {view === 'learn' && route.lesson && lessonContent[route.lesson] && (() => {
         const id = route.lesson;
         const content = lessonContent[id];
         const index = allLessons.findIndex(lesson => lesson.id === id);
         const next = allLessons.slice(index + 1).find(lesson => lessonContent[lesson.id]);
         return (
           <main>
-            <LessonView key={id} lesson={allLessons[index]} content={content} next={next}
+            <LessonView key={id} lesson={allLessons[index]} content={content} next={next} check={check}
               progress={lessonProgress[id] ?? { step: 0, values: defaultLessonValues(content), explanations: true }}
               onProgress={progress => setLessonProgress(all => ({ ...all, [id]: progress }))} />
           </main>

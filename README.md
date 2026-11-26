@@ -36,6 +36,8 @@ Every lesson ends with **Read it** and **Fix it** practice. Lessons marked **Any
 
 ## Labs
 
+Open each lab from **Hands-on labs** at the bottom of the lesson list. Each one starts with a lesson on its files, then walks you through running it, with a **Copy** button on every command. Do **Set up your laptop** first: it checks your tools and unlocks each lab when they are ready. On Windows, every lab command runs in Ubuntu on WSL 2.
+
 | Lab | What you do | Cost |
 | --- | --- | --- |
 | [Lab 1 · Hello Kubernetes](docs/lab-1-hello-kubernetes.md) | Deploy an app on your laptop, open it in your browser, scale it, and watch Kubernetes replace a deleted Pod. About 15 minutes. | Free |

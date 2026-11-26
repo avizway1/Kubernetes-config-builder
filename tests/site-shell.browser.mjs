@@ -6,6 +6,9 @@ import {
   brokenFile, defaultLessonValues, lessonContent, lessonText, matchLines, practiceFile, renderLesson, termIntroductions,
 } from '../frontend/src/lesson-builder.ts';
 import { levels } from '../frontend/src/lessons.ts';
+import { readGuide } from '../frontend/src/guide-reader.ts';
+import { labLessons, stepLines } from '../frontend/src/lab-lessons.ts';
+import { setup } from '../frontend/src/setup-check.ts';
 
 const require = createRequire(new URL('../frontend/package.json', import.meta.url));
 const { chromium } = require('playwright-core');
@@ -41,12 +44,14 @@ test('the dashboard opens into Learn Kubernetes and nothing links to Build a con
     assert.equal(await basics.getByText('Coming soon').count(), 0);
     assert.equal(await page.locator('section[aria-labelledby="level-0-title"] .lesson-start').count(), 2);
     assert.equal(await page.locator('section.level:not([aria-labelledby="labs-title"]) .badge-eks').count(), 7);
-    assert.equal(await page.locator('section[aria-labelledby="labs-title"] .lesson').count(), 2);
-    // Every lesson and lab is built, and each lab opens its guide.
+    // The labs list starts with the Set up your laptop card.
+    assert.equal(await page.locator('section[aria-labelledby="labs-title"] .lesson').count(), 3);
+    // Every lesson and lab is built. Each lab opens in the dashboard, after the setup card.
     assert.equal(await page.getByText('Coming soon').count(), 0);
-    for (const [title, guide] of [['Lab 1 · Hello Kubernetes', 'lab-1-hello-kubernetes.md'], ['Lab 2 · Your app on EKS', 'lab-2-your-app-on-eks.md']]) {
-      const link = page.getByRole('link', { name: `Open guide for ${title}`, exact: true });
-      assert.equal(await link.getAttribute('href'), `https://github.com/avizway1/Kubernetes-config-builder/blob/main/docs/${guide}`);
+    assert.equal(await page.getByRole('link', { name: 'Set up your laptop', exact: true }).getAttribute('href'), '#learn/setup');
+    for (const [title, id] of [['Lab 1 · Hello Kubernetes', 'lab-1'], ['Lab 2 · Your app on EKS', 'lab-2']]) {
+      const link = page.getByRole('link', { name: `Open lab ${title}`, exact: true });
+      assert.equal(await link.getAttribute('href'), `#learn/${id}`);
     }
 
     // Old #home links and the logo both land on Learn Kubernetes.
@@ -539,6 +544,244 @@ test('EKS only lessons start from the catalogue, ask for an EKS Auto Mode cluste
     await page.getByLabel('Wrong line').selectOption(String(pool.practice.fix.line));
     await page.getByRole('button', { name: 'Check my answer' }).click();
     await page.getByText(pool.practice.fix.message, { exact: true }).waitFor();
+  } finally {
+    await browser.close();
+  }
+});
+
+// Set up your laptop: specs/setup-check.md. Reports follow the check command's output format.
+const passingReport = `kms-check 1
+system Darwin arm64
+docker 29.8.2 memory 9328558080
+kubectl v1.37.2
+k3d v5.9.0
+aws aws-cli/2.36.37
+aws-signed-in yes
+eksctl 0.231.0`;
+
+test('Set up your laptop unlocks each lab separately, and the unlock survives a reload', { timeout: 60000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1366, height: 900 }, permissions: ['clipboard-read', 'clipboard-write'] });
+    page.setDefaultTimeout(8000);
+    const chips = () => page.locator('.setup-chip').allTextContents();
+    // A lesson's Try it links to the setup page until the tools for its cluster pass.
+    const setupLinks = async id => {
+      await page.goto(`${appUrl}#learn/${id}`);
+      const whole = page.getByRole('button', { name: 'Show whole file' });
+      if (await whole.isEnabled()) await whole.click();
+      await page.locator('.lesson-try-it').waitFor();
+      return page.locator('.lesson-setup a[href="#learn/setup"]').count();
+    };
+
+    // Before any check, both labs say their hands-on part is locked, but their files are open.
+    await page.goto(`${appUrl}#learn`);
+    assert.deepEqual(await chips(), ['Lab 1 tools not ready', 'Lab 2 tools not ready']);
+    assert.equal(await page.locator('.lab-lock-note').count(), 2);
+    assert.equal(await setupLinks('pod'), 1);
+    assert.equal(await setupLinks('pod-identity'), 1);
+    await page.goto(`${appUrl}#learn/lab-1`);
+    await page.getByRole('tab', { name: /2 · Do it on your laptop/ }).click();
+    await page.getByRole('heading', { name: 'Set up your laptop first' }).waitFor();
+    assert.deepEqual(await page.locator('.lab-lock .setup-results li').allTextContents(), ['Docker', 'kubectl', 'k3d']);
+    await page.getByRole('button', { name: 'Read the files while you wait' }).click();
+    await page.locator('#block-title').filter({ hasText: labLessons['lab-1'].steps[0].title }).waitFor();
+
+    // The setup page gives each system its own commands, and Copy copies them exactly.
+    await page.goto(`${appUrl}#learn/setup`);
+    await page.getByRole('heading', { name: 'Set up your laptop', level: 1 }).waitFor();
+    for (const system of setup.systems) {
+      await page.getByRole('tab', { name: system.label }).click();
+      assert.equal(await page.getByRole('heading', { name: 'First, set up WSL 2' }).count(), system.id === 'windows' ? 1 : 0, system.id);
+      const kubectl = setup.tools.find(tool => tool.id === 'kubectl').install[system.id].commands;
+      await page.getByRole('button', { name: 'Copy the kubectl install commands' }).click();
+      await page.locator('#tool-kubectl').locator('..').getByText('Copied').waitFor();
+      assert.equal(await page.evaluate(() => navigator.clipboard.readText()), kubectl, system.id);
+    }
+    await page.getByRole('button', { name: 'Copy the check command' }).click();
+    await page.waitForFunction(check => navigator.clipboard.readText().then(text => text === check), setup.check);
+
+    // Text that isn't the check's output unlocks nothing.
+    const pasted = page.getByLabel(/Everything the check printed/);
+    await pasted.fill('kubectl v1.37.2');
+    await page.getByRole('button', { name: 'Check', exact: true }).click();
+    await page.locator('.setup-invalid').waitFor();
+
+    // k3d is missing: Lab 1 stays locked and Lab 2 unlocks.
+    await pasted.fill(passingReport.replace('k3d v5.9.0', 'k3d missing'));
+    await page.getByRole('button', { name: 'Check again' }).click();
+    await page.locator('.setup-results li').nth(5).waitFor();
+    assert.equal(await page.locator('.setup-results .setup-ready').count(), 5);
+    assert.deepEqual(await page.locator('.setup-results .setup-fix').allTextContents(),
+      ['✗ Fix this: k3d is missingInstall it with the card above, then run the check again.']);
+    assert.match(await page.locator('.setup-summary').textContent(), /Lab 1 needs one fix: k3d\. Lab 2 is unlocked\. Open Lab 2\./);
+    await page.goto(`${appUrl}#learn/lab-1`);
+    await page.getByRole('tab', { name: /2 · Do it on your laptop/ }).click();
+    assert.deepEqual(await page.locator('.lab-lock .setup-results li').allTextContents(), ['k3d is missing']);
+    await page.goto(`${appUrl}#learn/lab-2`);
+    await page.getByRole('tab', { name: /2 · Do it on your laptop/ }).click();
+    await page.locator('.lab-step').first().waitFor();
+    assert.equal(await setupLinks('pod'), 1, 'Anywhere lessons need the Lab 1 tools');
+    assert.equal(await setupLinks('pod-identity'), 0, 'EKS only lessons need the Lab 2 tools');
+
+    // A passing report unlocks both labs, and the unlock is still there after a reload.
+    await page.goto(`${appUrl}#learn/setup`);
+    await pasted.fill(passingReport);
+    await page.getByRole('button', { name: 'Check again' }).click();
+    await page.locator('.setup-summary').filter({ hasText: 'Lab 1 is unlocked' }).waitFor();
+    await page.goto(`${appUrl}#learn`);
+    await page.reload();
+    await page.getByRole('heading', { name: 'Learn Kubernetes', level: 1 }).waitFor();
+    assert.deepEqual(await chips(), ['✓ Lab 1 tools ready', '✓ Lab 2 tools ready']);
+    assert.equal(await page.locator('.lab-lock-note').count(), 0);
+    await page.goto(`${appUrl}#learn/lab-1`);
+    await page.getByRole('tab', { name: /2 · Do it on your laptop/ }).click();
+    assert.match(await page.locator('.lab-step-body .setup-chip').textContent(), /Your laptop is ready for this lab · checked/);
+    assert.equal(await setupLinks('pod'), 0);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('each lab step highlights exactly its object, links its lesson, and Read it works', { timeout: 120000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
+    page.setDefaultTimeout(8000);
+    // Monaco draws only the lines on screen, so make the editor tall enough to draw a whole lab file.
+    const tall = '[data-testid="lesson-yaml"] { height: 4200px !important; }';
+    const highlighted = () => page.evaluate(() => {
+      const editor = document.querySelector('[data-testid="lesson-yaml"]');
+      const top = element => parseFloat(element.parentElement.style.top);
+      const numbers = [...editor.querySelectorAll('.line-numbers')].filter(element => element.textContent.trim())
+        .map(element => ({ top: top(element), line: Number(element.textContent.trim()) })).sort((a, b) => a.top - b.top);
+      return [...new Set([...editor.querySelectorAll('.comparison-value-line')]
+        .map(element => numbers.filter(number => number.top <= top(element)).at(-1)?.line))].sort((a, b) => a - b);
+    });
+    for (const lab of Object.values(labLessons)) {
+      await page.goto(`${appUrl}#learn/${lab.id}`);
+      await page.addStyleTag({ content: tall });
+      for (const [index, step] of lab.steps.entries()) {
+        const label = `${lab.id} step ${index + 1}`;
+        if (index) await page.getByRole('button', { name: 'Next step' }).click();
+        await page.locator('#block-title').filter({ hasText: step.title }).waitFor();
+        assert.equal(await page.locator('.lesson-progress').textContent(), `Step ${index + 1} of ${lab.steps.length} · ${step.file}`, label);
+        assert.equal(await page.locator('#lesson-file').textContent(), step.file, label);
+        const text = readFileSync(new URL(`../templates/kubernetes/labs/${step.file}`, import.meta.url), 'utf8');
+        const expected = stepLines(step, text);
+        const deadline = Date.now() + 8000;
+        while (JSON.stringify(await highlighted()) !== JSON.stringify(expected) && Date.now() < deadline) await page.waitForTimeout(100);
+        assert.deepEqual(await highlighted(), expected, `${label}: highlighted lines`);
+        const learned = page.locator('.lab-learned a').first();
+        if (step.lessons.length) assert.equal(await learned.getAttribute('href'), `#learn/${step.lessons[0]}`, label);
+        else assert.equal(await learned.getAttribute('href'), lab.sources[0].url, label);
+        if (step.term) {
+          assert.equal(await page.locator('.lesson-term dfn').textContent(), step.term, label);
+          assert.equal(await page.locator('.lesson-term-label').textContent(), 'Word to remember', label);
+        }
+      }
+      await page.getByRole('button', { name: 'Practise: Read it' }).click();
+      for (const [index, question] of lab.questions.entries()) {
+        const fieldset = page.locator('.practice-question').nth(index);
+        await fieldset.getByLabel(question.answers[question.correct], { exact: true }).check();
+        await fieldset.locator('.practice-correct').waitFor();
+        await page.locator('#lesson-file').filter({ hasText: question.file }).waitFor();
+        const deadline = Date.now() + 8000;
+        while (JSON.stringify(await highlighted()) !== JSON.stringify([question.line]) && Date.now() < deadline) await page.waitForTimeout(100);
+        assert.deepEqual(await highlighted(), [question.line], `${lab.id} question ${index + 1}`);
+      }
+      assert.equal(await page.locator('.lesson-progress').textContent(), `Read it · ${lab.questions.length} of ${lab.questions.length} right`);
+    }
+  } finally {
+    await browser.close();
+  }
+});
+
+test('Do it on your laptop shows each guide step with Copy on every command, and ticks survive a reload', { timeout: 60000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  try {
+    const context = await browser.newContext({ viewport: { width: 1366, height: 900 }, permissions: ['clipboard-read', 'clipboard-write'] });
+    await context.addInitScript(report => {
+      if (!window.localStorage.getItem('kubernetes-made-simple:setup-check')) {
+        window.localStorage.setItem('kubernetes-made-simple:setup-check', JSON.stringify({ report, checkedAt: '2026-11-26T09:00:00.000Z' }));
+      }
+    }, passingReport);
+    const page = await context.newPage();
+    page.setDefaultTimeout(8000);
+    for (const lab of Object.values(labLessons)) {
+      const guide = readGuide(readFileSync(new URL(`../docs/${lab.guide}`, import.meta.url), 'utf8'));
+      await page.goto(`${appUrl}#learn/${lab.id}`);
+      await page.getByRole('tab', { name: '2 · Do it on your laptop' }).click();
+      assert.deepEqual(await page.locator('.lab-step-head label').allTextContents(), guide.sections.map(section => section.title), lab.id);
+      assert.equal(await page.locator('#lab-progress').textContent(), `0 of ${guide.sections.length} steps done`);
+      // Open each step in turn. Every command has Copy, and every file is folded under Show the file.
+      for (const [index, section] of guide.sections.entries()) {
+        if (index) await page.getByRole('button', { name: `Show ${section.title}`, exact: true }).click();
+        const body = page.locator('.lab-step-body');
+        await body.waitFor();
+        const commands = section.blocks.filter(block => block.type === 'code' && block.lang === 'bash');
+        const files = section.blocks.filter(block => block.type === 'code' && block.lang === 'yaml');
+        assert.equal(await body.locator('.command-block').count(), commands.length, `${lab.id} ${section.title} commands`);
+        assert.equal(await body.locator('details.lab-file').count(), files.length, `${lab.id} ${section.title} files`);
+        assert.equal(await body.locator('details.lab-file[open]').count(), 0, `${lab.id} ${section.title} files start folded`);
+        assert.equal(await body.getByText('<!--').count(), 0);
+      }
+      // Copy copies the first command of the first step that has one, exactly.
+      const first = guide.sections.findIndex(section => section.blocks.some(block => block.type === 'code' && block.lang === 'bash'));
+      await page.getByRole('button', { name: `Show ${guide.sections[first].title}`, exact: true }).click();
+      const command = guide.sections[first].blocks.find(block => block.type === 'code' && block.lang === 'bash').text;
+      await page.locator('.lab-step-body .command-block button').first().click();
+      await page.waitForFunction(text => navigator.clipboard.readText().then(copied => copied === text), command);
+    }
+
+    // Ticks are kept per lab and survive a reload. Start again clears them.
+    await page.goto(`${appUrl}#learn/lab-1`);
+    await page.getByRole('tab', { name: '2 · Do it on your laptop' }).click();
+    await page.locator('.lab-step-head input').nth(0).check();
+    await page.locator('.lab-step-head input').nth(2).check();
+    await page.reload();
+    await page.getByRole('tab', { name: '2 · Do it on your laptop' }).click();
+    assert.equal(await page.locator('#lab-progress').textContent(), `2 of ${await page.locator('.lab-step').count()} steps done`);
+    assert.deepEqual(await page.locator('.lab-step-head input').evaluateAll(inputs => inputs.map(input => input.checked)).then(list => list.slice(0, 3)), [true, false, true]);
+    await page.goto(`${appUrl}#learn/lab-2`);
+    await page.getByRole('tab', { name: '2 · Do it on your laptop' }).click();
+    assert.match(await page.locator('#lab-progress').textContent(), /^0 of/);
+    await page.goto(`${appUrl}#learn/lab-1`);
+    await page.getByRole('tab', { name: '2 · Do it on your laptop' }).click();
+    await page.getByRole('button', { name: 'Start again' }).click();
+    assert.match(await page.locator('#lab-progress').textContent(), /^0 of/);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('the setup and lab pages fit a phone screen without sideways scrolling', { timeout: 30000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  try {
+    const context = await browser.newContext({ viewport: { width: 375, height: 812 } });
+    await context.addInitScript(report => {
+      window.localStorage.setItem('kubernetes-made-simple:setup-check', JSON.stringify({ report, checkedAt: '2026-11-26T09:00:00.000Z' }));
+    }, passingReport);
+    const page = await context.newPage();
+    page.setDefaultTimeout(8000);
+    const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    for (const system of setup.systems) {
+      await page.goto(`${appUrl}#learn/setup`);
+      await page.getByRole('tab', { name: system.label }).click();
+      assert.ok((await overflow()) <= 0, `setup on ${system.id} scrolls sideways by ${await overflow()}px`);
+    }
+    for (const lab of Object.keys(labLessons)) {
+      await page.goto(`${appUrl}#learn/${lab}`);
+      await page.locator('#block-title').waitFor();
+      assert.ok((await overflow()) <= 0, `${lab} files scroll sideways by ${await overflow()}px`);
+      await page.getByRole('tab', { name: '2 · Do it on your laptop' }).click();
+      for (const toggle of await page.locator('.lab-step-toggle').all()) {
+        await toggle.click();
+        const files = page.locator('.lab-step-body details.lab-file summary');
+        for (const summary of await files.all()) await summary.click();
+        assert.ok((await overflow()) <= 0, `${lab} steps scroll sideways by ${await overflow()}px`);
+      }
+    }
   } finally {
     await browser.close();
   }

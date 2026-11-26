@@ -1017,3 +1017,474 @@ section.lesson-try-it {
   display: block;
   margin-top: 0.25rem;
 }
+
+/* Set up your laptop: install cards, the check command, and the pasted result. See specs/setup-check.md. */
+section.setup-view,
+section.setup-step,
+section.setup-tool,
+section.lab-view,
+section.lab-lock,
+section.lab-steps-part {
+  display: block;
+}
+
+section.setup-view,
+section.lab-view,
+section.lab-steps-part {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.setup-view .lead {
+  max-width: 46rem;
+}
+
+section.setup-step {
+  margin-block: 1rem;
+  padding: 1rem 1.2rem;
+}
+
+.setup-step > h2 {
+  display: flex;
+  align-items: center;
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+  color: var(--brand-navy-dark);
+}
+
+.setup-number {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  margin-inline-end: 0.5rem;
+  border-radius: 50%;
+  color: #ffffff;
+  background: var(--brand-navy);
+  font-size: 0.9rem;
+}
+
+.setup-step > p {
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+.setup-group {
+  margin: 1rem 0 0.4rem;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.setup-tools {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(19rem, 100%), 1fr));
+  gap: 0.75rem;
+}
+
+section.setup-tool {
+  min-width: 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.6rem;
+  background: var(--page-bg);
+}
+
+.setup-tool h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.setup-tool p {
+  margin: 0.3rem 0;
+  line-height: 1.45;
+}
+
+.setup-tool ol {
+  margin: 0.4rem 0;
+  padding-inline-start: 1.25rem;
+  line-height: 1.45;
+}
+
+section.setup-first {
+  margin-block-end: 0.75rem;
+  border: 2px solid var(--brand-orange);
+  background: #fff8ef;
+}
+
+.setup-need {
+  color: var(--brand-navy);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.setup-sources {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.setup-report {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 9.5rem;
+  padding: 0.6rem;
+  border: 1px solid var(--control-border);
+  border-radius: 0.45rem;
+  font: 0.85rem/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.setup-step label {
+  font-weight: 600;
+}
+
+.setup-submit,
+.lab-step-next {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--brand-navy);
+  border-radius: 0.4rem;
+  color: #ffffff;
+  background: var(--brand-navy);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.setup-submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.setup-invalid {
+  padding: 0.5rem 0.7rem;
+  border-left: 4px solid var(--error);
+  color: var(--error);
+  background: var(--error-soft);
+}
+
+.setup-checked {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.setup-results {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.75rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.setup-results li {
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.45rem;
+}
+
+.setup-ready {
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.setup-fix {
+  color: var(--error);
+  background: var(--error-soft);
+}
+
+.setup-results small {
+  display: block;
+  color: var(--text);
+}
+
+.setup-summary {
+  padding: 0.7rem 0.9rem;
+  border-left: 4px solid var(--brand-orange);
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+
+.setup-card {
+  border: 2px solid var(--brand-orange);
+  background: #fff8ef;
+}
+
+.setup-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-block-start: 0.5rem;
+}
+
+.setup-chip {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  color: var(--text-muted);
+  background: var(--surface);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.setup-chip-ready {
+  color: var(--success);
+  background: var(--success-soft);
+}
+
+.lab-lock-note,
+.lesson-setup {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* A command or file that learners copy exactly. The Copy button sits over the top right corner. */
+.command-block {
+  position: relative;
+  margin: 0.4rem 0;
+}
+
+.command-block pre,
+.lab-file pre {
+  margin: 0;
+  padding: 0.6rem 4.75rem 0.6rem 0.75rem;
+  border-radius: 0.45rem;
+  color: #e8eefb;
+  background: var(--text);
+  font: 0.85rem/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.command-block button {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--control-border);
+  border-radius: 0.35rem;
+  color: #ffffff;
+  background: #24344f;
+  font: 600 0.8rem system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.command-status:not(:empty) {
+  display: block;
+  margin-block-start: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+/* Lab lessons: understand the files, then do the lab. See specs/lab-lessons.md. */
+.lab-tabs {
+  margin-block-end: 1rem;
+}
+
+.lab-tabs button {
+  padding: 0.55rem 1rem;
+}
+
+.lab-learned {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  background: var(--page-bg);
+}
+
+.lab-question-file {
+  display: block;
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+section.lab-lock {
+  max-width: 46rem;
+  padding: 1.2rem;
+  border-width: 2px;
+}
+
+.lab-lock h2 {
+  margin-top: 0;
+  color: var(--brand-navy-dark);
+}
+
+.lab-read-files {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--control-border);
+  border-radius: 0.4rem;
+  color: var(--brand-navy);
+  background: var(--accent-soft);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lab-steps-part > p {
+  max-width: 52rem;
+  line-height: 1.5;
+}
+
+.lab-progress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 1rem 0 0.6rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.lab-progress button,
+.lab-step-toggle {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--control-border);
+  border-radius: 0.4rem;
+  color: var(--brand-navy);
+  background: var(--surface);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lab-progress button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* One column as wide as the page, so a wide table scrolls inside its own box. */
+.lab-steps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lab-step {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--surface);
+}
+
+.lab-step-open {
+  border-color: var(--brand-navy);
+  box-shadow: 0 0 0 1px var(--brand-navy);
+}
+
+.lab-step-head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.65rem 0.9rem;
+}
+
+.lab-step-head input {
+  flex: 0 0 auto;
+  width: 1.2rem;
+  height: 1.2rem;
+  margin: 0;
+  accent-color: var(--success);
+}
+
+.lab-step-head label {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lab-step-head .lab-step-done {
+  color: var(--text-muted);
+  font-weight: 600;
+  text-decoration: line-through;
+}
+
+.lab-step-toggle {
+  flex: 0 0 auto;
+}
+
+.lab-step-body {
+  min-width: 0;
+  padding: 0 1rem 0.9rem 2.8rem;
+}
+
+.lab-step-body p,
+.lab-step-body li {
+  line-height: 1.5;
+}
+
+.lab-step-body p {
+  margin: 0.5rem 0;
+}
+
+.lab-step-body code,
+.lab-steps-part > p code {
+  overflow-wrap: anywhere;
+}
+
+.lab-step-body .setup-chip {
+  display: inline-block;
+  margin: 0.25rem 0;
+}
+
+.lab-table {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.lab-table table {
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.lab-table th,
+.lab-table td {
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.lab-table th {
+  background: var(--sticky-bg);
+}
+
+.lab-file {
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  background: var(--page-bg);
+}
+
+.lab-file summary {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lab-file[open] summary {
+  margin-block-end: 0.5rem;
+}
+
+.lab-file pre {
+  padding-inline-end: 0.75rem;
+  max-height: 28rem;
+  overflow: auto;
+}
+
+.lab-file .export-actions {
+  margin-block-start: 0.5rem;
+}
+
+@media (max-width: 600px) {
+  .lab-step-body {
+    padding-inline-start: 1rem;
+  }
+}
