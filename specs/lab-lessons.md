@@ -1,6 +1,6 @@
 # Lab lessons
 
-**Status: Plan and mock-ups approved by Charan on 2026-11-26**, including whole-object recap steps and lab lesson files in `templates/kubernetes/labs`. Built before phase 2, after [Set up your laptop](setup-check.md).
+**Status: Plan and mock-ups approved by Charan on 2026-11-26**, including whole-object recap steps and lab lesson files in `templates/kubernetes/labs`. Built after [Set up your laptop](setup-check.md).
 
 ## Goal
 

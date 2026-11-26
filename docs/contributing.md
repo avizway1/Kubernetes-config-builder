@@ -1,26 +1,16 @@
 # Contributing
 
-How to run Kubernetes Made Simple from source, and how to run its tests and checks. Read [AGENTS.md](../AGENTS.md) first: it holds the project rules, the Lessons Learned, and the Decision Log. Every feature starts as a spec in [specs](../specs/).
+How to run Learning Kubernetes made easy from source, and how to run its tests and checks. Read [AGENTS.md](../AGENTS.md) first: it holds the project rules, the Lessons Learned, and the Decision Log. Every feature starts as a spec in [specs](../specs/).
 
 ## Run from source
 
-Install Node.js 26.13.1, Go 1.27.4, Helm, kubeconform, and Python 3. If you use nvm, run `nvm install` and `nvm use` from the project root. Download the verified chart archives and pinned schemas once.
+Install Node.js 26.13.1, kubeconform, and Python 3. If you use nvm, run `nvm install` and `nvm use` from the project root. Prepare the pinned schemas once:
 
 ```sh
-./backend/download-charts.sh
 python3 backend/download-schemas.py
-./backend/build-promtool.sh "$PWD/.runtime/prometheus-tools"
-export PATH="$PWD/.runtime/prometheus-tools:$PATH"
 ```
 
-Start the renderer from the project root.
-
-```sh
-cd backend
-go run .
-```
-
-In another terminal, start the frontend from the project root.
+Start the dashboard from the project root:
 
 ```sh
 cd frontend
@@ -28,17 +18,19 @@ npm ci
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) or the URL printed by Vite. The renderer listens on loopback port 8080. [Local chart rendering](local-rendering.md) has more on the renderer.
+Open [http://localhost:5173](http://localhost:5173) or the URL printed by Vite. Lessons, labs, and the setup page all run in the browser, so the dev server is all you need.
+
+The Docker image serves the built pages with a small Go server in `backend`. To run it the same way without Docker, install Go 1.27.4, run `npm run build` in `frontend`, then run `go run .` in `backend` and open [http://localhost:8080](http://localhost:8080).
 
 ## Build the Docker image from source
 
-The README starts the published image. To build the same image from your checkout instead, give Docker at least 8 GB of memory (Docker Desktop: **Settings → Resources → Advanced → Memory limit**), then run this from the project root:
+The README starts the published image. To build the same image from your checkout instead, run this from the project root:
 
 ```sh
 docker compose -f compose.yaml -f compose.build.yaml up -d --build
 ```
 
-The first build downloads and compiles everything, so it often takes 20 minutes or more. It stops with “cannot allocate memory” if Docker has less than 8 GB. Stop it with `docker compose -f compose.yaml -f compose.build.yaml down`. The same build runs in CI's package job.
+The 4 GB of Docker memory that the start guide asks for is enough. The first build also downloads the Node.js and Go base images. After that, a build without cache took 17 seconds on the project Mac. Stop it with `docker compose -f compose.yaml -f compose.build.yaml down`. The same build runs in CI's package job.
 
 ## Lessons and labs
 
@@ -54,68 +46,51 @@ Run these from `frontend`:
 
 Run these from the project root:
 
-- `go test ./...` from `backend`, after downloading the charts.
+- `go test ./...` from `backend`, to check the server's caching headers.
 - `node --test tests/lesson-manifests.check.mjs`, after preparing the schemas, to check every finished lesson step and every lab file with strict kubeconform.
 - `tests/check-lessons-k3s.sh 1.37`, with Docker, k3d, kubectl, and curl installed, to apply every Anywhere lesson to a fresh K3s cluster. It checks each **Try it** result and each **Fix it** message, then deletes the cluster. Repeat with `1.36` and `1.35`.
-- `KCB_LAB_LIMIT_SECONDS=900 node tests/lab-guide.check.mjs docs/lab-1-hello-kubernetes.md` to run Lab 1 on a fresh K3s cluster and time it. It uses its own kubeconfig in `.runtime`, so yours is untouched.
+- `LKME_LAB_LIMIT_SECONDS=900 node tests/lab-guide.check.mjs docs/lab-1-hello-kubernetes.md` to run Lab 1 on a fresh K3s cluster and time it. It uses its own kubeconfig in `.runtime`, so yours is untouched.
 
 ### Browser checks
 
-Run the browser checks with the backend and Vite dev server running. From `frontend`, install Chromium with `npx playwright-core install chromium`, then run `npm run test:browser`. Set `KCB_CHROME_PATH` to use an installed Chrome binary. `node ../tests/site-shell.browser.mjs` checks Learn Kubernetes on its own, with only the Vite dev server running.
+Run the browser checks with the Vite dev server running. From `frontend`, install Chromium with `npx playwright-core install chromium`, then run `npm run test:browser`. Set `LKME_CHROME_PATH` to use an installed Chrome binary, and `LKME_APP_URL` if the dev server is not at `http://127.0.0.1:5173`.
 
 ### Checks on EKS
 
 These create resources in AWS, which charges for them. Run them only with Charan's approval of the account, Region, and budget, and delete everything afterwards.
 
-EKS only lessons, on a dedicated cluster named `kcb-lessons-*`:
+EKS only lessons, on a dedicated cluster named `lkme-lessons-*`:
 
 ```sh
-export KCB_EKS_CLUSTER=kcb-lessons-137 KCB_EKS_REGION=ap-south-1
-KCB_EFS_ID=$(tests/eks-lessons-cluster.sh create 1.37 | tail -n 1)
-KCB_EFS_ID=$KCB_EFS_ID tests/check-lessons-eks.sh 1.37
+export LKME_EKS_CLUSTER=lkme-lessons-137 LKME_EKS_REGION=ap-south-1
+LKME_EFS_ID=$(tests/eks-lessons-cluster.sh create 1.37 | tail -n 1)
+LKME_EFS_ID=$LKME_EFS_ID tests/check-lessons-eks.sh 1.37
 tests/eks-lessons-cluster.sh delete
 ```
 
-Creating the cluster and EFS takes about 20 minutes. The check waits up to ten minutes for each load balancer, volume, or new machine. `delete` removes the lessons' objects first, so AWS removes their load balancers and volumes, then the EFS file system, the roles, and the cluster. It ends by listing anything left. Set `KCB_LESSON_ONLY=<id>,<id>` to rerun some lessons. The check also saves the cluster's NodePool and IngressClassParams CRDs in `.runtime/eks-crds`. Compare them with `backend/eks-crds` to see whether Auto Mode changed either kind.
+Creating the cluster and EFS takes about 20 minutes. The check waits up to ten minutes for each load balancer, volume, or new machine. `delete` removes the lessons' objects first, so AWS removes their load balancers and volumes, then the EFS file system, the roles, and the cluster. It ends by listing anything left. Set `LKME_LESSON_ONLY=<id>,<id>` to rerun some lessons. The check also saves the cluster's NodePool and IngressClassParams CRDs in `.runtime/eks-crds`. Compare them with `backend/eks-crds` to see whether Auto Mode changed either kind.
 
 Lab 2 creates and deletes its own cluster, `hello-eks`, as a learner would:
 
 ```sh
-KCB_LAB_SET='{"export AWS_REGION=us-east-1":"export AWS_REGION=ap-south-1"}' KCB_LAB_RETRY_SECONDS=600 KCB_LAB_LIMIT_SECONDS=2400 \
+LKME_LAB_SET='{"export AWS_REGION=us-east-1":"export AWS_REGION=ap-south-1"}' LKME_LAB_RETRY_SECONDS=600 LKME_LAB_LIMIT_SECONDS=2400 \
   node tests/lab-guide.check.mjs docs/lab-2-your-app-on-eks.md
 ```
 
 If a step fails, the check runs the guide's clean-up commands. Check the AWS console afterwards anyway.
 
-### Build a config checks (phase 2)
-
-- `./tests/check-argo-usage.sh <dedicated-test-kubeconfig>` with the pinned Argo CD chart and its ApplicationSet controller running on a fresh local K3s 1.37 test cluster.
-- `./tests/check-prometheus-usage.sh <dedicated-test-kubeconfig>` with a dedicated local K3s 1.37 Prometheus test cluster.
-- `bash tests/check-first-k3s-lab.sh` to download the actual files in Chromium and time the GitOps and monitoring lab on a disposable K3s cluster. Add `--applicationset` for the separate Full preset check. See the [lab guide](first-k3s-lab.md) for prerequisites.
-- The [local K3s deployment instructions](local-rendering.md#local-k3s-deploy-checks) for server-side dry runs and rollout checks.
-
 ### CI
 
-GitHub Actions verifies chart checksums, runs the frontend and Go checks, and runs Helm lint and strict kubeconform across the supported Kubernetes versions. Pushes to this repository do not start CI, so start it from the Actions tab. During phase 1, CI runs once, at the end.
+GitHub Actions runs on every push. It tests and builds the frontend, checks every lesson step and lab file with strict kubeconform, tests the Go server, runs the browser checks, builds and checks the Docker image, and runs the setup page's Windows commands in Ubuntu on WSL 2.
 
 ## Security checks
 
-CI fails on high or critical npm and Go findings. The only exception is an unfixed development-only npm finding recorded in the [accepted dependency risks file](../security/accepted-dependency-risks.json). It fails again after its review date, if it reaches the runtime dependencies, or once a fixed release is published. Image findings recorded in the [accepted risks file](../security/accepted-risks.json) are reported through their review date. Unaccepted or expired findings fail CI. npm audit reads the frontend lockfile. Trivy scans the Go module and the images from both verified charts across supported Kubernetes minors and builder toggles. The image scan covers Linux AMD64 and ARM64 and includes the Argo CD initialization Job.
-
-To reproduce the image scan locally with Trivy installed, run from the project root after downloading the charts.
-
-```sh
-mkdir -p .runtime/security
-(cd backend && go run . -list-images) > .runtime/security/chart-images.txt
-./tests/scan-chart-images.sh .runtime/security/chart-images.txt .runtime/security/images
-```
-
-The script prints findings and writes per-image JSON reports to the directory you pass. An incomplete scan fails the check.
+CI fails on high or critical npm and Go findings, and on high or critical findings in the built Docker image. The only exception is an unfixed development-only npm finding recorded in the [accepted dependency risks file](../security/accepted-dependency-risks.json). It fails again after its review date, if it reaches the runtime dependencies, or once a fixed release is published. npm audit reads the frontend lockfile, and Trivy scans the Go module and the image.
 
 ## Releases
 
 Release notes are in [docs/releases](releases/). Tag a release only after Charan confirms the final review.
 
 1. Write the release notes and point `compose.yaml` at the new version on a branch. Merge it into `main` once CI passes and Charan confirms the final review.
-2. Create the GitHub release from that commit, for example `gh release create v1.0.0 --target main --title v1.0.0 --notes-file docs/releases/v1.0.0.md`. Publishing the release starts `release-image.yml`, which builds, tests, and scans both architectures, then publishes `ghcr.io/avizway1/kubernetes-config-builder:<version>`.
-3. The workflow's last jobs start the image without credentials on both architectures, then attach the verified `compose.yaml` to the release. The v1.0.0 package was public from its first push. If a new package starts private, those start jobs fail: set the package to public in its GitHub package settings, then rerun the failed jobs.
+2. Create the GitHub release from that commit, for example `gh release create v1.1.0 --target main --title v1.1.0 --notes-file docs/releases/v1.1.0.md`. Publishing the release starts `release-image.yml`, which builds, tests, and scans both architectures, then publishes `ghcr.io/avizway1/learning-kubernetes-made-easy:<version>`.
+3. The workflow's last jobs start the image without credentials on both architectures, then attach the verified `compose.yaml` to the release. If the package is private, those start jobs fail: set it to public in its GitHub package settings, then rerun the failed jobs.

@@ -1,6 +1,6 @@
 services:
   dashboard:
-    image: ${KCB_IMAGE:-ghcr.io/avizway1/kubernetes-config-builder:v1.0.0}
+    image: ${LKME_IMAGE:-ghcr.io/avizway1/learning-kubernetes-made-easy:v1.1.0}
     ports:
       - "127.0.0.1:8080:8080"
     read_only: true

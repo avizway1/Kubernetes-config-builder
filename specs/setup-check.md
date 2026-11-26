@@ -1,6 +1,6 @@
 # Set up your laptop
 
-**Status: Plan and mock-ups approved by Charan on 2026-11-26.** Built before phase 2, together with [lab lessons](lab-lessons.md).
+**Status: Plan and mock-ups approved by Charan on 2026-11-26.** Built together with [lab lessons](lab-lessons.md).
 
 ## Goal
 
@@ -52,7 +52,7 @@ Each command is copied from the tool's official install page when the page is bu
 The command works unchanged in macOS zsh, Linux bash, and WSL 2 bash. It prints one line per tool and nothing personal: no account number, user name, or file path. A missing tool prints `missing` instead of failing. The exact command is settled while building and tested on each system. Its output looks like this:
 
 ```text
-kms-check 1
+lkme-check 1
 system Darwin arm64
 docker 29.8.2 memory 9328558080
 kubectl v1.36.1
@@ -97,4 +97,4 @@ eksctl 0.231.0
 - [x] The start guide's Windows practice cluster uses WSL 2, matching Lab 1.
 - [x] Unit and browser tests above pass.
 
-On 2026-11-26 the check ran unchanged in macOS zsh and bash, and in Linux bash inside `nginx:1.30.4`. The same day, CI run [45814830178](https://github.com/avizway1/Kubernetes-config-builder/actions/runs/45814830178) ran it in Ubuntu 26.04 on WSL 2 (kernel `6.18.58.1-microsoft-standard-WSL2`) on a `windows-2025` runner, after the Windows card installed kubectl 1.37.2, k3d 5.9.0, AWS CLI 2.42.4, and eksctl 0.232.0. It read as Windows (WSL 2). Its first run found the eksctl checksum problem in the Decision Log. Docker's WSL integration and Lab 1 on Windows still need a Windows tester, since the runner has no Docker Desktop. Microsoft's [Install WSL](https://learn.microsoft.com/windows/wsl/install) says plain `wsl --install` works only when WSL is not installed at all. Docker Desktop installs WSL first, so the Windows card and the start guide use `wsl --install -d Ubuntu`.
+On 2026-11-26 the check ran unchanged in macOS zsh and bash, and in Linux bash inside `nginx:1.30.4`. The same day, CI run [45814830178](https://github.com/avizway1/learning-kubernetes-made-easy/actions/runs/45814830178) ran it in Ubuntu 26.04 on WSL 2 (kernel `6.18.58.1-microsoft-standard-WSL2`) on a `windows-2025` runner, after the Windows card installed kubectl 1.37.2, k3d 5.9.0, AWS CLI 2.42.4, and eksctl 0.232.0. It read as Windows (WSL 2). Its first run found the eksctl checksum problem in the Decision Log. Docker's WSL integration and Lab 1 on Windows still need a Windows tester, since the runner has no Docker Desktop. Microsoft's [Install WSL](https://learn.microsoft.com/windows/wsl/install) says plain `wsl --install` works only when WSL is not installed at all. Docker Desktop installs WSL first, so the Windows card and the start guide use `wsl --install -d Ubuntu`.

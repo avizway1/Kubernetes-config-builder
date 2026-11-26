@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<!-- Beginner start guide for Kubernetes Made Simple. Open this file in a browser. -->
-<title>Kubernetes Made Simple Start Guide</title>
+<!-- Beginner start guide for Learning Kubernetes made easy. Open this file in a browser. -->
+<title>Learning Kubernetes made easy - Start Guide</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -186,8 +186,8 @@ footer .wrap { padding-block: 0 40px; }
 <body>
 <header class="hero">
   <div class="wrap">
-    <span class="eyebrow">Aviz Academy · Kubernetes Made Simple</span>
-    <h1>Run Kubernetes Made Simple on your laptop</h1>
+    <span class="eyebrow">Aviz Academy · Learning Kubernetes made easy</span>
+    <h1>Run Learning Kubernetes made easy on your laptop</h1>
     <p>This guide takes you from a laptop with nothing installed to the Learn Kubernetes lessons open in your browser. Copy each command, paste it into your terminal, and press Enter.</p>
     <div class="facts">
       <span><b>8 GB</b> laptop memory</span>
@@ -212,7 +212,7 @@ footer .wrap { padding-block: 0 40px; }
   <div class="wrap">
 
     <section class="intro" aria-label="What you are setting up">
-      <p><strong>What this is.</strong> Kubernetes Made Simple is a website that runs on your own laptop. It teaches Kubernetes one small block at a time and explains every line in plain English.</p>
+      <p><strong>What this is.</strong> Learning Kubernetes made easy is a website that runs on your own laptop. It teaches Kubernetes one small block at a time and explains every line in plain English.</p>
       <p><strong>Why Docker.</strong> Docker runs the website inside a sealed box called a container, so you don't have to install its programming tools yourself. You install Docker once, and one command downloads and starts everything.</p>
     </section>
 
@@ -326,7 +326,7 @@ docker compose version</code></pre></div>
         <div class="code"><pre><code>git --version</code></pre></div>
       </div>
       <p class="expect"><b>You should see</b> a line such as <code class="inline">git version 2.x</code>.</p>
-      <div class="note"><p><strong>Can't install Git?</strong> Download the project as a <a href="https://github.com/avizway1/Kubernetes-config-builder/archive/refs/heads/main.zip" target="_blank" rel="noopener">ZIP file</a> and unzip it into your home folder. The folder is called <span class="path">Kubernetes-config-builder-main</span>, so use that name in the <code class="inline">cd</code> commands below and skip the <code class="inline">git clone</code> line. To update later, download the ZIP again.</p></div>
+      <div class="note"><p><strong>Can't install Git?</strong> Download the project as a <a href="https://github.com/avizway1/learning-kubernetes-made-easy/archive/refs/heads/main.zip" target="_blank" rel="noopener">ZIP file</a> and unzip it into your home folder. The folder is called <span class="path">learning-kubernetes-made-easy-main</span>, so use that name in the <code class="inline">cd</code> commands below and skip the <code class="inline">git clone</code> line. To update later, download the ZIP again.</p></div>
     </section>
 
     <section class="step" aria-labelledby="s4">
@@ -334,13 +334,13 @@ docker compose version</code></pre></div>
       <p>Make sure Docker Desktop is running, then paste these four lines into your terminal. They are the same on every laptop.</p>
       <div class="cmd">
         <div class="code"><pre><code>cd ~
-git clone https://github.com/avizway1/Kubernetes-config-builder.git
-cd Kubernetes-config-builder
+git clone https://github.com/avizway1/learning-kubernetes-made-easy.git
+cd learning-kubernetes-made-easy
 docker compose up -d</code></pre></div>
       </div>
       <ul>
         <li><code class="inline">cd ~</code> goes to your home folder.</li>
-        <li><code class="inline">git clone</code> downloads the project into a new <span class="path">Kubernetes-config-builder</span> folder.</li>
+        <li><code class="inline">git clone</code> downloads the project into a new <span class="path">learning-kubernetes-made-easy</span> folder.</li>
         <li><code class="inline">docker compose up -d</code> downloads the dashboard and starts it in the background.</li>
       </ul>
       <p class="expect"><b>You should see</b> Docker download the dashboard, then a line that says <code class="inline">Started</code>. The download happens only the first time.</p>
@@ -429,14 +429,14 @@ kubectl get nodes</code></pre></div>
 
       <div class="cmd">
         <span class="cmd-label">Start it again, for example after restarting your laptop</span>
-        <div class="code"><pre><code>cd ~/Kubernetes-config-builder
+        <div class="code"><pre><code>cd ~/learning-kubernetes-made-easy
 docker compose up -d</code></pre></div>
       </div>
       <p class="expect">It starts in seconds, because Docker keeps the dashboard it downloaded.</p>
 
       <div class="cmd">
         <span class="cmd-label">Get the latest lessons</span>
-        <div class="code"><pre><code>cd ~/Kubernetes-config-builder
+        <div class="code"><pre><code>cd ~/learning-kubernetes-made-easy
 git pull
 docker compose up -d</code></pre></div>
       </div>
@@ -456,7 +456,7 @@ docker compose up -d</code></pre></div>
         <span class="cmd-label">Remove it completely</span>
         <div class="code"><pre><code>docker compose down --rmi all</code></pre></div>
       </div>
-      <p class="expect">This stops the dashboard and deletes the image it downloaded. Then delete the <span class="path">Kubernetes-config-builder</span> folder from your home folder.</p>
+      <p class="expect">This stops the dashboard and deletes the image it downloaded. Then delete the <span class="path">learning-kubernetes-made-easy</span> folder from your home folder.</p>
     </section>
 
     <section class="step" aria-labelledby="s8">
@@ -470,7 +470,7 @@ docker compose up -d</code></pre></div>
 
       <details>
         <summary>“no configuration file provided: not found”</summary>
-        <div><p>The terminal isn't in the project folder. Run <code class="inline">cd ~/Kubernetes-config-builder</code> first, or the <span class="path">-main</span> folder name if you used the ZIP.</p></div>
+        <div><p>The terminal isn't in the project folder. Run <code class="inline">cd ~/learning-kubernetes-made-easy</code> first, or the <span class="path">-main</span> folder name if you used the ZIP.</p></div>
       </details>
 
       <details>
@@ -484,7 +484,7 @@ docker compose up -d</code></pre></div>
       </details>
 
       <details>
-        <summary>“fatal: destination path 'Kubernetes-config-builder' already exists”</summary>
+        <summary>“fatal: destination path 'learning-kubernetes-made-easy' already exists”</summary>
         <div><p>You already downloaded the project. Skip the <code class="inline">git clone</code> line and use <strong>Get the latest lessons</strong> above.</p></div>
       </details>
 
@@ -509,13 +509,13 @@ docker compose up -d</code></pre></div>
 
 <footer>
   <div class="wrap">
-    <p>Project source: <a href="https://github.com/avizway1/Kubernetes-config-builder" target="_blank" rel="noopener">github.com/avizway1/Kubernetes-config-builder</a>. Built by <a href="https://avizacademy.com" target="_blank" rel="noopener">Aviz Academy</a>.</p>
+    <p>Project source: <a href="https://github.com/avizway1/learning-kubernetes-made-easy" target="_blank" rel="noopener">github.com/avizway1/learning-kubernetes-made-easy</a>. Built by <a href="https://avizacademy.com" target="_blank" rel="noopener">Aviz Academy</a>.</p>
   </div>
 </footer>
 
 <script>
 (function () {
-  var key = 'kms-start-guide-os';
+  var key = 'lkme-start-guide-os';
   var buttons = Array.prototype.slice.call(document.querySelectorAll('.os-choice button'));
 
   function guess() {
