@@ -91,10 +91,10 @@ eksctl 0.231.0
 ## Acceptance criteria
 
 - [x] The setup page shows install commands for macOS, Windows (WSL 2), and Linux, each linked to its official source, with the version each lab needs.
-- [ ] The check command runs unchanged in macOS zsh, Linux bash, and WSL 2 bash, and prints nothing personal.
+- [x] The check command runs unchanged in macOS zsh, Linux bash, and WSL 2 bash, and prints nothing personal.
 - [x] Pasting a report shows **Ready** or **Fix this** for every tool, and unlocks Lab 1 and Lab 2 separately.
 - [x] The unlock survives a reload.
 - [x] The start guide's Windows practice cluster uses WSL 2, matching Lab 1.
 - [x] Unit and browser tests above pass.
 
-On 2026-11-26 the check ran unchanged in macOS zsh and bash, and in Linux bash inside `nginx:1.30.4`. WSL 2 stays unchecked until a Windows tester runs it. Microsoft's [Install WSL](https://learn.microsoft.com/windows/wsl/install) says plain `wsl --install` works only when WSL is not installed at all. Docker Desktop installs WSL first, so the Windows card and the start guide use `wsl --install -d Ubuntu`.
+On 2026-11-26 the check ran unchanged in macOS zsh and bash, and in Linux bash inside `nginx:1.30.4`. The same day, CI run [45814830178](https://github.com/avizway1/Kubernetes-config-builder/actions/runs/45814830178) ran it in Ubuntu 26.04 on WSL 2 (kernel `6.18.58.1-microsoft-standard-WSL2`) on a `windows-2025` runner, after the Windows card installed kubectl 1.37.2, k3d 5.9.0, AWS CLI 2.42.4, and eksctl 0.232.0. It read as Windows (WSL 2). Its first run found the eksctl checksum problem in the Decision Log. Docker's WSL integration and Lab 1 on Windows still need a Windows tester, since the runner has no Docker Desktop. Microsoft's [Install WSL](https://learn.microsoft.com/windows/wsl/install) says plain `wsl --install` works only when WSL is not installed at all. Docker Desktop installs WSL first, so the Windows card and the start guide use `wsl --install -d Ubuntu`.

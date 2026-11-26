@@ -7,7 +7,8 @@ import {
 } from '../frontend/src/setup-check.ts';
 
 // Real output: macOS from the project Mac in zsh on 2026-11-26, and Linux from the check run in bash inside nginx:1.30.4.
-// WSL 2 follows the same format with " WSL" after the system, and stays unverified until a Windows tester runs it.
+// WSL 2 adds " WSL" after the system, as the windows-2025 CI job shows. That runner has no Docker Desktop, so this
+// report's Docker line is one a Windows laptop with Docker Desktop would print.
 const macos = `kms-check 1
 system Darwin arm64
 docker 29.8.2 memory 9328558080
