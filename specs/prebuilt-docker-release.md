@@ -47,8 +47,10 @@ On 2026-11-26 Charan renamed the project **Learning Kubernetes made easy - Aviz 
 
 **Acceptance criteria**
 
-- [ ] CI passes on the release commit, including the Docker package check and the WSL 2 setup check.
-- [ ] Charan confirms the final review before the `v1.1.0` release and tag are created.
-- [ ] The release workflow publishes `v1.1.0` for Linux AMD64 and ARM64 at `ghcr.io/avizway1/learning-kubernetes-made-easy`, and the anonymous cold start passes on both.
-- [ ] On the project Mac, with no dashboard image cached, the start guide's commands pull the image and open Learn Kubernetes.
-- [ ] The `v1.1.0` release has the verified `compose.yaml` attached.
+- [x] CI passes on the release commit, including the Docker package check and the WSL 2 setup check.
+- [x] Charan confirms the final review before the `v1.1.0` release and tag are created.
+- [x] The release workflow publishes `v1.1.0` for Linux AMD64 and ARM64 at `ghcr.io/avizway1/learning-kubernetes-made-easy`, and the anonymous cold start passes on both.
+- [x] On the project Mac, with no dashboard image cached, the start guide's commands pull the image and open Learn Kubernetes.
+- [x] The `v1.1.0` release has the verified `compose.yaml` attached.
+
+**Results, 2026-11-27.** Charan confirmed the final review. `main` moved forward to `3eda286`, and [v1.1.0](https://github.com/avizway1/learning-kubernetes-made-easy/releases/tag/v1.1.0) was released from it. CI passed on that commit on the branch and again on `main`, including the Docker package check and the WSL 2 setup check. The release workflow built, tested, and scanned both architectures, published the multi-architecture tag, and attached `compose.yaml`. The new package was public from its first push, so no GitHub setting had to change. Its anonymous cold starts took 3.44 seconds on AMD64 and 3.11 seconds on ARM64. On the project Mac (Apple silicon, Docker Desktop), with an empty Docker client configuration and no cached image, a fresh `git clone` took 1.5 seconds. `docker compose up -d` then reached the first page in 3.7 seconds, against 13.6 seconds for v1.0.0. The page opened on Learn Kubernetes with the new title, `tests/check-docker-release.py` passed against it, and the pulled ARM64 image is 23.2 MB. `docker compose down` and `docker rmi` removed the container and the image.
