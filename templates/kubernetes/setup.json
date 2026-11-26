@@ -1,0 +1,84 @@
+{
+  "check": "echo \"kms-check 1\"\necho \"system $(uname -sm)$(grep -qi microsoft /proc/version 2>/dev/null && echo ' WSL')\"\ndocker info --format 'docker {{.ServerVersion}} memory {{.MemTotal}}' 2>/dev/null | grep '^docker [0-9]' || echo \"docker not-running\"\ncommand -v kubectl >/dev/null && kubectl version --client 2>/dev/null | sed -n 's/^Client Version: /kubectl /p' || echo \"kubectl missing\"\ncommand -v k3d >/dev/null && k3d version 2>/dev/null | sed -n 's/^k3d version /k3d /p' || echo \"k3d missing\"\ncommand -v aws >/dev/null && echo \"aws $(aws --version 2>&1 | cut -d' ' -f1)\" || echo \"aws missing\"\naws sts get-caller-identity >/dev/null 2>&1 && echo \"aws-signed-in yes\" || echo \"aws-signed-in no\"\ncommand -v eksctl >/dev/null && echo \"eksctl $(eksctl version 2>/dev/null)\" || echo \"eksctl missing\"",
+  "systems": [
+    { "id": "macos", "label": "macOS" },
+    { "id": "windows", "label": "Windows (WSL 2)" },
+    { "id": "linux", "label": "Linux" }
+  ],
+  "windowsFirst": {
+    "title": "First, set up WSL 2",
+    "steps": [
+      { "text": "Open PowerShell as administrator and run this. It installs Ubuntu, and WSL too if Docker Desktop hasn't. Restart when it asks, then Ubuntu asks you to choose a user name and password.", "commands": "wsl --install -d Ubuntu" },
+      { "text": "In Docker Desktop, open Settings, then Resources, then WSL integration. Turn on Ubuntu and select Apply & restart." },
+      { "text": "Open Ubuntu from the Start menu. Run every command on this page, and every lab command, in Ubuntu." }
+    ],
+    "sources": [
+      { "title": "Install WSL", "url": "https://learn.microsoft.com/windows/wsl/install" },
+      { "title": "Docker Desktop WSL 2 backend", "url": "https://docs.docker.com/desktop/features/wsl/" }
+    ]
+  },
+  "tools": [
+    {
+      "id": "docker",
+      "name": "Docker",
+      "what": "Runs the dashboard, and the practice cluster for Lab 1.",
+      "install": {
+        "macos": { "text": "You already have Docker Desktop, because the dashboard runs in it. Start it before Lab 1." },
+        "windows": { "text": "You already have Docker Desktop, because the dashboard runs in it. Turn on its WSL integration for Ubuntu, as the first card says." },
+        "linux": { "text": "You already have Docker, because the dashboard runs in it. Start it before Lab 1, and check that docker info works without sudo." }
+      },
+      "sources": [{ "title": "Start guide", "url": "https://github.com/avizway1/Kubernetes-config-builder/blob/main/docs/getting-started.html" }]
+    },
+    {
+      "id": "kubectl",
+      "name": "kubectl",
+      "what": "The command you use to talk to a cluster.",
+      "install": {
+        "macos": { "text": "Install it with Homebrew. If brew --version doesn't work, first install Homebrew with the command on brew.sh.", "commands": "brew install kubectl" },
+        "windows": { "text": "In Ubuntu, download kubectl 1.37.2, check the download, and install it. On an ARM64 laptop, replace amd64 with arm64.", "commands": "curl -LO \"https://dl.k8s.io/release/v1.37.2/bin/linux/amd64/kubectl\"\ncurl -LO \"https://dl.k8s.io/release/v1.37.2/bin/linux/amd64/kubectl.sha256\"\necho \"$(cat kubectl.sha256)  kubectl\" | sha256sum --check\nsudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl" },
+        "linux": { "text": "Download kubectl 1.37.2, check the download, and install it. On an ARM64 machine, replace amd64 with arm64.", "commands": "curl -LO \"https://dl.k8s.io/release/v1.37.2/bin/linux/amd64/kubectl\"\ncurl -LO \"https://dl.k8s.io/release/v1.37.2/bin/linux/amd64/kubectl.sha256\"\necho \"$(cat kubectl.sha256)  kubectl\" | sha256sum --check\nsudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl" }
+      },
+      "sources": [
+        { "title": "Install kubectl on macOS", "url": "https://kubernetes.io/docs/tasks/tools/install-kubectl-macos/" },
+        { "title": "Install kubectl on Linux", "url": "https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/" }
+      ]
+    },
+    {
+      "id": "k3d",
+      "name": "k3d",
+      "what": "Creates a small practice cluster inside Docker.",
+      "install": {
+        "macos": { "text": "Install it with Homebrew.", "commands": "brew install k3d" },
+        "windows": { "text": "In Ubuntu, download the official installer, read it, then run it.", "commands": "curl -fsSL -o install-k3d.sh https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh\nbash install-k3d.sh" },
+        "linux": { "text": "Download the official installer, read it, then run it.", "commands": "curl -fsSL -o install-k3d.sh https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh\nbash install-k3d.sh" }
+      },
+      "sources": [{ "title": "k3d installation", "url": "https://k3d.io/stable/#installation" }]
+    },
+    {
+      "id": "aws",
+      "name": "AWS CLI version 2",
+      "what": "Lets your terminal use your AWS account.",
+      "install": {
+        "macos": { "text": "Download the official installer and run it.", "commands": "curl \"https://awscli.amazonaws.com/AWSCLIV2.pkg\" -o \"AWSCLIV2.pkg\"\nsudo installer -pkg ./AWSCLIV2.pkg -target /" },
+        "windows": { "text": "In Ubuntu, download and install it. On an ARM64 laptop, replace x86_64 with aarch64. If unzip is missing, run sudo apt install unzip first.", "commands": "curl \"https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip\" -o \"awscliv2.zip\"\nunzip awscliv2.zip\nsudo ./aws/install" },
+        "linux": { "text": "Download and install it. On an ARM64 machine, replace x86_64 with aarch64.", "commands": "curl \"https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip\" -o \"awscliv2.zip\"\nunzip awscliv2.zip\nsudo ./aws/install" }
+      },
+      "after": "Then sign in with aws configure, or aws sso login if your company uses IAM Identity Center.",
+      "sources": [
+        { "title": "Installing the AWS CLI", "url": "https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html" },
+        { "title": "Sign in with the AWS CLI", "url": "https://docs.aws.amazon.com/cli/latest/userguide/getting-started-quickstart.html" }
+      ]
+    },
+    {
+      "id": "eksctl",
+      "name": "eksctl",
+      "what": "Creates and deletes the EKS cluster for Lab 2.",
+      "install": {
+        "macos": { "text": "Install it from the AWS Homebrew tap.", "commands": "brew tap aws/tap\nbrew install aws/tap/eksctl" },
+        "windows": { "text": "In Ubuntu, download the latest release, check it, and install it. On an ARM64 laptop, set ARCH=arm64.", "commands": "ARCH=amd64\nPLATFORM=$(uname -s)_$ARCH\ncurl -sLO \"https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$PLATFORM.tar.gz\"\ncurl -sL \"https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_checksums.txt\" | grep $PLATFORM | sha256sum --check\ntar -xzf eksctl_$PLATFORM.tar.gz -C /tmp && rm eksctl_$PLATFORM.tar.gz\nsudo install -m 0755 /tmp/eksctl /usr/local/bin && rm /tmp/eksctl" },
+        "linux": { "text": "Download the latest release, check it, and install it. On an ARM64 machine, set ARCH=arm64.", "commands": "ARCH=amd64\nPLATFORM=$(uname -s)_$ARCH\ncurl -sLO \"https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$PLATFORM.tar.gz\"\ncurl -sL \"https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_checksums.txt\" | grep $PLATFORM | sha256sum --check\ntar -xzf eksctl_$PLATFORM.tar.gz -C /tmp && rm eksctl_$PLATFORM.tar.gz\nsudo install -m 0755 /tmp/eksctl /usr/local/bin && rm /tmp/eksctl" }
+      },
+      "sources": [{ "title": "eksctl installation", "url": "https://docs.aws.amazon.com/eks/latest/eksctl/installation.html" }]
+    }
+  ]
+}

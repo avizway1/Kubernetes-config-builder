@@ -357,7 +357,7 @@ docker compose -f compose.yaml -f compose.build.yaml up -d --build</code></pre><
         <div><b>Copy and Download</b><span>Save the file you built. <strong>Show explanations</strong> adds or removes the comment lines.</span></div>
       </div>
       <p>From <em>Parts of every manifest</em> onwards, a <strong>Try it</strong> panel lists commands to run the file on a practice cluster. Set one up in the optional step below when you're ready.</p>
-      <p>After Level 1, try <a href="https://github.com/avizway1/Kubernetes-config-builder/blob/main/docs/lab-1-hello-kubernetes.md" target="_blank" rel="noopener">Lab 1 · Hello Kubernetes</a>. It runs a small app on your laptop in about 15 minutes, for free.</p>
+      <p>After Level 1, try <strong>Lab 1 · Hello Kubernetes</strong> from <strong>Hands-on labs</strong> at the bottom of the lesson list. It runs a small app on your laptop in about 15 minutes, for free. Do <a href="http://localhost:8080/#learn/setup" target="_blank" rel="noopener">Set up your laptop</a> first: it checks the tools from step 6 and unlocks each lab when they're ready.</p>
     </section>
 
     <section class="step" aria-labelledby="s6">
@@ -370,17 +370,23 @@ docker compose -f compose.yaml -f compose.build.yaml up -d --build</code></pre><
 brew install kubectl</code></pre></div></div>
       </div>
       <div data-os-only="win" hidden>
-        <p>Install them with Scoop, a free installer for command-line tools. If <code class="inline">scoop --version</code> doesn't work, install Scoop first in a normal (not administrator) PowerShell window:</p>
-        <div class="cmd">
-          <span class="cmd-label">Install Scoop (once)</span>
-          <div class="code"><pre><code>Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression</code></pre></div>
-        </div>
-        <div class="cmd">
-          <span class="cmd-label">Install k3d and kubectl</span>
-          <div class="code"><pre><code>scoop install k3d
-scoop install kubectl</code></pre></div>
-        </div>
+        <p>On Windows, the practice cluster and the labs run in <strong>Ubuntu on WSL 2</strong>, a Linux terminal built into Windows. Docker Desktop already runs on WSL 2.</p>
+        <ol>
+          <li>Open PowerShell as administrator and run the command below. It installs Ubuntu, and WSL too if Docker Desktop hasn't. Restart when it asks, then Ubuntu asks you to choose a user name and password.</li>
+        </ol>
+        <div class="cmd"><div class="code"><pre><code>wsl --install -d Ubuntu</code></pre></div></div>
+        <ol start="2">
+          <li>In Docker Desktop, open <span class="path">Settings</span>, then <span class="path">Resources</span>, then <span class="path">WSL integration</span>. Turn on <span class="path">Ubuntu</span> and select <span class="path">Apply &amp; restart</span>.</li>
+          <li>Open <span class="path">Ubuntu</span> from the Start menu. Run every command from here on in Ubuntu, not PowerShell.</li>
+        </ol>
+        <p>See Microsoft's <a href="https://learn.microsoft.com/windows/wsl/install" target="_blank" rel="noopener">Install WSL</a> and Docker's <a href="https://docs.docker.com/desktop/features/wsl/" target="_blank" rel="noopener">WSL 2 backend</a> guides. Then, in Ubuntu, install k3d with the official installer. Read it, then run it.</p>
+        <div class="cmd"><div class="code"><pre><code>curl -fsSL -o install-k3d.sh https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh
+bash install-k3d.sh</code></pre></div></div>
+        <p>Install kubectl 1.37.2 from the <a href="https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/" target="_blank" rel="noopener">official Linux instructions</a>. On an ARM64 laptop, replace <code class="inline">amd64</code> with <code class="inline">arm64</code>.</p>
+        <div class="cmd"><div class="code"><pre><code>curl -LO "https://dl.k8s.io/release/v1.37.2/bin/linux/amd64/kubectl"
+curl -LO "https://dl.k8s.io/release/v1.37.2/bin/linux/amd64/kubectl.sha256"
+echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl</code></pre></div></div>
       </div>
       <div data-os-only="linux" hidden>
         <p>Download the official k3d installer, read it, then run it.</p>
@@ -398,6 +404,7 @@ kubectl get nodes</code></pre></div>
 
       <h3>Try your first file</h3>
       <p>In the lesson <em>Run one container</em>, click <strong>Show whole file</strong>, then <strong>Download</strong>. Your browser saves <span class="path">pod.yaml</span> in your Downloads folder. Then run:</p>
+      <p data-os-only="win" hidden>In Ubuntu, your Windows Downloads folder is <span class="path">/mnt/c/Users/&lt;your Windows user name&gt;/Downloads</span>. Use that path instead of <code class="inline">~/Downloads</code>.</p>
       <div class="cmd"><div class="code"><pre><code>cd ~/Downloads
 kubectl apply -f pod.yaml
 kubectl get pod web</code></pre></div></div>
