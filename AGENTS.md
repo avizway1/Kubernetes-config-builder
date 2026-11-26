@@ -70,6 +70,7 @@ Spec driven development. Every feature starts as a written spec with clear input
 /frontend          React app: options panel, Monaco editor, diff highlights, hover notes
   /public/brand    Aviz Academy logo and brand assets
 /backend           Go API: render templates, validate, explain uploaded YAML
+  /eks-crds        NodePool and IngressClassParams CRDs exported from EKS Auto Mode, for strict schemas
 /templates         One folder per tool, per version
   /prometheus
     /yaml          Plain manifests with section comments
@@ -82,9 +83,11 @@ Spec driven development. Every feature starts as a written spec with clear input
     options.json
     notes.json
   /kubernetes      Core Kubernetes lessons built one block at a time
+    /labs          YAML files the lab guides download
 /specs             One spec file per feature, written before code
 /tests             Unit tests, plus deploy tests against K3s
-/docs              User and contributor guides
+/docs              User and contributor guides, including the lab guides
+  /releases        Release notes, one file per version
 ```
 
 ## Acceptance Criteria (MVP)
@@ -311,3 +314,4 @@ Dates refer to when the correction was made. The Decision Log records the result
 | 2026-11-25 | Lab 1 passed on fresh K3s 1.37.2 in 49 seconds of machine time. Lab 2 passed on EKS Auto Mode 1.37 in ap-south-1 in 1,319 seconds, from cluster creation to deletion, and left nothing behind. Check clean-up by asking each AWS service directly. The Resource Groups Tagging API keeps listing deleted instances, volumes, and network interfaces for a while. The EKS only lessons passed again on a fresh cluster created by `tests/eks-lessons-cluster.sh`, and the exported CRDs match `backend/eks-crds`. | Tagging API clean-up check | Labs, EKS checks |
 | 2026-11-26 | Close the remaining phase 1 lesson criteria with tests. A browser test steps through every block of every lesson and checks the card and the highlighted lines. A unit test checks that each block names at most one glossary term and that each term is introduced once. The card says **New word** only at a term’s first block in catalogue order and **Word to remember** after that. | Block size, highlight, and term rules checked only in part, and every term labelled New word | Learn Kubernetes, lesson card, tests |
 | 2026-11-26 | Charan accepted [CVE-2026-39821](https://avd.aquasec.com/nvd/cve-2026-39821) in `golang.org/x/net` v0.56.0 inside `ghcr.io/dexidp/dex:v2.46.1`, on AMD64 and ARM64, through the existing 2026-12-11 review date. The final phase 1 CI run found it as a new advisory. The newest official Argo CD chart, [10.20.0](https://github.com/argoproj/argo-helm/releases/tag/argo-cd-10.20.0), still ships Dex v2.46.1, which is also Dex’s newest release. Dex runs only in the Argo CD Full preset. Every other phase 1 CI check passed on commit `817f712`, including the Build a config browser tests. | An unaccepted Dex finding failing CI | Security review, CI |
+| 2026-11-26 | Charan approved three new folders: `backend/eks-crds` for the CRDs exported from EKS Auto Mode, `templates/kubernetes/labs` for the lab YAML files, and `docs/releases` for release notes. | Folder structure without these folders | Folder structure |
