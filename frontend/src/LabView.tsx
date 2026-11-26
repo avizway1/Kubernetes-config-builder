@@ -13,7 +13,7 @@ import { checkedDate } from './SetupView';
 export type LabProgress = { part: 'files' | 'steps'; step: number; practising: boolean; answers: (number | undefined)[]; focus?: number };
 export const newLabProgress = (): LabProgress => ({ part: 'files', step: 0, practising: false, answers: [] });
 
-const repoBlob = 'https://github.com/avizway1/Kubernetes-config-builder/blob/main/';
+const repoBlob = 'https://github.com/avizway1/learning-kubernetes-made-easy/blob/main/';
 const lessonTitles = Object.fromEntries(levels.flatMap(level => level.lessons).map(lesson => [lesson.id, lesson.title]));
 
 // Guide links: other labs open in the dashboard, other repository files on GitHub, and web pages in a new tab.
@@ -80,7 +80,7 @@ function GuideBlocks({ blocks }: { blocks: GuideBlock[] }) {
 }
 
 // Ticks are kept per lab in this browser. Storage can be blocked, so the page keeps them for the visit too.
-const ticksKey = (lab: string) => `kubernetes-made-simple:lab-steps:${lab}`;
+const ticksKey = (lab: string) => `learning-kubernetes:lab-steps:${lab}`;
 function loadTicks(lab: string): number[] {
   try {
     const saved = JSON.parse(window.localStorage.getItem(ticksKey(lab)) ?? '[]');

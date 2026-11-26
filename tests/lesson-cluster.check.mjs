@@ -1,9 +1,9 @@
 // Apply every lesson to a dedicated test cluster and confirm each Try it result with its check.
-// Needs kubectl and curl. Run from the project root with KCB_LESSON_KUBECONFIG and KCB_LESSON_VERSION set (1.35, 1.36, or 1.37).
+// Needs kubectl and curl. Run from the project root with LKME_LESSON_KUBECONFIG and LKME_LESSON_VERSION set (1.35, 1.36, or 1.37).
 // K3s (the default): tests/check-lessons-k3s.sh creates the cluster, runs this file for the Anywhere lessons, and deletes
-// the cluster. KCB_LESSON_NODES is the cluster's node count. Each run checks only the lessons written for that many nodes.
-// EKS: tests/check-lessons-eks.sh sets KCB_LESSON_PLATFORM=eks and runs the EKS only lessons against a dedicated
-// EKS Auto Mode cluster named kcb-lessons-*, with KCB_EKS_CLUSTER, KCB_EKS_ACCOUNT, and KCB_EFS_ID. It also needs the AWS CLI.
+// the cluster. LKME_LESSON_NODES is the cluster's node count. Each run checks only the lessons written for that many nodes.
+// EKS: tests/check-lessons-eks.sh sets LKME_LESSON_PLATFORM=eks and runs the EKS only lessons against a dedicated
+// EKS Auto Mode cluster named lkme-lessons-*, with LKME_EKS_CLUSTER, LKME_EKS_ACCOUNT, and LKME_EFS_ID. It also needs the AWS CLI.
 import { equal, fail, match, ok } from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -13,11 +13,11 @@ import { test } from 'node:test';
 import catalogue from '../templates/kubernetes/lessons.json' with { type: 'json' };
 import { brokenFile, defaultLessonValues, lessonContent, lessonText, practiceFile, renderLesson } from '../frontend/src/lesson-builder.ts';
 
-const kubeconfig = process.env.KCB_LESSON_KUBECONFIG;
-const version = process.env.KCB_LESSON_VERSION;
-const nodes = Number(process.env.KCB_LESSON_NODES ?? 1);
-const platform = process.env.KCB_LESSON_PLATFORM ?? 'k3s';
-const retrySeconds = Number(process.env.KCB_LESSON_RETRY_SECONDS ?? 180);
+const kubeconfig = process.env.LKME_LESSON_KUBECONFIG;
+const version = process.env.LKME_LESSON_VERSION;
+const nodes = Number(process.env.LKME_LESSON_NODES ?? 1);
+const platform = process.env.LKME_LESSON_PLATFORM ?? 'k3s';
+const retrySeconds = Number(process.env.LKME_LESSON_RETRY_SECONDS ?? 180);
 
 function shell(command, cwd) {
   const result = spawnSync('sh', ['-c', command], { cwd, encoding: 'utf8', env: { ...process.env, KUBECONFIG: kubeconfig } });
@@ -50,19 +50,19 @@ function confirm(label, command, check, values, cwd, once) {
 }
 
 test(`the cluster is a dedicated ${platform === 'eks' ? 'EKS Auto Mode' : 'loopback K3s'} test cluster`, () => {
-  ok(kubeconfig && version, 'Set KCB_LESSON_KUBECONFIG and KCB_LESSON_VERSION. Use tests/check-lessons-k3s.sh or tests/check-lessons-eks.sh.');
+  ok(kubeconfig && version, 'Set LKME_LESSON_KUBECONFIG and LKME_LESSON_VERSION. Use tests/check-lessons-k3s.sh or tests/check-lessons-eks.sh.');
   if (platform === 'eks') {
-    const { KCB_EKS_CLUSTER: cluster, KCB_EKS_ACCOUNT: account, KCB_EFS_ID: efs } = process.env;
-    match(cluster ?? '', /^kcb-lessons-[a-z0-9-]+$/, 'KCB_EKS_CLUSTER must name a dedicated kcb-lessons-* cluster');
-    match(account ?? '', /^\d{12}$/, 'Set KCB_EKS_ACCOUNT to the 12-digit account ID');
-    match(efs ?? '', /^fs-[0-9a-f]+$/, 'Set KCB_EFS_ID to the test file system ID');
+    const { LKME_EKS_CLUSTER: cluster, LKME_EKS_ACCOUNT: account, LKME_EFS_ID: efs } = process.env;
+    match(cluster ?? '', /^lkme-lessons-[a-z0-9-]+$/, 'LKME_EKS_CLUSTER must name a dedicated lkme-lessons-* cluster');
+    match(account ?? '', /^\d{12}$/, 'Set LKME_EKS_ACCOUNT to the 12-digit account ID');
+    match(efs ?? '', /^fs-[0-9a-f]+$/, 'Set LKME_EFS_ID to the test file system ID');
     match(shell('kubectl config current-context').stdout.trim(), new RegExp(`^arn:aws:eks:[a-z0-9-]+:${account}:cluster/${cluster}$`));
     match(shell("kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}'").stdout, /^https:\/\/[0-9A-F]+\.[a-z0-9]+\.[a-z0-9-]+\.eks\.amazonaws\.com$/);
     const server = JSON.parse(shell('kubectl get --raw /version').stdout).gitVersion;
     ok(server.startsWith(`v${version}.`) && server.includes('-eks-'), `Expected EKS ${version}, got ${server}`);
     return;
   }
-  match(shell('kubectl config current-context').stdout.trim(), /^k3d-kcb-lessons-\d+$/);
+  match(shell('kubectl config current-context').stdout.trim(), /^k3d-lkme-lessons-\d+$/);
   match(shell("kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}'").stdout, /^https:\/\/127\.0\.0\.1:\d+$/);
   const server = JSON.parse(shell('kubectl get --raw /version').stdout).gitVersion;
   ok(server.startsWith(`v${version}.`) && server.includes('+k3s'), `Expected K3s ${version}, got ${server}`);
@@ -74,8 +74,8 @@ const files = lesson => [lesson, ...(lesson.uses ?? []).map(id => lessonContent[
 
 const runsHere = new Set(catalogue.levels.flatMap(level => level.lessons).filter(lesson => lesson.runsOn === (platform === 'eks' ? 'eks' : 'anywhere')).map(lesson => lesson.id));
 // EKS Auto Mode adds nodes as Pods need them, so the node count matters only on K3s.
-// KCB_LESSON_ONLY, a comma-separated list of lesson IDs, reruns just those lessons, such as after fixing them.
-const only = process.env.KCB_LESSON_ONLY?.split(',');
+// LKME_LESSON_ONLY, a comma-separated list of lesson IDs, reruns just those lessons, such as after fixing them.
+const only = process.env.LKME_LESSON_ONLY?.split(',');
 const checked = Object.values(lessonContent).filter(lesson => lesson.kind && runsHere.has(lesson.id) && (platform === 'eks' || (lesson.nodes ?? 1) === nodes)
   && (!only || only.includes(lesson.id)));
 // Commands that change the cluster or AWS run once: kubectl apply or delete, also at the end of a pipe, and AWS CLI create or delete.

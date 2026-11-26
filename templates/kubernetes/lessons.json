@@ -323,7 +323,7 @@
       "runsOn": "anywhere",
       "cost": "Free, on your laptop",
       "summary": "Deploy an app, scale it, and watch Kubernetes bring back a deleted Pod.",
-      "link": "https://github.com/avizway1/Kubernetes-config-builder/blob/main/docs/lab-1-hello-kubernetes.md"
+      "link": "https://github.com/avizway1/learning-kubernetes-made-easy/blob/main/docs/lab-1-hello-kubernetes.md"
     },
     {
       "id": "lab-2",
@@ -331,7 +331,7 @@
       "runsOn": "eks",
       "cost": "Uses your AWS account, which charges while the cluster runs",
       "summary": "Run the same app on EKS Auto Mode with a load balancer and storage, then clean up.",
-      "link": "https://github.com/avizway1/Kubernetes-config-builder/blob/main/docs/lab-2-your-app-on-eks.md"
+      "link": "https://github.com/avizway1/learning-kubernetes-made-easy/blob/main/docs/lab-2-your-app-on-eks.md"
     }
   ]
 }

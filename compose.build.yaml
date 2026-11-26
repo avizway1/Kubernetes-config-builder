@@ -1,5 +1,5 @@
 services:
   dashboard:
-    image: kcb-dashboard:local
+    image: learning-kubernetes-made-easy:local
     pull_policy: build
     build: .

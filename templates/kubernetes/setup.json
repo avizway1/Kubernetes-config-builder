@@ -1,5 +1,5 @@
 {
-  "check": "echo \"kms-check 1\"\necho \"system $(uname -sm)$(grep -qi microsoft /proc/version 2>/dev/null && echo ' WSL')\"\ndocker info --format 'docker {{.ServerVersion}} memory {{.MemTotal}}' 2>/dev/null | grep '^docker [0-9]' || echo \"docker not-running\"\ncommand -v kubectl >/dev/null && kubectl version --client 2>/dev/null | sed -n 's/^Client Version: /kubectl /p' || echo \"kubectl missing\"\ncommand -v k3d >/dev/null && k3d version 2>/dev/null | sed -n 's/^k3d version /k3d /p' || echo \"k3d missing\"\ncommand -v aws >/dev/null && echo \"aws $(aws --version 2>&1 | cut -d' ' -f1)\" || echo \"aws missing\"\naws sts get-caller-identity >/dev/null 2>&1 && echo \"aws-signed-in yes\" || echo \"aws-signed-in no\"\ncommand -v eksctl >/dev/null && echo \"eksctl $(eksctl version 2>/dev/null)\" || echo \"eksctl missing\"",
+  "check": "echo \"lkme-check 1\"\necho \"system $(uname -sm)$(grep -qi microsoft /proc/version 2>/dev/null && echo ' WSL')\"\ndocker info --format 'docker {{.ServerVersion}} memory {{.MemTotal}}' 2>/dev/null | grep '^docker [0-9]' || echo \"docker not-running\"\ncommand -v kubectl >/dev/null && kubectl version --client 2>/dev/null | sed -n 's/^Client Version: /kubectl /p' || echo \"kubectl missing\"\ncommand -v k3d >/dev/null && k3d version 2>/dev/null | sed -n 's/^k3d version /k3d /p' || echo \"k3d missing\"\ncommand -v aws >/dev/null && echo \"aws $(aws --version 2>&1 | cut -d' ' -f1)\" || echo \"aws missing\"\naws sts get-caller-identity >/dev/null 2>&1 && echo \"aws-signed-in yes\" || echo \"aws-signed-in no\"\ncommand -v eksctl >/dev/null && echo \"eksctl $(eksctl version 2>/dev/null)\" || echo \"eksctl missing\"",
   "systems": [
     { "id": "macos", "label": "macOS" },
     { "id": "windows", "label": "Windows (WSL 2)" },
@@ -27,7 +27,7 @@
         "windows": { "text": "You already have Docker Desktop, because the dashboard runs in it. Turn on its WSL integration for Ubuntu, as the first card says." },
         "linux": { "text": "You already have Docker, because the dashboard runs in it. Start it before Lab 1, and check that docker info works without sudo." }
       },
-      "sources": [{ "title": "Start guide", "url": "https://github.com/avizway1/Kubernetes-config-builder/blob/main/docs/getting-started.html" }]
+      "sources": [{ "title": "Start guide", "url": "https://github.com/avizway1/learning-kubernetes-made-easy/blob/main/docs/getting-started.html" }]
     },
     {
       "id": "kubectl",

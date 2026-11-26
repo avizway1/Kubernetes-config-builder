@@ -2,26 +2,19 @@ import { lessonContent } from './lesson-builder';
 import { labs, levels, runsOnLabels, type RunsOn } from './lessons';
 import { labReady, readReport, type LabId, type SavedCheck } from './setup-check';
 
-export type View = 'home' | 'learn' | 'build';
-
-// Phase 1 builds Learn Kubernetes end to end. Build a config returns in phase 2 by turning this on.
-// While it is off, the dashboard opens into Learn Kubernetes and nothing links to #build.
-export const showBuildAConfig = false;
-
 const brand = `${import.meta.env.BASE_URL}brand/`;
-const repository = 'https://github.com/avizway1/Kubernetes-config-builder';
+const repository = 'https://github.com/avizway1/learning-kubernetes-made-easy';
 
-export function SiteHeader({ view }: { view: View }) {
+export function SiteHeader() {
   return (
     <header className="site-header">
       <div className="site-header-inner">
-        <a className="brand" href={showBuildAConfig ? '#home' : '#learn'}>
+        <a className="brand" href="#learn">
           <img src={`${brand}aviz-academy-logo-header.webp`} alt="Aviz Academy" width={134} height={44} />
-          <span className="product-name">Kubernetes Made Simple</span>
+          <span className="product-name">Learning Kubernetes made easy</span>
         </a>
         <nav className="site-nav" aria-label="Main">
-          <a href="#learn" aria-current={view === 'learn' ? 'page' : undefined}>Learn Kubernetes</a>
-          {showBuildAConfig && <a href="#build" aria-current={view === 'build' ? 'page' : undefined}>Build a config</a>}
+          <a href="#learn" aria-current="page">Learn Kubernetes</a>
         </nav>
       </div>
     </header>
@@ -38,27 +31,6 @@ export function SiteFooter() {
         <a href={repository} target="_blank" rel="noopener">Source code</a>
       </p>
     </footer>
-  );
-}
-
-export function Home() {
-  return (
-    <section className="home" aria-labelledby="home-title">
-      <h1 id="home-title">What would you like to do?</h1>
-      <p className="lead">Kubernetes, one simple block at a time. Written for Amazon EKS, with free practice on your laptop.</p>
-      <div className="doors">
-        <a className="door door-primary" href="#learn">
-          <h2>Learn Kubernetes</h2>
-          <p>New to Kubernetes? Build real files one block at a time, with plain-English help for every line.</p>
-          <span className="door-action">Start learning</span>
-        </a>
-        <a className="door" href="#build">
-          <h2>Build a config</h2>
-          <p>Know what you need? Fill in a short form and copy ready-to-use YAML for Argo CD or Prometheus.</p>
-          <span className="door-action">Open the builder</span>
-        </a>
-      </div>
-    </section>
   );
 }
 

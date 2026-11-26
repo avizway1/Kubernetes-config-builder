@@ -161,7 +161,7 @@
       "command": "kubectl apply -f efs.yaml",
       "result": "Creates the StorageClass, the claim, and the Deployment. Replace the fileSystemId placeholder first.",
       "check": {
-        "run": "sed \"s/fs-0123456789abcdef0/$KCB_EFS_ID/\" efs.yaml | kubectl apply -f -",
+        "run": "sed \"s/fs-0123456789abcdef0/$LKME_EFS_ID/\" efs.yaml | kubectl apply -f -",
         "expect": [
           "storageclass.storage.k8s.io/efs created",
           "persistentvolumeclaim/shared created",

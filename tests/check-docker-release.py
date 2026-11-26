@@ -1,6 +1,5 @@
 """Smoke-test the Docker distribution on localhost."""
 
-import json
 import re
 import time
 from pathlib import Path
@@ -10,12 +9,14 @@ from urllib.request import Request, urlopen
 BASE = "http://127.0.0.1:8080"
 
 
-def request(path, payload=None):
-    options = {}
-    if payload is not None:
-        options = {"data": json.dumps(payload).encode(), "headers": {"Content-Type": "application/json"}}
-    with urlopen(Request(BASE + path, **options), timeout=30) as response:
+def request(path):
+    with urlopen(BASE + path, timeout=30) as response:
         return response.read().decode()
+
+
+def cache_control(path):
+    with urlopen(Request(BASE + path, method="HEAD"), timeout=30) as response:
+        return response.headers.get("Cache-Control")
 
 
 for attempt in range(30):
@@ -31,8 +32,14 @@ asset = re.search(r'<script[^>]+src="(/assets/[^"]+\.js)"', index)
 bundle = request(asset[1]) if asset else ""
 assert bundle, "Built frontend script is missing"
 
-# The page is Kubernetes Made Simple, and its lab pages include both guides, which are read when the image is built.
-assert "<title>Kubernetes Made Simple</title>" in index, "The page is not Kubernetes Made Simple"
+# The page is Learning Kubernetes made easy, and its lab pages include both guides, which are read when the image is built.
+title = "<title>Learning Kubernetes made easy - Aviz Academy</title>"
+assert title in index, "The page is not Learning Kubernetes made easy"
+
+# Browsers check the page on every visit and keep the hashed files, so a new release shows up at once.
+assert cache_control("/") == "no-cache", cache_control("/")
+assert cache_control(asset[1]) == "public, max-age=31536000, immutable", cache_control(asset[1])
+print("The page is checked on every visit and hashed files are cached for a year")
 root = Path(__file__).resolve().parent.parent
 for guide in ("docs/lab-1-hello-kubernetes.md", "docs/lab-2-your-app-on-eks.md"):
     text = (root / guide).read_text(encoding="utf-8")
@@ -45,56 +52,3 @@ for guide in ("docs/lab-1-hello-kubernetes.md", "docs/lab-2-your-app-on-eks.md")
     missing = [line for line in commands if line not in bundle]
     assert not missing, f"{guide} is missing from the built lab page: {missing[:3]}"
     print(f"{guide}: all {len(commands)} plain commands are in the built lab page")
-
-for version in ("1.35", "1.36", "1.37"):
-    for tool in ("prometheus", "argo-cd"):
-        config = {"tool": tool, "kubernetesVersion": version, "values": ""}
-        rendered = request("/api/render", config)
-        assert "kind: Deployment" in rendered, f"Missing deployment for {tool}"
-        result = json.loads(request("/api/validate", config))
-        assert result["status"] == "passed", f"{tool} / {version}: {result}"
-        print(f"{tool} / Kubernetes {version}: rendered and validated")
-
-
-export = json.loads(request("/api/export", {"tool": "prometheus", "kubernetesVersion": "1.37", "values": ""}))
-assert "kind: Namespace" in export["manifests"] and "# Why: Use apps/v1 because" in export["manifests"]
-
-
-application = """apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: guestbook
-  namespace: argocd
-spec:
-  project: default
-  source:
-    repoURL: https://github.com/argoproj/argocd-example-apps.git
-    path: guestbook
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: guestbook
-"""
-usage = {"tool": "argo-cd", "kubernetesVersion": "1.37", "values": application}
-result = json.loads(request("/api/usage/validate", usage))
-assert result["status"] == "passed", result
-usage["values"] = application.replace("project: default", "project: []")
-result = json.loads(request("/api/usage/validate", usage))
-assert result["status"] == "error", result
-print("Packaged Argo CD usage validation accepts valid resources and rejects invalid fields")
-
-scrape = """scrapeConfigs:
-  smoke-test:
-    enabled: true
-    scrape_interval: 30s
-    metrics_path: /metrics
-    scheme: http
-    static_configs:
-      - targets: [metrics.default.svc:8080]
-"""
-usage = {"tool": "prometheus", "kubernetesVersion": "1.37", "usageTemplate": "scrape-job", "values": scrape}
-result = json.loads(request("/api/usage/validate", usage))
-assert result["status"] == "passed", result
-usage["values"] = scrape.replace("30s", "bad interval")
-result = json.loads(request("/api/usage/validate", usage))
-assert result["status"] == "error" and result["diagnostics"][0]["check"] == "promtool", result
-print("Packaged promtool accepts valid Prometheus usage values and rejects an invalid interval")

@@ -9,7 +9,7 @@ import {
 // Real output: macOS from the project Mac in zsh on 2026-11-26, and Linux from the check run in bash inside nginx:1.30.4.
 // WSL 2 adds " WSL" after the system, as the windows-2025 CI job shows. That runner has no Docker Desktop, so this
 // report's Docker line is one a Windows laptop with Docker Desktop would print.
-const macos = `kms-check 1
+const macos = `lkme-check 1
 system Darwin arm64
 docker 29.8.2 memory 9328558080
 kubectl v1.36.1
@@ -18,7 +18,7 @@ aws aws-cli/2.36.37
 aws-signed-in yes
 eksctl 0.231.0-dev+f671416a1.2026-10-02T23:16:13Z`;
 
-const linuxBare = `kms-check 1
+const linuxBare = `lkme-check 1
 system Linux aarch64
 docker not-running
 kubectl missing
@@ -27,7 +27,7 @@ aws missing
 aws-signed-in no
 eksctl missing`;
 
-const wsl = `kms-check 1
+const wsl = `lkme-check 1
 system Linux x86_64 WSL
 docker 29.8.2 memory 8217387008
 kubectl v1.37.2
@@ -107,7 +107,7 @@ test('only the check output counts: other text is ignored, and a missing line is
 test('the check command runs unchanged in bash and zsh, prints only tool lines, and keeps the AWS account private', () => {
   // The AWS identity call is silenced, so the account number never reaches the screen or the dashboard.
   match(setup.check, /aws sts get-caller-identity >\/dev\/null 2>&1/);
-  const names = ['kms-check', 'system', ...Object.keys(toolLabels)];
+  const names = ['lkme-check', 'system', ...Object.keys(toolLabels)];
   for (const shell of ['/bin/bash', '/bin/zsh'].filter(existsSync)) {
     // A bare PATH, so the result does not depend on the tools on this machine.
     const output = execFileSync(shell, ['-c', setup.check], { env: { PATH: '/usr/bin:/bin' }, encoding: 'utf8' });

@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing stable release tag (for example v0.3.0)
+        description: Existing stable release tag (for example v1.0.0)
         required: true
         type: string
 
@@ -74,7 +74,7 @@ jobs:
             --label "org.opencontainers.image.revision=$(git rev-parse HEAD)" \
             --label "org.opencontainers.image.version=$VERSION" .
           test "$(docker image inspect dashboard:release --format '{{.Architecture}}')" = "$ARCH"
-      - name: Test the built dashboard and offline validators
+      - name: Test the built dashboard
         run: |
           docker run -d --name dashboard --read-only --tmpfs /tmp:mode=1777 --cap-drop ALL \
             --security-opt no-new-privileges:true -p 127.0.0.1:8080:8080 dashboard:release
@@ -139,7 +139,7 @@ jobs:
       - name: Generate the release Compose file
         run: |
           mkdir -p release
-          KCB_IMAGE="$IMAGE:$VERSION" docker compose -p kcb config > release/compose.yaml
+          LKME_IMAGE="$IMAGE:$VERSION" docker compose -p learning-kubernetes config > release/compose.yaml
           test "$(docker compose -f release/compose.yaml config --images)" = "$IMAGE:$VERSION"
           docker compose -f release/compose.yaml config --format json |
             jq -e '.services.dashboard | has("build") | not'

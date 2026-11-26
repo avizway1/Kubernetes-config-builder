@@ -8,7 +8,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v6
         with:
@@ -21,24 +21,12 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
-      - name: Install Helm and kubeconform
-        shell: bash
+          # The server has no dependencies, so there is no go.sum to cache.
+          cache: false
+      - name: Install kubeconform
         run: |
-          cd "$RUNNER_TEMP"
-          archive=helm-v4.3.1-linux-amd64.tar.gz
-          curl --fail --silent --show-error --location --remote-name "https://get.helm.sh/$archive"
-          curl --fail --silent --show-error --location --remote-name "https://get.helm.sh/$archive.sha256sum"
-          sha256sum --check "$archive.sha256sum"
-          tar -xzf "$archive" linux-amd64/helm
-          GOBIN="$RUNNER_TEMP/linux-amd64" go install github.com/yannh/kubeconform/cmd/kubeconform@v0.7.0
-          echo "$RUNNER_TEMP/linux-amd64" >> "$GITHUB_PATH"
-      - name: Build the pinned Prometheus checker
-        run: |
-          ./backend/build-promtool.sh "$RUNNER_TEMP/prometheus-tools"
-          echo "$RUNNER_TEMP/prometheus-tools" >> "$GITHUB_PATH"
-      - name: Download and verify pinned charts
-        run: ./backend/download-charts.sh
+          GOBIN="$RUNNER_TEMP/bin" go install github.com/yannh/kubeconform/cmd/kubeconform@v0.7.0
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
       - name: Test and build frontend
         working-directory: frontend
         run: |
@@ -49,49 +37,26 @@ jobs:
         run: python3 backend/download-schemas.py
       - name: Validate lesson manifests with kubeconform
         run: node --test tests/lesson-manifests.check.mjs
-      - name: Test Go renderer and validator
+      - name: Test the Go server
         working-directory: backend
         run: go test ./...
-      - name: Test live builder in Chromium
+      - name: Test lessons, labs, and setup in Chromium
         shell: bash
         run: |
           (cd frontend && npx playwright-core install --with-deps chromium)
-          (cd backend && go build -o "$RUNNER_TEMP/kcb-backend" .)
-          (cd backend && exec "$RUNNER_TEMP/kcb-backend") > "$RUNNER_TEMP/backend.log" 2>&1 &
-          backend_pid=$!
           (cd frontend && exec npm run dev -- --host 127.0.0.1 --port 5173 --strictPort) > "$RUNNER_TEMP/frontend.log" 2>&1 &
           frontend_pid=$!
-          trap 'kill "$backend_pid" "$frontend_pid" 2>/dev/null || true' EXIT
+          trap 'kill "$frontend_pid" 2>/dev/null || true' EXIT
           for attempt in {1..20}; do
-            if curl --silent --fail -o /dev/null http://127.0.0.1:5173/ && curl --silent -o /dev/null http://127.0.0.1:8080/; then
+            if curl --silent --fail -o /dev/null http://127.0.0.1:5173/; then
               break
             fi
             sleep 1
           done
           if ! (cd frontend && npm run test:browser); then
-            cat "$RUNNER_TEMP/backend.log" "$RUNNER_TEMP/frontend.log"
+            cat "$RUNNER_TEMP/frontend.log"
             exit 1
           fi
-      - name: Lint and validate both charts across supported Kubernetes versions
-        shell: bash
-        run: |
-          for version in 1.35.0 1.36.0 1.37.0; do
-            for tool in prometheus argo-cd; do
-              case "$tool" in
-                prometheus) namespace=monitoring ;;
-                argo-cd) namespace=argocd ;;
-              esac
-              archive=$(awk -v prefix="$tool-" 'index($2, prefix) == 1 { print $2 }' backend/chart-checksums.txt)
-              chart=".runtime/charts/$archive"
-              values=()
-              if [[ "$archive" == prometheus-29.45.1.tgz ]]; then
-                values=(-f backend/prometheus-arm64-values.json)
-              fi
-              helm lint "$chart" --namespace "$namespace" --kube-version "$version" "${values[@]}"
-              helm template "$tool" "$chart" --namespace "$namespace" --kube-version "$version" --include-crds "${values[@]}" |
-                kubeconform -strict -summary -kubernetes-version "$version" -schema-location .runtime/schemas
-            done
-          done
       - name: Audit npm dependencies
         if: ${{ !cancelled() }}
         working-directory: frontend
@@ -112,18 +77,9 @@ jobs:
       - name: Audit Go dependencies
         if: ${{ !cancelled() }}
         run: trivy fs --scanners vuln --pkg-types library --severity HIGH,CRITICAL --exit-code 1 --no-progress backend
-      - name: Test the image risk policy
-        if: ${{ !cancelled() }}
-        run: python3 tests/test_image_risk_policy.py
       - name: Test the npm dependency risk policy
         if: ${{ !cancelled() }}
         run: python3 tests/test_npm_audit_policy.py
-      - name: Scan chart images on AMD64 and ARM64
-        if: ${{ !cancelled() }}
-        shell: bash
-        run: |
-          (cd backend && go run . -list-images) > "$RUNNER_TEMP/chart-images.txt"
-          ./tests/scan-chart-images.sh "$RUNNER_TEMP/chart-images.txt" "$RUNNER_TEMP/chart-image-reports"
 
   package:
     runs-on: ubuntu-24.04
@@ -134,7 +90,7 @@ jobs:
           persist-credentials: false
       - name: Build and start the Docker distribution
         run: docker compose -f compose.yaml -f compose.build.yaml up -d --build
-      - name: Check the UI and offline validation
+      - name: Check the dashboard page and its caching
         run: python3 tests/check-docker-release.py
       - name: Scan the packaged runtime
         shell: bash

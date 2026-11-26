@@ -113,7 +113,7 @@ function judge(id: ToolId, value: string): ToolResult {
 // Read the check's output. Unknown lines are ignored, and a tool with no line is left unchecked.
 export function readReport(text: string): SetupReport {
   const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
-  const report: SetupReport = { valid: lines.includes('kms-check 1'), tools: {} };
+  const report: SetupReport = { valid: lines.includes('lkme-check 1'), tools: {} };
   for (const line of lines) {
     const space = line.indexOf(' ');
     if (space < 0) continue;
@@ -146,7 +146,7 @@ export function systemLabel(system: string | undefined) {
 
 // The last check is kept in this browser. Storage can be blocked, so callers keep their own copy for the visit.
 export type SavedCheck = { report: string; checkedAt: string };
-const storageKey = 'kubernetes-made-simple:setup-check';
+const storageKey = 'learning-kubernetes:setup-check';
 
 export function loadCheck(): SavedCheck | undefined {
   try {

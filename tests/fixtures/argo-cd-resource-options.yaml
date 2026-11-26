@@ -1,7 +1,0 @@
-dex:
-  enabled: false
-server:
-  metrics:
-    enabled: true
-  service:
-    type: NodePort

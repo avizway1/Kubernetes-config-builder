@@ -48,7 +48,7 @@ export AWS_REGION=us-east-1
 
 ```bash
 mkdir -p ~/lab-2 && cd ~/lab-2
-curl -fsSLO https://raw.githubusercontent.com/avizway1/Kubernetes-config-builder/main/templates/kubernetes/labs/hello-eks-cluster.yaml
+curl -fsSLO https://raw.githubusercontent.com/avizway1/learning-kubernetes-made-easy/main/templates/kubernetes/labs/hello-eks-cluster.yaml
 sed -i.bak "s/region: .*/region: $AWS_REGION/" hello-eks-cluster.yaml
 ```
 
@@ -86,7 +86,7 @@ It prints `No resources found`. Auto Mode starts machines only when Pods need th
 ## 2. Deploy the Lab 1 app, unchanged
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/avizway1/Kubernetes-config-builder/main/templates/kubernetes/labs/hello.yaml
+curl -fsSLO https://raw.githubusercontent.com/avizway1/learning-kubernetes-made-easy/main/templates/kubernetes/labs/hello.yaml
 kubectl apply -f hello.yaml
 kubectl rollout status deployment/hello -n hello --timeout=10m
 kubectl get nodes
@@ -123,7 +123,7 @@ sleep 60
 Download the second file:
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/avizway1/Kubernetes-config-builder/main/templates/kubernetes/labs/hello-eks.yaml
+curl -fsSLO https://raw.githubusercontent.com/avizway1/learning-kubernetes-made-easy/main/templates/kubernetes/labs/hello-eks.yaml
 ```
 
 ```yaml

@@ -88,7 +88,7 @@ export function SetupView({ check, onCheck }: { check?: SavedCheck; onCheck: (ch
 
       <section className="setup-step" aria-labelledby="setup-paste">
         <h2 id="setup-paste"><span className="setup-number" aria-hidden="true">4</span>Paste what it printed</h2>
-        <label htmlFor="setup-report">Everything the check printed, starting with <code>kms-check 1</code></label>
+        <label htmlFor="setup-report">Everything the check printed, starting with <code>lkme-check 1</code></label>
         <textarea id="setup-report" className="setup-report" rows={9} spellCheck={false} value={pasted}
           onChange={event => setPasted(event.target.value)} />
         <p>
@@ -99,7 +99,7 @@ export function SetupView({ check, onCheck }: { check?: SavedCheck; onCheck: (ch
         </p>
         <div aria-live="polite">
           {report && !report.valid && (
-            <p className="setup-invalid">This doesn't look like the check's output. Paste everything it printed, starting with kms-check 1.</p>
+            <p className="setup-invalid">This doesn't look like the check's output. Paste everything it printed, starting with lkme-check 1.</p>
           )}
           {report?.valid && (
             <>

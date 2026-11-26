@@ -4,7 +4,7 @@
 // The guide is the test. Every line in a ```bash block runs once and must succeed.
 // Hidden HTML comments add what a learner does by hand or sees with their eyes:
 //   <!-- do: <command> -->     runs once, like editing a file in a text editor.
-//   <!-- check: <command> -->  must succeed, retried for up to KCB_LAB_RETRY_SECONDS (default 120).
+//   <!-- check: <command> -->  must succeed, retried for up to LKME_LAB_RETRY_SECONDS (default 120).
 // A few commands need a stand-in because a learner runs them differently:
 //   kubectl port-forward ...   runs in the background and restarts before each check, as the guide tells learners to.
 //   ... --watch                is skipped; the checks after it wait for the same result.
@@ -12,8 +12,8 @@
 //   ~/lab-N                    becomes a temporary folder.
 // Environment:
 //   KUBECONFIG is set to a project-local file, so the learner's own kubeconfig is never touched.
-//   KCB_LAB_SET='{"old text":"new text"}' replaces text in commands, for example a placeholder Region.
-//   KCB_LAB_LIMIT_SECONDS fails the run if the lab takes longer, timed from cluster creation.
+//   LKME_LAB_SET='{"old text":"new text"}' replaces text in commands, for example a placeholder Region.
+//   LKME_LAB_LIMIT_SECONDS fails the run if the lab takes longer, timed from cluster creation.
 // If a step fails after the cluster is created, the commands in the guide's "Clean up" section run before the check exits.
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
@@ -28,10 +28,10 @@ if (!guidePath) {
   console.error('Usage: node tests/lab-guide.check.mjs docs/<lab>.md');
   process.exit(2);
 }
-const rawPrefix = 'https://raw.githubusercontent.com/avizway1/Kubernetes-config-builder/main/';
-const retrySeconds = Number(process.env.KCB_LAB_RETRY_SECONDS ?? 120);
-const limitSeconds = Number(process.env.KCB_LAB_LIMIT_SECONDS ?? 0);
-const replacements = Object.entries(JSON.parse(process.env.KCB_LAB_SET ?? '{}'));
+const rawPrefix = 'https://raw.githubusercontent.com/avizway1/learning-kubernetes-made-easy/main/';
+const retrySeconds = Number(process.env.LKME_LAB_RETRY_SECONDS ?? 120);
+const limitSeconds = Number(process.env.LKME_LAB_LIMIT_SECONDS ?? 0);
+const replacements = Object.entries(JSON.parse(process.env.LKME_LAB_SET ?? '{}'));
 const lab = path.basename(guidePath, '.md');
 const work = mkdtempSync(path.join(os.tmpdir(), `${lab}-`));
 const env = { ...process.env, KUBECONFIG: path.join(root, '.runtime', `kubeconfig-${lab}`), AWS_PAGER: '' };
@@ -80,7 +80,7 @@ function prepare(command) {
 
 // One long-lived shell, like a learner's terminal, so `cd` and `export` carry over to later commands.
 const shell = spawn('bash', ['--noprofile', '--norc'], { cwd: work, env, stdio: ['pipe', 'pipe', 'inherit'] });
-const marker = '__KCB_LAB_DONE__';
+const marker = '__LKME_LAB_DONE__';
 let pending = null;
 let buffer = '';
 shell.stdout.setEncoding('utf8');

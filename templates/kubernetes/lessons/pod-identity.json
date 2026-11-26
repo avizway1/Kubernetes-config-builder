@@ -65,19 +65,19 @@
   },
   "tryIt": [
     {
-      "command": "aws iam create-role --role-name kcb-pod-identity-demo --assume-role-policy-document '{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"pods.eks.amazonaws.com\"},\"Action\":[\"sts:AssumeRole\",\"sts:TagSession\"]}]}'",
+      "command": "aws iam create-role --role-name lkme-pod-identity-demo --assume-role-policy-document '{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"pods.eks.amazonaws.com\"},\"Action\":[\"sts:AssumeRole\",\"sts:TagSession\"]}]}'",
       "result": "Creates an IAM role that only EKS Pod Identity can use. It has no permissions yet.",
       "check": {
         "expect": [
-          "\"RoleName\": \"kcb-pod-identity-demo\""
+          "\"RoleName\": \"lkme-pod-identity-demo\""
         ]
       }
     },
     {
-      "command": "aws eks create-pod-identity-association --cluster-name <cluster> --namespace default --service-account aws-caller --role-arn arn:aws:iam::<account-id>:role/kcb-pod-identity-demo",
+      "command": "aws eks create-pod-identity-association --cluster-name <cluster> --namespace default --service-account aws-caller --role-arn arn:aws:iam::<account-id>:role/lkme-pod-identity-demo",
       "result": "Links the role to the aws-caller ServiceAccount in default. Put in your cluster name and account ID.",
       "check": {
-        "run": "aws eks create-pod-identity-association --cluster-name \"$KCB_EKS_CLUSTER\" --namespace default --service-account aws-caller --role-arn \"arn:aws:iam::$KCB_EKS_ACCOUNT:role/kcb-pod-identity-demo\"",
+        "run": "aws eks create-pod-identity-association --cluster-name \"$LKME_EKS_CLUSTER\" --namespace default --service-account aws-caller --role-arn \"arn:aws:iam::$LKME_EKS_ACCOUNT:role/lkme-pod-identity-demo\"",
         "expect": [
           "\"serviceAccount\": \"aws-caller\""
         ]
@@ -131,14 +131,14 @@
       "command": "aws eks delete-pod-identity-association --cluster-name <cluster> --association-id $(aws eks list-pod-identity-associations --cluster-name <cluster> --namespace default --service-account aws-caller --query 'associations[0].associationId' --output text)",
       "result": "Removes the association.",
       "check": {
-        "run": "aws eks delete-pod-identity-association --cluster-name \"$KCB_EKS_CLUSTER\" --association-id $(aws eks list-pod-identity-associations --cluster-name \"$KCB_EKS_CLUSTER\" --namespace default --service-account aws-caller --query 'associations[0].associationId' --output text)",
+        "run": "aws eks delete-pod-identity-association --cluster-name \"$LKME_EKS_CLUSTER\" --association-id $(aws eks list-pod-identity-associations --cluster-name \"$LKME_EKS_CLUSTER\" --namespace default --service-account aws-caller --query 'associations[0].associationId' --output text)",
         "expect": [
           "\"serviceAccount\": \"aws-caller\""
         ]
       }
     },
     {
-      "command": "aws iam delete-role --role-name kcb-pod-identity-demo",
+      "command": "aws iam delete-role --role-name lkme-pod-identity-demo",
       "result": "Removes the IAM role. It prints nothing.",
       "check": {
         "lines": 0

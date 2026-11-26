@@ -10,7 +10,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { readReport, setup, systemLabel, toolLabels } from '../frontend/src/setup-check.ts';
 
-const distro = process.env.KCB_WSL_DISTRO ?? 'Ubuntu';
+const distro = process.env.LKME_WSL_DISTRO ?? 'Ubuntu';
 const user = 'learner';
 // wsl.exe prints its own messages in UTF-16 unless WSL_UTF8 is set.
 const env = { ...process.env, WSL_UTF8: '1' };
@@ -53,7 +53,7 @@ for (const tool of setup.tools) {
 const output = run('check', setup.check, { capture: true });
 console.log(output);
 const lines = output.trim().split('\n');
-assert.deepEqual(lines.map(line => line.split(' ')[0]), ['kms-check', 'system', ...Object.keys(toolLabels)], 'the check prints one line per tool');
+assert.deepEqual(lines.map(line => line.split(' ')[0]), ['lkme-check', 'system', ...Object.keys(toolLabels)], 'the check prints one line per tool');
 assert.ok(!/\b\d{12}\b/.test(output), 'the check printed something like an AWS account number');
 
 const report = readReport(output);

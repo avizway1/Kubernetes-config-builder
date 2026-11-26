@@ -6,7 +6,7 @@ The app uses the five objects from Level 1 in one file: a Namespace, a ConfigMap
 
 ## Before you start
 
-You need Docker running, plus `k3d` and `kubectl`. The start guide installs all three on macOS, Windows, and Linux. The [README](../README.md#learn-kubernetes) says how to open it. On Windows, run every command in your WSL 2 terminal.
+You need Docker running, plus `k3d` and `kubectl`. The start guide installs all three on macOS, Windows, and Linux. The [README](../README.md#start-learning) says how to open it. On Windows, run every command in your WSL 2 terminal.
 
 Check the tools:
 
@@ -29,11 +29,11 @@ You should see one node, `k3d-lab-1-server-0`, with STATUS `Ready`. k3d also poi
 
 ## 2. Save the app file
 
-Download [`hello.yaml`](https://raw.githubusercontent.com/avizway1/Kubernetes-config-builder/main/templates/kubernetes/labs/hello.yaml) into a new folder:
+Download [`hello.yaml`](https://raw.githubusercontent.com/avizway1/learning-kubernetes-made-easy/main/templates/kubernetes/labs/hello.yaml) into a new folder:
 
 ```bash
 mkdir -p ~/lab-1 && cd ~/lab-1
-curl -fsSLO https://raw.githubusercontent.com/avizway1/Kubernetes-config-builder/main/templates/kubernetes/labs/hello.yaml
+curl -fsSLO https://raw.githubusercontent.com/avizway1/learning-kubernetes-made-easy/main/templates/kubernetes/labs/hello.yaml
 ```
 
 Or copy this text into a file named `hello.yaml`:
@@ -80,7 +80,7 @@ metadata:
   namespace: hello
 type: Opaque
 stringData:
-  htpasswd: "learner:$apr1$kcblab01$CQu3e0qDUa52ZSkHt8tv9/"
+  htpasswd: "learner:$apr1$avizlab1$6Fsb5nuxKPD7tZLAF7c.Q0"
 ---
 # The Deployment keeps two copies of the web server running.
 apiVersion: apps/v1

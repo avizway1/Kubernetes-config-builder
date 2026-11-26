@@ -39,7 +39,7 @@ metadata:
   namespace: hello
 type: Opaque
 stringData:
-  htpasswd: "learner:$apr1$kcblab01$CQu3e0qDUa52ZSkHt8tv9/"
+  htpasswd: "learner:$apr1$avizlab1$6Fsb5nuxKPD7tZLAF7c.Q0"
 ---
 # The Deployment keeps two copies of the web server running.
 apiVersion: apps/v1

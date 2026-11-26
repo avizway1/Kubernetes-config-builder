@@ -6,7 +6,7 @@ self.MonacoEnvironment ??= { getWorker: () => new EditorWorker() };
 
 // Read-only YAML for a lesson. Highlighted lines are what the last action added or changed.
 // `onLineClick` lets Fix it learners pick a line by clicking it.
-export function LessonEditor({ text, notes, highlights, label, highlightClass = 'comparison-value-line', onLineClick }: {
+export function LessonEditor({ text, notes, highlights, label, highlightClass = 'changed-line', onLineClick }: {
   text: string;
   notes: (string | undefined)[];
   highlights: number[];

@@ -5,8 +5,8 @@ import { labs, levels, runsOnLabels } from '../frontend/src/lessons.ts';
 
 const words = text => text.trim().split(/\s+/).length;
 
-// Charan removed lessons 35 and 37 on 2026-11-20, so phase 1 ends at Level 8. Level 9 returns in phase 2 with lesson 36.
-test('the lesson catalogue follows the approved class curriculum, Levels 0 to 8, without phase 2 tool lessons', () => {
+// Charan removed lessons 35 and 37 on 2026-11-20, so the curriculum ends at Level 8.
+test('the lesson catalogue follows the approved class curriculum, Levels 0 to 8', () => {
   deepEqual(levels.map(level => level.id), [...Array(9).keys()].map(index => `level-${index}`));
   deepEqual(levels.map(level => level.lessons.map(lesson => lesson.id)), [
     ['reading-yaml', 'manifest-parts'],
@@ -35,17 +35,16 @@ test('lesson text stays short and every badge has a label', () => {
   for (const level of levels) ok(words(level.summary) <= 20, level.id);
 });
 
-test('nothing in Learn Kubernetes opens Build a config or is tested only on K3s in phase 1', () => {
+test('every lesson and lab runs Anywhere or on EKS only', () => {
   for (const item of [...levels.flatMap(level => level.lessons), ...labs]) {
-    equal('open' in item, false, `${item.id} opens Build a config`);
-    ok(item.runsOn !== 'k3s', `${item.id} belongs to phase 2`);
+    ok(['anywhere', 'eks'].includes(item.runsOn), `${item.id} runs on ${item.runsOn}`);
   }
 });
 
 // Each lab guide lives in docs/ and is linked from the catalogue. Its YAML must match the files learners download.
 test('lab guides exist, and their YAML and downloads match the lab files', () => {
-  const repo = 'https://github.com/avizway1/Kubernetes-config-builder/blob/main/';
-  const raw = 'https://raw.githubusercontent.com/avizway1/Kubernetes-config-builder/main/';
+  const repo = 'https://github.com/avizway1/learning-kubernetes-made-easy/blob/main/';
+  const raw = 'https://raw.githubusercontent.com/avizway1/learning-kubernetes-made-easy/main/';
   const root = new URL('../', import.meta.url);
   const labFiles = readdirSync(new URL('templates/kubernetes/labs/', root))
     .map(name => readFileSync(new URL(`templates/kubernetes/labs/${name}`, root), 'utf8'));

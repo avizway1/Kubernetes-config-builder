@@ -12,36 +12,33 @@ import { setup } from '../frontend/src/setup-check.ts';
 
 const require = createRequire(new URL('../frontend/package.json', import.meta.url));
 const { chromium } = require('playwright-core');
-const appUrl = process.env.KCB_APP_URL ?? 'http://127.0.0.1:5173';
+const appUrl = process.env.LKME_APP_URL ?? 'http://127.0.0.1:5173';
 
-test('the dashboard opens into Learn Kubernetes and nothing links to Build a config in phase 1', { timeout: 30000 }, async () => {
-  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+test('the dashboard opens into Learn Kubernetes with the Aviz Academy brand', { timeout: 30000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.LKME_CHROME_PATH, args: ['--disable-gpu'] });
   try {
     const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
     page.setDefaultTimeout(8000);
     await page.goto(appUrl);
 
-    assert.equal(await page.title(), 'Kubernetes Made Simple');
+    assert.equal(await page.title(), 'Learning Kubernetes made easy - Aviz Academy');
     await page.getByRole('heading', { name: 'Learn Kubernetes', level: 1 }).waitFor();
+    assert.equal(await page.locator('.product-name').textContent(), 'Learning Kubernetes made easy');
     const logo = page.getByRole('img', { name: 'Aviz Academy' });
     await logo.waitFor();
     assert.ok(await logo.evaluate(image => image.complete && image.naturalWidth > 0), 'logo loads');
     assert.equal(await page.locator('link[rel="icon"][sizes="32x32"]').getAttribute('href'), '/brand/favicon-32.png');
     assert.equal(await page.getByRole('link', { name: 'Aviz Academy', exact: true }).getAttribute('href'), 'https://avizacademy.com');
+    assert.equal(await page.getByRole('link', { name: 'Source code', exact: true }).getAttribute('href'),
+      'https://github.com/avizway1/learning-kubernetes-made-easy');
+    // The header has one link, to the lesson list.
+    assert.deepEqual(await page.locator('.site-nav a').evaluateAll(links => links.map(link => link.getAttribute('href'))), ['#learn']);
 
-    // Build a config is hidden until phase 2: no doors, no header link, and no lesson opens it.
-    assert.equal(await page.locator('.door').count(), 0);
-    assert.equal(await page.locator('a[href="#build"]').count(), 0);
-    assert.equal(await page.getByText('Build a config').count(), 0);
-    assert.equal(await page.locator('.lesson-meta button').count(), 0);
-    assert.equal(await page.locator('.badge-k3s').count(), 0);
-
-    // Levels 0 to 8 and the labs. Level 9 returns in phase 2.
+    // Levels 0 to 8 and the labs.
     assert.equal(await page.locator('section.level').count(), 10);
     const basics = page.locator('section[aria-labelledby="level-1-title"] .lesson');
     assert.equal(await basics.count(), 8);
     assert.equal(await basics.locator('.lesson-start').count(), 8);
-    assert.equal(await basics.getByText('Coming soon').count(), 0);
     assert.equal(await page.locator('section[aria-labelledby="level-0-title"] .lesson-start').count(), 2);
     assert.equal(await page.locator('section.level:not([aria-labelledby="labs-title"]) .badge-eks').count(), 7);
     // The labs list starts with the Set up your laptop card.
@@ -54,29 +51,23 @@ test('the dashboard opens into Learn Kubernetes and nothing links to Build a con
       assert.equal(await link.getAttribute('href'), `#learn/${id}`);
     }
 
-    // Old #home links and the logo both land on Learn Kubernetes.
-    await page.goto(`${appUrl}#home`);
-    await page.getByRole('heading', { name: 'Learn Kubernetes', level: 1 }).waitFor();
+    // The logo leads back to the lesson list.
     await page.goto(`${appUrl}#learn/pod`);
     await page.getByRole('heading', { name: 'Run one container', level: 1 }).waitFor();
     await page.locator('.brand').click();
     await page.getByRole('heading', { name: 'Learn Kubernetes', level: 1 }).waitFor();
     assert.equal(new URL(page.url()).hash, '#learn');
-
-    // The Build a config screen still works when typed directly, so its existing tests keep running.
-    await page.goto(`${appUrl}#build`);
-    await page.getByRole('heading', { name: 'Build a config', level: 1 }).waitFor();
   } finally {
     await browser.close();
   }
 });
 
 test('the lesson list fits a phone screen without sideways scrolling', { timeout: 20000 }, async () => {
-  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  const browser = await chromium.launch({ executablePath: process.env.LKME_CHROME_PATH, args: ['--disable-gpu'] });
   try {
     const page = await browser.newPage({ viewport: { width: 375, height: 812 } });
     page.setDefaultTimeout(8000);
-    for (const hash of ['#home', '#learn']) {
+    for (const hash of ['', '#learn']) {
       await page.goto(`${appUrl}${hash}`);
       await page.locator('main h1').waitFor();
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
@@ -88,7 +79,7 @@ test('the lesson list fits a phone screen without sideways scrolling', { timeout
 });
 
 test('a lesson builds the file one block at a time and exports exactly what is shown', { timeout: 40000 }, async () => {
-  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  const browser = await chromium.launch({ executablePath: process.env.LKME_CHROME_PATH, args: ['--disable-gpu'] });
   try {
     const page = await browser.newPage({ viewport: { width: 1366, height: 900 }, permissions: ['clipboard-read', 'clipboard-write'] });
     page.setDefaultTimeout(8000);
@@ -114,7 +105,7 @@ test('a lesson builds the file one block at a time and exports exactly what is s
     await page.getByRole('button', { name: 'Next block' }).click();
     assert.equal(await progress.textContent(), 'Block 2 of 4');
     await yaml.locator('.view-line').filter({ hasText: 'app: web' }).waitFor();
-    await page.waitForFunction(() => document.querySelectorAll('[data-testid="lesson-yaml"] .comparison-value-line').length === 5);
+    await page.waitForFunction(() => document.querySelectorAll('[data-testid="lesson-yaml"] .changed-line').length === 5);
     assert.equal(await page.locator('.lesson-term dfn').textContent(), 'label');
 
     // Hovering a line explains it in plain English.
@@ -164,7 +155,7 @@ test('a lesson builds the file one block at a time and exports exactly what is s
 // Every step of every lesson: the card shows that block, and the editor highlights exactly the lines it added,
 // its comment included. The unit tests keep each block to one to six YAML lines.
 test('every lesson step highlights the lines its block adds and shows that block on the card', { timeout: 300000 }, async () => {
-  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  const browser = await chromium.launch({ executablePath: process.env.LKME_CHROME_PATH, args: ['--disable-gpu'] });
   try {
     const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
     page.setDefaultTimeout(8000);
@@ -189,7 +180,7 @@ test('every lesson step highlights the lines its block adds and shows that block
           const top = element => parseFloat(element.parentElement.style.top);
           const numbers = [...editor.querySelectorAll('.line-numbers')].filter(element => element.textContent.trim())
             .map(element => ({ top: top(element), line: element.textContent.trim() })).sort((a, b) => a.top - b.top);
-          return new Set([...editor.querySelectorAll('.comparison-value-line')]
+          return new Set([...editor.querySelectorAll('.changed-line')]
             .map(element => numbers.filter(number => number.top <= top(element)).at(-1)?.line)).size;
         });
         const deadline = Date.now() + 8000;
@@ -211,7 +202,7 @@ test('every lesson step highlights the lines its block adds and shows that block
 });
 
 test('a lesson stacks on a phone with jump links and no sideways scrolling', { timeout: 20000 }, async () => {
-  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  const browser = await chromium.launch({ executablePath: process.env.LKME_CHROME_PATH, args: ['--disable-gpu'] });
   try {
     const page = await browser.newPage({ viewport: { width: 375, height: 812 } });
     page.setDefaultTimeout(8000);
@@ -241,7 +232,7 @@ test('a lesson stacks on a phone with jump links and no sideways scrolling', { t
 });
 
 test('a file with two objects explains each one and exports both', { timeout: 30000 }, async () => {
-  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  const browser = await chromium.launch({ executablePath: process.env.LKME_CHROME_PATH, args: ['--disable-gpu'] });
   try {
     const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
     page.setDefaultTimeout(8000);
@@ -265,7 +256,7 @@ test('a file with two objects explains each one and exports both', { timeout: 30
 });
 
 test('Level 0 shows the indentation mistake with the real error, then returns to the fixed file', { timeout: 30000 }, async () => {
-  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  const browser = await chromium.launch({ executablePath: process.env.LKME_CHROME_PATH, args: ['--disable-gpu'] });
   try {
     const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
     page.setDefaultTimeout(8000);
@@ -323,7 +314,7 @@ test('Level 0 shows the indentation mistake with the real error, then returns to
 });
 
 test('Practise asks Read it questions and finds the Fix it mistake, keeping answers when learners go back', { timeout: 40000 }, async () => {
-  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  const browser = await chromium.launch({ executablePath: process.env.LKME_CHROME_PATH, args: ['--disable-gpu'] });
   try {
     const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
     page.setDefaultTimeout(8000);
@@ -356,7 +347,7 @@ test('Practise asks Read it questions and finds the Fix it mistake, keeping answ
     await first.getByText('Correct.').waitFor();
     await first.getByText(questions[0].explain, { exact: false }).waitFor();
     await page.getByRole('tab', { name: 'Read it · 1 of 3' }).waitFor();
-    await page.waitForFunction(() => document.querySelectorAll('[data-testid="lesson-yaml"] .comparison-value-line').length === 1);
+    await page.waitForFunction(() => document.querySelectorAll('[data-testid="lesson-yaml"] .changed-line').length === 1);
 
     // Fix it: a wrong pick, then the right line clicked in the file, with the message Kubernetes printed on K3s.
     await page.getByRole('button', { name: 'Next: Fix it' }).click();
@@ -414,7 +405,7 @@ test('Practise asks Read it questions and finds the Fix it mistake, keeping answ
 });
 
 test('Level 2 lessons start from the catalogue and name the earlier files they use', { timeout: 30000 }, async () => {
-  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  const browser = await chromium.launch({ executablePath: process.env.LKME_CHROME_PATH, args: ['--disable-gpu'] });
   try {
     const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
     page.setDefaultTimeout(8000);
@@ -447,7 +438,7 @@ test('Level 2 lessons start from the catalogue and name the earlier files they u
 });
 
 test('Level 3 and 4 lessons start from the catalogue, and Fix it says which command shows the mistake', { timeout: 30000 }, async () => {
-  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  const browser = await chromium.launch({ executablePath: process.env.LKME_CHROME_PATH, args: ['--disable-gpu'] });
   try {
     const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
     page.setDefaultTimeout(8000);
@@ -479,7 +470,7 @@ test('Level 3 and 4 lessons start from the catalogue, and Fix it says which comm
 });
 
 test('Level 5, 6, and 7 lessons start from the catalogue, and scheduling lessons say how to add nodes', { timeout: 30000 }, async () => {
-  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  const browser = await chromium.launch({ executablePath: process.env.LKME_CHROME_PATH, args: ['--disable-gpu'] });
   try {
     const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
     page.setDefaultTimeout(8000);
@@ -509,7 +500,7 @@ test('Level 5, 6, and 7 lessons start from the catalogue, and scheduling lessons
 });
 
 test('EKS only lessons start from the catalogue, ask for an EKS Auto Mode cluster, and name what to set up first', { timeout: 30000 }, async () => {
-  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  const browser = await chromium.launch({ executablePath: process.env.LKME_CHROME_PATH, args: ['--disable-gpu'] });
   try {
     const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
     page.setDefaultTimeout(8000);
@@ -550,7 +541,7 @@ test('EKS only lessons start from the catalogue, ask for an EKS Auto Mode cluste
 });
 
 // Set up your laptop: specs/setup-check.md. Reports follow the check command's output format.
-const passingReport = `kms-check 1
+const passingReport = `lkme-check 1
 system Darwin arm64
 docker 29.8.2 memory 9328558080
 kubectl v1.37.2
@@ -560,7 +551,7 @@ aws-signed-in yes
 eksctl 0.231.0`;
 
 test('Set up your laptop unlocks each lab separately, and the unlock survives a reload', { timeout: 60000 }, async () => {
-  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  const browser = await chromium.launch({ executablePath: process.env.LKME_CHROME_PATH, args: ['--disable-gpu'] });
   try {
     const page = await browser.newPage({ viewport: { width: 1366, height: 900 }, permissions: ['clipboard-read', 'clipboard-write'] });
     page.setDefaultTimeout(8000);
@@ -644,7 +635,7 @@ test('Set up your laptop unlocks each lab separately, and the unlock survives a 
 });
 
 test('each lab step highlights exactly its object, links its lesson, and Read it works', { timeout: 120000 }, async () => {
-  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  const browser = await chromium.launch({ executablePath: process.env.LKME_CHROME_PATH, args: ['--disable-gpu'] });
   try {
     const page = await browser.newPage({ viewport: { width: 1366, height: 900 } });
     page.setDefaultTimeout(8000);
@@ -655,7 +646,7 @@ test('each lab step highlights exactly its object, links its lesson, and Read it
       const top = element => parseFloat(element.parentElement.style.top);
       const numbers = [...editor.querySelectorAll('.line-numbers')].filter(element => element.textContent.trim())
         .map(element => ({ top: top(element), line: Number(element.textContent.trim()) })).sort((a, b) => a.top - b.top);
-      return [...new Set([...editor.querySelectorAll('.comparison-value-line')]
+      return [...new Set([...editor.querySelectorAll('.changed-line')]
         .map(element => numbers.filter(number => number.top <= top(element)).at(-1)?.line))].sort((a, b) => a - b);
     });
     for (const lab of Object.values(labLessons)) {
@@ -698,12 +689,12 @@ test('each lab step highlights exactly its object, links its lesson, and Read it
 });
 
 test('Do it on your laptop shows each guide step with Copy on every command, and ticks survive a reload', { timeout: 60000 }, async () => {
-  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  const browser = await chromium.launch({ executablePath: process.env.LKME_CHROME_PATH, args: ['--disable-gpu'] });
   try {
     const context = await browser.newContext({ viewport: { width: 1366, height: 900 }, permissions: ['clipboard-read', 'clipboard-write'] });
     await context.addInitScript(report => {
-      if (!window.localStorage.getItem('kubernetes-made-simple:setup-check')) {
-        window.localStorage.setItem('kubernetes-made-simple:setup-check', JSON.stringify({ report, checkedAt: '2026-11-26T09:00:00.000Z' }));
+      if (!window.localStorage.getItem('learning-kubernetes:setup-check')) {
+        window.localStorage.setItem('learning-kubernetes:setup-check', JSON.stringify({ report, checkedAt: '2026-11-26T09:00:00.000Z' }));
       }
     }, passingReport);
     const page = await context.newPage();
@@ -756,11 +747,11 @@ test('Do it on your laptop shows each guide step with Copy on every command, and
 });
 
 test('the setup and lab pages fit a phone screen without sideways scrolling', { timeout: 30000 }, async () => {
-  const browser = await chromium.launch({ executablePath: process.env.KCB_CHROME_PATH, args: ['--disable-gpu'] });
+  const browser = await chromium.launch({ executablePath: process.env.LKME_CHROME_PATH, args: ['--disable-gpu'] });
   try {
     const context = await browser.newContext({ viewport: { width: 375, height: 812 } });
     await context.addInitScript(report => {
-      window.localStorage.setItem('kubernetes-made-simple:setup-check', JSON.stringify({ report, checkedAt: '2026-11-26T09:00:00.000Z' }));
+      window.localStorage.setItem('learning-kubernetes:setup-check', JSON.stringify({ report, checkedAt: '2026-11-26T09:00:00.000Z' }));
     }, passingReport);
     const page = await context.newPage();
     page.setDefaultTimeout(8000);
