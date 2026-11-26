@@ -194,6 +194,16 @@
         },
         {
           "advisory": "CVE-2026-39821",
+          "package": "golang.org/x/net",
+          "installedVersion": "v0.56.0",
+          "severity": "HIGH",
+          "architectures": [
+            "amd64",
+            "arm64"
+          ]
+        },
+        {
+          "advisory": "CVE-2026-39821",
           "package": "stdlib",
           "installedVersion": "v1.26.5",
           "severity": "HIGH",

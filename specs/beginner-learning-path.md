@@ -393,6 +393,7 @@ On 2026-11-25 Charan asked to finish phase 1 and approved `nginxinc/nginx-unpriv
 - Many blocks name a term an earlier lesson already introduced, such as Deployment or replica. The card called every one a **New word**. Now only a term’s first block in catalogue order says **New word**; later blocks say **Word to remember**.
 - A unit test checks that each block names at most one term, that every term is in the glossary, and that every glossary term is introduced by exactly one block. The existing tests already keep notes, card sentences, and practice text to 20 words a sentence.
 - Verified on Node 26.13.1: `npm run lint`, `npm test` (42 passing), `npm run build`, and `tests/site-shell.browser.mjs` (12 passing in Chrome).
+- The final phase 1 CI run on commit `817f712` passed every test, including the existing usage and installation browser tests at `#build`. Its image scan found a new Dex advisory, which Charan accepted through 2026-12-11.
 
 Every milestone pins the schemas its kinds need.
 
@@ -491,7 +492,7 @@ Every milestone pins the schemas its kinds need.
 - [x] Lab 2 runs end to end on a fresh EKS Auto Mode cluster in under 40 minutes. Its cleanup leaves no cluster, load balancer, or EBS volume, verified with AWS CLI commands.
 - [x] Each lesson and lab shows its Anywhere or EKS only badge. **Tested on K3s** content returns with Build a config in phase 2.
 - [x] Brand header, colours, favicon, and footer appear on desktop and narrow screens, and text meets WCAG AA contrast.
-- [ ] Existing usage and installation browser tests still pass, with only their start URL changed to `#build`.
+- [x] Existing usage and installation browser tests still pass, with only their start URL changed to `#build`.
 
 ## Changes to project rules
 
