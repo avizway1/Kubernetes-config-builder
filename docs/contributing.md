@@ -42,7 +42,7 @@ Lab guides are Markdown files in `docs`, and their YAML files are in `templates/
 
 Run these from `frontend`:
 
-- `npm run lint`, `npm test`, and `npm run build`.
+- `npm run lint`, `npm test`, and `npm run build`. `npm test` runs ShellCheck on the install scripts. Without ShellCheck installed, set `LKME_SKIP_SHELLCHECK=1` to skip that test.
 
 Run these from the project root:
 
@@ -51,6 +51,9 @@ Run these from the project root:
 - `tests/check-lessons-k3s.sh 1.37`, with Docker, k3d, kubectl, and curl installed, to apply every Anywhere lesson to a fresh K3s cluster. It checks each **Try it** result and each **Fix it** message, then deletes the cluster. Repeat with `1.36` and `1.35`.
 - `LKME_LAB_LIMIT_SECONDS=900 node tests/lab-guide.check.mjs docs/lab-1-hello-kubernetes.md` to run Lab 1 on a fresh K3s cluster and time it. It uses its own kubeconfig in `.runtime`, so yours is untouched.
 - `node --test tests/practice-cluster.check.mjs` to run the setup page's practice cluster and kubeconfig steps on K3s 1.37.2. It starts from a kubeconfig that holds another cluster and no current context, applies the Pod lesson's file, then deletes its `lkme-practice` cluster. It uses its own kubeconfig in `.runtime`, so yours is untouched.
+- `node --test tests/install-linux.check.mjs`, with Docker, to run `scripts/install-linux.sh` twice in fresh `ubuntu:26.04` and `debian:13` containers and read its check. Set `LKME_INSTALL_IMAGES` to choose other images, separated by spaces.
+- `node --test tests/install-macos.check.mjs` on macOS, to run `scripts/install-macos.sh` twice and read its check. It installs any tool the Mac is missing. On a Mac that has every tool, it changes nothing. Set `LKME_SKIP_DOCKER=1` where Docker Desktop can't run.
+- `node --test tests/install-windows.check.mjs` on a Windows test machine, in PowerShell as administrator, after `wsl --install -d Ubuntu --no-launch`. It gives Ubuntu a `learner` user with passwordless sudo, makes it the default, then runs `scripts/install-windows.ps1 -SkipDockerDesktop` twice.
 
 ### Browser checks
 
@@ -82,7 +85,7 @@ If a step fails, the check runs the guide's clean-up commands. Check the AWS con
 
 ### CI
 
-GitHub Actions runs on every push. It tests and builds the frontend, checks every lesson step and lab file with strict kubeconform, tests the Go server, runs the browser checks, builds and checks the Docker image, and runs the setup page's Windows commands in Ubuntu on WSL 2.
+GitHub Actions runs on every push. It tests and builds the frontend, checks every lesson step and lab file with strict kubeconform, tests the Go server, runs the browser checks, builds and checks the Docker image, runs the setup page's Windows commands in Ubuntu on WSL 2, and runs each install script on macOS (Apple silicon and Intel), on Windows with WSL 2, and in Ubuntu and Debian containers on AMD64 and ARM64.
 
 ## Security checks
 

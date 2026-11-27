@@ -24,6 +24,12 @@ export type SetupData = {
     items: { label: string; text: string; systems?: Record<SystemId, string> }[];
     sources: Source[];
   };
+  installScript: {
+    title: string;
+    text: string;
+    systems: Record<SystemId, { where: string; commands: string; expect: string; file: string }>;
+    source: string;
+  };
   windowsFirst: { title: string; steps: { text: string; commands?: string }[]; sources: Source[] };
   tools: SetupTool[];
   practiceCluster: {

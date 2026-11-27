@@ -27,7 +27,7 @@ Opened at `#learn/setup`, from a **Set up your laptop** card at the top of the l
 
 1. **What your laptop needs.** Memory, disk, system, internet, permission to install apps, and an AWS account for Lab 2 and EKS only lessons. The values match the start guide's **Check your laptop** step.
 2. **Choose your system:** macOS, Windows (WSL 2), or Linux. The page picks one from the browser and the learner can change it.
-3. **Install the tools.** One card per tool, with the version each lab needs, the install commands for the chosen system, and a link to the official install page they come from. Lab 2's tools are in their own group, **Only for Lab 2**.
+3. **Install the tools.** First, the chosen system's [install script](install-scripts.md), which installs every tool and runs the check. Then, under **Or install each tool yourself**, one card per tool, with the version each lab needs, the install commands for the chosen system, and a link to the official install page they come from. Lab 2's tools are in their own group, **Only for Lab 2**.
 4. **Run the check.** One short command block with **Copy**. Learners read it before running it. It never downloads or runs a script.
 5. **Paste what it printed.** The page lists each tool as **Ready** or **Fix this**, with the fix, and says which labs are now unlocked.
 6. **Create your practice cluster and point kubectl at it.** Create the `practice` cluster once, switch kubectl to it every time, then fixes for the real messages. Each command block says what success looks like.

@@ -29,6 +29,31 @@
       { "title": "Docker Desktop for Windows", "url": "https://docs.docker.com/desktop/setup/install/windows-install/" }
     ]
   },
+  "installScript": {
+    "title": "Install everything with one script",
+    "text": "The script prints what it finds about your laptop, installs only what is missing, then runs the check in step 4 for you. It is safe to run again. Download it, open it to read it if you like, then run it. It asks for your password when it installs something.",
+    "systems": {
+      "macos": {
+        "where": "Run these in Terminal.",
+        "commands": "curl -fsSLO https://raw.githubusercontent.com/avizway1/learning-kubernetes-made-easy/main/scripts/install-macos.sh\nbash install-macos.sh",
+        "expect": "It installs Git, Docker Desktop, kubectl, k3d, the AWS CLI, and eksctl, and ends with the check's output between two dashed lines. Paste those lines into step 5. When Docker Desktop first starts, read its agreement and select Accept.",
+        "file": "install-macos.sh"
+      },
+      "windows": {
+        "where": "Open PowerShell as administrator: click Start, type PowerShell, right-click Windows PowerShell, and select Run as administrator. Then run these. -ExecutionPolicy Bypass lets this one PowerShell run the script you downloaded, without changing your laptop's settings.",
+        "commands": "cd $HOME\nInvoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/avizway1/learning-kubernetes-made-easy/main/scripts/install-windows.ps1 -OutFile install-windows.ps1\npowershell -ExecutionPolicy Bypass -File .\\install-windows.ps1",
+        "expect": "The first run installs Git, Docker Desktop, and Ubuntu on WSL 2. It may then ask you to restart and to open Ubuntu once to choose a user name and password, and it tells you what to run next. The next run installs kubectl, k3d, the AWS CLI, and eksctl inside Ubuntu, and ends with the check's output between two dashed lines. Paste those lines into step 5.",
+        "file": "install-windows.ps1"
+      },
+      "linux": {
+        "where": "For Ubuntu and Debian. Run these in Terminal as yourself, not as root.",
+        "commands": "wget -q https://raw.githubusercontent.com/avizway1/learning-kubernetes-made-easy/main/scripts/install-linux.sh\nbash install-linux.sh",
+        "expect": "It installs Docker Engine, Git, kubectl, k3d, the AWS CLI, and eksctl, and ends with the check's output between two dashed lines. Paste those lines into step 5. If it added you to the docker group, log out and back in before you use docker in a new terminal.",
+        "file": "install-linux.sh"
+      }
+    },
+    "source": "https://github.com/avizway1/learning-kubernetes-made-easy/blob/main/scripts/"
+  },
   "windowsFirst": {
     "title": "First, set up WSL 2",
     "steps": [

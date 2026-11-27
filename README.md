@@ -6,7 +6,7 @@
 
 ## Start learning
 
-**New to Docker or the terminal?** Use the [start guide](docs/getting-started.html). It goes from a laptop with nothing installed to your first lesson, with copy-paste commands for macOS, Windows, and Linux. GitHub shows HTML files as code, so save the [raw file](https://raw.githubusercontent.com/avizway1/learning-kubernetes-made-easy/main/docs/getting-started.html) (right-click, then **Save Link As**) and open it in your browser.
+**New to Docker or the terminal?** Use the [start guide](docs/getting-started.html). It goes from a laptop with nothing installed to your first lesson, with copy-paste commands for macOS, Windows, and Linux. Its quick way is one script for your system that installs everything, including Docker and Git. GitHub shows HTML files as code, so save the [raw file](https://raw.githubusercontent.com/avizway1/learning-kubernetes-made-easy/main/docs/getting-started.html) (right-click, then **Save Link As**) and open it in your browser.
 
 If you already have Docker and Git, run:
 

@@ -223,6 +223,7 @@ test('every command learners copy is plain text a terminal accepts', () => {
     ['the check', setup.check],
     ...setup.tools.flatMap(tool => Object.entries(tool.install).filter(([, install]) => install.commands)
       .map(([system, install]) => [`${tool.id} on ${system}`, install.commands])),
+    ...Object.entries(setup.installScript.systems).map(([system, script]) => [`install script on ${system}`, script.commands]),
     ...setup.windowsFirst.steps.filter(step => step.commands).map(step => ['WSL', step.commands]),
     ...setup.practiceCluster.steps.map(step => [step.title, step.commands]),
     ...setup.insideNode.steps.map(step => [step.title, step.commands]),

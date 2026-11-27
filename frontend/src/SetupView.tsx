@@ -87,7 +87,22 @@ export function SetupView({ check, onCheck }: { check?: SavedCheck; onCheck: (ch
 
       <section className="setup-step" aria-labelledby="setup-install">
         <h2 id="setup-install"><span className="setup-number" aria-hidden="true">3</span>Install the tools</h2>
-        <p>Open a terminal and run the commands for each tool you don't have yet. Each card links to the official guide it comes from.</p>
+        <p>
+          The quickest way is one script that looks at your laptop and installs everything that is missing. You can also install
+          each tool yourself with the cards after it, which link to the official guides they come from.
+        </p>
+        <section className="setup-tool setup-first setup-script" aria-labelledby="setup-script">
+          <h3 id="setup-script">{setup.installScript.title}</h3>
+          <p>{setup.installScript.text}</p>
+          <p>{setup.installScript.systems[system].where}</p>
+          <CommandBlock text={setup.installScript.systems[system].commands} name="the install script commands" />
+          <p className="setup-expect">{setup.installScript.systems[system].expect}</p>
+          <Sources label="Read the script" sources={[{
+            title: setup.installScript.systems[system].file,
+            url: `${setup.installScript.source}${setup.installScript.systems[system].file}`,
+          }]} />
+        </section>
+        <h3 className="setup-group" id="setup-by-hand">Or install each tool yourself</h3>
         {system === 'windows' && (
           <section className="setup-tool setup-first" aria-labelledby="setup-wsl">
             <h3 id="setup-wsl">{setup.windowsFirst.title}</h3>
@@ -108,6 +123,7 @@ export function SetupView({ check, onCheck }: { check?: SavedCheck; onCheck: (ch
       <section className="setup-step" aria-labelledby="setup-run">
         <h2 id="setup-run"><span className="setup-number" aria-hidden="true">4</span>Run the check</h2>
         <p>Paste this into your terminal{system === 'windows' ? ' in Ubuntu' : ''}. It prints only tool names and versions, never your account number.</p>
+        <p>If you used the script, it ran this check for you. Run it again whenever you change a tool.</p>
         <CommandBlock text={setup.check} name="the check command" />
       </section>
 

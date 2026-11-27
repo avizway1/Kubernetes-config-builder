@@ -617,6 +617,13 @@ test('Set up your laptop unlocks each lab separately, and the unlock survives a 
     await page.waitForFunction(commands => navigator.clipboard.readText().then(text => text === commands), stopped.commands);
     for (const system of setup.systems) {
       await page.getByRole('tab', { name: system.label }).click();
+      // Step 3 opens with this system's install script, then the cards for each tool.
+      const script = setup.installScript.systems[system.id];
+      assert.deepEqual((await page.locator('#setup-install ~ * h3, #setup-install ~ h3').allTextContents()).slice(0, 2),
+        ['Install everything with one script', 'Or install each tool yourself'], system.id);
+      await page.getByRole('button', { name: 'Copy the install script commands' }).click();
+      await page.waitForFunction(commands => navigator.clipboard.readText().then(text => text === commands), script.commands);
+      assert.equal(await page.locator('.setup-script .setup-sources a').getAttribute('href'), `${setup.installScript.source}${script.file}`);
       assert.equal(await page.getByRole('heading', { name: 'First, set up WSL 2' }).count(), system.id === 'windows' ? 1 : 0, system.id);
       assert.equal((await page.locator('#setup-kubectl + p').textContent()).endsWith('Run these commands in Ubuntu.'), system.id === 'windows', system.id);
       assert.equal((await page.locator('#setup-inside + p').textContent()).endsWith('Run these commands in Ubuntu.'), system.id === 'windows', system.id);
@@ -892,7 +899,8 @@ test('every start guide command copies exactly what it shows, on each system', {
         copied++;
       }
     }
-    assert.equal(copied, 22 + 26 + 22, `${copied} commands copied`);
+    // Each system's count includes its install script in The quick way.
+    assert.equal(copied, 23 + 27 + 23, `${copied} commands copied`);
     // The practice cluster steps are the setup page's commands.
     for (const step of setup.practiceCluster.steps) {
       await page.locator('.code code').filter({ hasText: step.commands.split('\n')[0] }).first().waitFor({ state: 'attached' });
