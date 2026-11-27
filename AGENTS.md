@@ -24,7 +24,7 @@ Freshers, entry-level engineers, and Aviz Academy students who want to write, re
 
 **Labs.** Lab 1 runs an app on a laptop for free. Lab 2 runs the same app on EKS Auto Mode and deletes everything afterwards. Each lab opens with a lesson on its files.
 
-**Set up your laptop.** The first item in the lesson list. It says what the laptop needs, installs the tools, points kubectl at the free practice cluster, and lets learners look inside its node without changing anything. One check command unlocks each lab when its tools pass.
+**Set up your laptop.** The first item in the lesson list. It says what the laptop needs, installs the tools with one script per system or one card per tool, points kubectl at the free practice cluster, and lets learners look inside its node without changing anything. One check command unlocks each lab when its tools pass.
 
 **Copy and download.** Every step can be copied or downloaded, with one comment per block.
 
@@ -34,7 +34,7 @@ Local app. Amazon EKS with Auto Mode is the main target, with Kubernetes 1.37, 1
 
 Build the approved [beginner learning path](specs/beginner-learning-path.md): the block-at-a-time builder, plain-English explanation rules, the class curriculum, Levels 0 to 8, from YAML basics to autoscaling and AWS access, with Build it, Read it, and Fix it practice in every lesson (Pod, ReplicaSet, Deployment, resources, Namespace, ConfigMap, Secret, Job and CronJob, every Service type, DNS, Ingress, EBS and EFS storage, StatefulSet, DaemonSet, LimitRange, ResourceQuota, probes, timing, PodDisruptionBudget, affinity, taints, Auto Mode NodePool, rollout strategies, HorizontalPodAutoscaler, and Pod Identity), a free local lab and an EKS Auto Mode lab, a simple README, and Aviz Academy branding. Lesson downloads use one comment per block.
 
-Also build the [setup check](specs/setup-check.md), which unlocks each lab's hands-on part once the learner's tools pass, the [lab lessons](specs/lab-lessons.md), which open each lab in the dashboard with a walk-through of its files, and the beginner [start guide](docs/getting-started.html).
+Also build the [setup check](specs/setup-check.md), which unlocks each lab's hands-on part once the learner's tools pass, the [lab lessons](specs/lab-lessons.md), which open each lab in the dashboard with a walk-through of its files, the [install scripts](specs/install-scripts.md), which install every tool on macOS, Windows, Ubuntu, or Debian, and the beginner [start guide](docs/getting-started.html).
 
 The lessons and labs shipped as [v1.0.0](https://github.com/avizway1/learning-kubernetes-made-easy/releases/tag/v1.0.0) on 2026-11-26. The same day, Charan renamed the project **Learning Kubernetes made easy - Aviz Academy** and limited this repository to the lessons, labs, setup check, and start guide. They shipped under the new name as [v1.1.0](https://github.com/avizway1/learning-kubernetes-made-easy/releases/tag/v1.1.0) on 2026-11-27, and the Set up your laptop changes followed as [v1.2.0](https://github.com/avizway1/learning-kubernetes-made-easy/releases/tag/v1.2.0) the same day.
 
@@ -68,6 +68,7 @@ Spec driven development. Every feature starts as a written spec with clear input
   /kubernetes      Core Kubernetes lessons built one block at a time
     /labs          YAML files the lab guides download, and each lab’s lesson
 /specs             One spec file per feature, written before code
+/scripts           One install script per system: macOS, Linux (Ubuntu and Debian), and Windows
 /tests             Unit and browser tests, plus deploy tests against K3s and EKS
 /docs              User and contributor guides, including the lab guides
   /releases        Release notes, one file per version
@@ -75,7 +76,7 @@ Spec driven development. Every feature starts as a written spec with clear input
 
 ## Acceptance Criteria
 
-Each spec holds its own acceptance criteria: the [beginner learning path](specs/beginner-learning-path.md#acceptance-criteria), the [setup check](specs/setup-check.md), the [lab lessons](specs/lab-lessons.md), and [prebuilt Docker releases](specs/prebuilt-docker-release.md).
+Each spec holds its own acceptance criteria: the [beginner learning path](specs/beginner-learning-path.md#acceptance-criteria), the [setup check](specs/setup-check.md), the [lab lessons](specs/lab-lessons.md), the [install scripts](specs/install-scripts.md), and [prebuilt Docker releases](specs/prebuilt-docker-release.md).
 
 **Security**
 
@@ -221,3 +222,4 @@ Dates refer to when the correction was made. The Decision Log records the result
 | 2026-11-27 | Charan chose to keep K3s as the only practice cluster and drop kind, as [Set up your laptop](specs/setup-check.md#charans-changes-on-2026-11-27) item 6 explains. K3s includes metrics-server and can add workers to a running cluster, and one tool keeps one path. The practice cluster used about 836 MiB on the project Mac. | kind suggested for laptops with less memory | Practice cluster |
 | 2026-11-27 | Add an optional step 7 to [Set up your laptop](specs/setup-check.md#charans-changes-on-2026-11-27), **Look inside your practice cluster**, and the same commands to the start guide. `docker exec -it k3d-practice-server-0 sh` opens a shell on the node, since k3d nodes are Docker containers with no SSH. Then read-only commands show the k3s server process, the SQLite datastore, the certificates, the auto-applied manifests, the node's containers, and the Pod logs, with kubeadm's paths for comparison. A warning says not to edit, move, or delete anything, and never to print the token or keys. EKS Auto Mode allows no SSH, so the practice cluster is where learners see these parts. | Setup page ending at the practice cluster commands | Setup page, start guide, tests |
 | 2026-11-27 | Charan confirmed the final review. Released [v1.2.0](https://github.com/avizway1/learning-kubernetes-made-easy/releases/tag/v1.2.0) from `9545c81`, after CI passed on that commit on the branch and on `main`. The release workflow published `ghcr.io/avizway1/learning-kubernetes-made-easy:v1.2.0` for Linux AMD64 and ARM64, with anonymous cold starts of 9.22 and 4.10 seconds. On the project Mac, `docker compose up -d` reached the first page in 3.8 seconds with no cached image. The README now says to do Set up your laptop before Level 0, as the start guide does. | v1.1.0 as the latest release | Release, GHCR, README |
+| 2026-11-27 | Charan asked for one [install script](specs/install-scripts.md) per system that checks the laptop's system, CPU, and architecture, then installs everything: Docker, Git, kubectl, k3d, AWS CLI, and eksctl. Charan approved a new top-level `scripts` folder, Ubuntu and Debian for Linux, and the scripts first in each system's install step on the setup page and in the start guide, with the step-by-step cards kept below. Learners download a script from `main` with one command, so it can install Docker and Git before they clone. Each script skips what is installed, never accepts an agreement or signs in for the learner, and ends with the setup check. | Installing each tool by hand from its card | Folder structure, setup page, start guide, tests, CI |
