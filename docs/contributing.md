@@ -50,6 +50,7 @@ Run these from the project root:
 - `node --test tests/lesson-manifests.check.mjs`, after preparing the schemas, to check every finished lesson step and every lab file with strict kubeconform.
 - `tests/check-lessons-k3s.sh 1.37`, with Docker, k3d, kubectl, and curl installed, to apply every Anywhere lesson to a fresh K3s cluster. It checks each **Try it** result and each **Fix it** message, then deletes the cluster. Repeat with `1.36` and `1.35`.
 - `LKME_LAB_LIMIT_SECONDS=900 node tests/lab-guide.check.mjs docs/lab-1-hello-kubernetes.md` to run Lab 1 on a fresh K3s cluster and time it. It uses its own kubeconfig in `.runtime`, so yours is untouched.
+- `node --test tests/practice-cluster.check.mjs` to run the setup page's practice cluster and kubeconfig steps on K3s 1.37.2. It starts from a kubeconfig that holds another cluster and no current context, applies the Pod lesson's file, then deletes its `lkme-practice` cluster. It uses its own kubeconfig in `.runtime`, so yours is untouched.
 
 ### Browser checks
 

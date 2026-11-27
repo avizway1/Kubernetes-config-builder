@@ -162,6 +162,7 @@ Every lab sample image must be pinned by digest, support AMD64 and ARM64, run as
 ### 5. The Learn Kubernetes screen
 
 - The lesson list says lessons are written for Amazon EKS with Auto Mode, and that **Anywhere** lessons also run free on a practice cluster on your laptop. Each lesson shows an **Anywhere** or **EKS only** badge.
+- The lesson list starts with **Set up your laptop**, before Level 0, and ends with **Hands-on labs**. Charan moved the setup card to the top on 2026-11-27 ([setup check](setup-check.md#charans-changes-on-2026-11-27)).
 - A **Show explanations** switch turns the one-comment-per-block lines on or off.
 - Narrow screens stack the lesson card above the YAML, with a jump link between them.
 

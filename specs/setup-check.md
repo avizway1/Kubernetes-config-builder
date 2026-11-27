@@ -1,6 +1,6 @@
 # Set up your laptop
 
-**Status: Plan and mock-ups approved by Charan on 2026-11-26.** Built together with [lab lessons](lab-lessons.md).
+**Status: Plan and mock-ups approved by Charan on 2026-11-26.** Built together with [lab lessons](lab-lessons.md). Charan changed it on 2026-11-27: the card moves to the top of the lesson list, and the page opens with what the laptop needs and ends with the practice cluster and kubeconfig steps. See [Charan's changes on 2026-11-27](#charans-changes-on-2026-11-27).
 
 ## Goal
 
@@ -23,12 +23,14 @@ Learners need Docker and Git to start the dashboard, so those stay in the [start
 
 ## The setup page
 
-Opened at `#learn/setup`, from a **Set up your laptop** card at the top of the catalogue's **Hands-on labs** section and from each locked lab.
+Opened at `#learn/setup`, from a **Set up your laptop** card at the top of the lesson list, before Level 0, and from each locked lab and each **Try it** panel.
 
-1. **Choose your system:** macOS, Windows (WSL 2), or Linux. The page picks one from the browser and the learner can change it.
-2. **Install the tools.** One card per tool, with the version each lab needs, the install commands for the chosen system, and a link to the official install page they come from. Lab 2's tools are in their own group, **Only for Lab 2**.
-3. **Run the check.** One short command block with **Copy**. Learners read it before running it. It never downloads or runs a script.
-4. **Paste what it printed.** The page lists each tool as **Ready** or **Fix this**, with the fix, and says which labs are now unlocked.
+1. **What your laptop needs.** Memory, disk, system, internet, permission to install apps, and an AWS account for Lab 2 and EKS only lessons. The values match the start guide's **Check your laptop** step.
+2. **Choose your system:** macOS, Windows (WSL 2), or Linux. The page picks one from the browser and the learner can change it.
+3. **Install the tools.** One card per tool, with the version each lab needs, the install commands for the chosen system, and a link to the official install page they come from. Lab 2's tools are in their own group, **Only for Lab 2**.
+4. **Run the check.** One short command block with **Copy**. Learners read it before running it. It never downloads or runs a script.
+5. **Paste what it printed.** The page lists each tool as **Ready** or **Fix this**, with the fix, and says which labs are now unlocked.
+6. **Point kubectl at your practice cluster.** Create the `practice` cluster once, check which cluster kubectl uses, switch to the practice cluster, and add it back to the kubeconfig if it is missing. Each command block says what success looks like.
 
 ### Windows
 
@@ -87,6 +89,80 @@ eksctl 0.231.0
 - **Browser:** labs locked, a passing report pasted, labs unlocked, still unlocked after reload. A report with k3d missing unlocks only Lab 2.
 - **Real systems:** run the check command on macOS and Linux.
 - **WSL 2 in CI:** `tests/setup-check-wsl.check.mjs` runs on a GitHub-hosted `windows-2025` runner, whose image lists WSL 2 as the default. It installs Ubuntu with `wsl --install -d Ubuntu`, then runs the Windows card's commands for kubectl, k3d, AWS CLI, and eksctl in Ubuntu as a normal user, then the check command in bash. The dashboard's report reader must read the output as Windows (WSL 2) with all four tools ready. The runner has no Docker Desktop and no AWS sign-in, so Docker must read as not running and AWS as signed out. Docker's WSL integration, the restart after `wsl --install`, and Lab 1 on Windows still need a Windows tester.
+
+## Charan's changes on 2026-11-27
+
+Charan asked for three changes, which also approve the layout change.
+
+1. **Set up your laptop comes first.** The card moves from the top of **Hands-on labs** to its own section at the top of the lesson list, before Level 0, so learners set up before the first lesson. **Hands-on labs** stays at the bottom and lists only the labs.
+2. **What the laptop needs, first.** The setup page opens with the basic requirements:
+   - Memory: 8 GB or more. Docker gets half of it by default, and 4 GB is enough for the dashboard and a practice cluster.
+   - Disk: about 10 GB free.
+   - System:
+     - macOS: a version Docker Desktop supports, which is the current release and the two before it ([Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/mac-install/)).
+     - Windows: 64-bit Windows 10 22H2 or Windows 11 23H2 or later, in the Pro, Enterprise, or Education edition, with WSL 2 ([Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/)).
+     - Linux: Docker Engine.
+   - Internet: a steady connection, and permission to install apps.
+   - An AWS account for Lab 2 and EKS only lessons. AWS charges for these.
+
+   These are the start guide's values.
+3. **kubeconfig steps.** Charan's tools passed the check, but the first **Try it** command did not reach K3s. There were two gaps:
+   - The setup page stopped at the tools. Only the start guide's optional step created the practice cluster.
+   - Nothing said which cluster kubectl uses.
+
+   How kubectl finds a cluster:
+   - kubectl reads clusters from its kubeconfig. That is `$HOME/.kube/config` unless `KUBECONFIG` names other files ([Organizing cluster access using kubeconfig files](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/)).
+   - `k3d cluster create` adds the cluster to that file as the context `k3d-<name>` and switches to it. Both flags default to true in k3d 5.9.0 ([k3d cluster create](https://k3d.io/stable/usage/commands/k3d_cluster_create/)).
+   - `k3d cluster delete` removes the context. If it was the current one, k3d switches kubectl to another cluster in the file, such as an EKS cluster. Lab 1's last step does this.
+   - EKS tools add their clusters to the same file.
+   - On the project Mac on 2026-11-27, the kubeconfig held only an EKS context and no current context. With no current context, kubectl falls back to `localhost:8080`, which is the dashboard's own port. With the dashboard running, kubectl answers `the server could not find the requested resource`.
+
+   The new last step gives the commands, each with what success looks like:
+
+   | Command | Why | Source |
+   | --- | --- | --- |
+   | `k3d cluster create practice --image rancher/k3s:v1.37.2-k3s1 --wait` | Creates the practice cluster once, as the start guide does. | [k3d cluster create](https://k3d.io/stable/usage/commands/k3d_cluster_create/) |
+   | `kubectl config current-context` | Shows which cluster kubectl uses. Success is `k3d-practice`. | [kubectl quick reference](https://kubernetes.io/docs/reference/kubectl/quick-reference/) |
+   | `kubectl get nodes` | Proves kubectl reaches it. Success is `k3d-practice-server-0` with STATUS `Ready`. | |
+   | `kubectl config get-contexts` and `kubectl config use-context k3d-practice` | Lists the clusters and switches to the practice cluster, for example after Lab 2 or an EKS only lesson. | [kubectl quick reference](https://kubernetes.io/docs/reference/kubectl/quick-reference/) |
+   | `k3d kubeconfig merge practice --kubeconfig-merge-default --kubeconfig-switch-context` | Adds the practice cluster back to the kubeconfig when `k3d cluster list` shows it but `get-contexts` does not. | [k3d kubeconfig](https://k3d.io/stable/usage/kubeconfig/) |
+
+   On Windows, every command runs in Ubuntu. The **Try it** panel of every Anywhere lesson says to check that `kubectl config current-context` prints `k3d-practice`, and links to the setup page. The check command stays the same: it checks tools, and Lab 1 creates its own cluster.
+4. **Every command can be copied and pasted.** Charan asked for this the same day.
+   - Every **Try it** command gets its own block with a **Copy** button, as on the setup and lab pages. So do the context check and the command that adds worker nodes. Selecting a command no longer picks up the result line below it.
+   - Every command stays plain ASCII text, with no prompt, tab, curly quote, or long dash.
+   - Command fonts show `--` as two hyphens, never one long dash, so `--image` can't be misread as `—image`.
+
+**Tests.**
+
+- **Unit.** The setup data opens with the requirements and ends with the practice cluster steps. Every practice cluster command block has a source. The start guide uses the same create, check, and switch commands.
+- **Browser.** The setup card is the first item in the lesson list, before Level 0. The setup page's first step is **What your laptop needs**, and its last step shows the kubeconfig commands. An Anywhere lesson's **Try it** shows the context check, and an EKS only lesson's does not.
+- **Copy.**
+  - A unit test checks that every command in the setup data, the lessons, the lab guides, the README, the contributing guide, and the start guide is plain text with no prompt.
+  - A browser test clicks every **Try it** **Copy** button in every lesson and checks that the clipboard holds exactly that command.
+  - Another browser test does the same for every start guide command on macOS, Windows, and Linux, and checks that ligatures are off.
+- **Real cluster.** `tests/practice-cluster.check.mjs` reads the practice cluster commands from the setup data and runs them on K3s 1.37.2, under a test cluster name, with its own kubeconfig.
+  - It starts from an EKS-style context and no current context, as on the project Mac.
+  - It removes the practice context to test the merge command.
+  - It applies the Pod lesson's download and checks that the Pod runs on the k3d node.
+  - It deletes the cluster and checks that the context is gone and kubectl has moved to the other cluster.
+
+**Acceptance criteria**
+
+- [x] The **Set up your laptop** card is the first item in the lesson list, before Level 0.
+- [x] The setup page opens with what the laptop needs, with the same values as the start guide.
+- [x] The setup page ends with the practice cluster and kubeconfig steps, each linked to its official source, with what success looks like.
+- [x] Anywhere lessons' **Try it** says how to check that kubectl uses the practice cluster.
+- [x] The practice cluster commands pass on K3s 1.37.2, starting from a kubeconfig that holds another cluster and no current context.
+- [x] The start guide and README match the new order and commands.
+- [x] Every command on the setup page, in **Try it**, in the labs, and in the start guide has a **Copy** button that copies exactly the command, in plain text.
+
+On 2026-11-27, on the project Mac (Apple silicon, Docker Desktop), with Node 26.13.1:
+- `npm run lint`, `npm test` (31 passing), and `npm run build` passed.
+- The browser tests (18 passing in Chrome) passed. They copied all 244 **Try it** command blocks in 35 lessons. They also copied every start guide block: 19 on macOS, 23 on Windows, and 19 on Linux.
+- `tests/practice-cluster.check.mjs` passed on K3s 1.37.2 with k3d 5.9.0 in 40 seconds. The default `~/.kube/config` was unchanged afterwards.
+
+The same day, with the v1.1.0 dashboard running and no current context, kubectl reached the dashboard at `localhost:8080` and answered `the server could not find the requested resource`. That matches what Charan saw.
 
 ## Acceptance criteria
 

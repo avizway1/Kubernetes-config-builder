@@ -34,11 +34,11 @@ The image runs on Linux AMD64 and ARM64, which covers Docker Desktop on Intel an
 | 7 · Scale | HorizontalPodAutoscaler |
 | 8 · AWS access | On EKS: Pod Identity |
 
-Every lesson ends with **Read it** and **Fix it** practice. Lessons marked **Anywhere** run on a free k3d practice cluster, which the start guide sets up. Lessons marked **EKS only** need an EKS Auto Mode cluster in your AWS account, which AWS charges for while it runs.
+Every lesson ends with **Read it** and **Fix it** practice. Lessons marked **Anywhere** run on a free k3d practice cluster. **Set up your laptop**, at the top of the lesson list, says what your laptop needs, installs the tools, and points kubectl at the practice cluster. Lessons marked **EKS only** need an EKS Auto Mode cluster in your AWS account, which AWS charges for while it runs.
 
 ## Labs
 
-Open each lab from **Hands-on labs** at the bottom of the lesson list. Each one starts with a lesson on its files, then walks you through running it, with a **Copy** button on every command. Do **Set up your laptop** first: it checks your tools and unlocks each lab when they are ready. On Windows, every lab command runs in Ubuntu on WSL 2.
+Open each lab from **Hands-on labs** at the bottom of the lesson list. Each one starts with a lesson on its files, then walks you through running it, with a **Copy** button on every command. Do **Set up your laptop**, at the top of the lesson list, first: it checks your tools and unlocks each lab when they are ready. On Windows, every lab command runs in Ubuntu on WSL 2.
 
 | Lab | What you do | Cost |
 | --- | --- | --- |

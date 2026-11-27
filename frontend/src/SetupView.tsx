@@ -7,6 +7,19 @@ import {
 const labNames = { 'lab-1': 'Lab 1', 'lab-2': 'Lab 2' } as const;
 const reportOrder: ToolId[] = ['docker', 'kubectl', 'k3d', 'aws', 'aws-signed-in', 'eksctl'];
 
+type Source = { title: string; url: string };
+
+function Sources({ label, sources }: { label: string; sources: Source[] }) {
+  return (
+    <p className="setup-sources">
+      {label}:{' '}
+      {sources.map((source, index) => (
+        <span key={source.url}>{index > 0 && ' · '}<a href={source.url} target="_blank" rel="noopener">{source.title}</a></span>
+      ))}
+    </p>
+  );
+}
+
 export function checkedDate(check: SavedCheck) {
   return new Date(check.checkedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 }
@@ -27,12 +40,7 @@ export function SetupView({ check, onCheck }: { check?: SavedCheck; onCheck: (ch
         <p>{install.text}</p>
         {install.commands && <CommandBlock text={install.commands} name={`the ${tool.name} install commands`} />}
         {tool.after && <p>{tool.after}</p>}
-        <p className="setup-sources">
-          Official guide:{' '}
-          {tool.sources.map((source, index) => (
-            <span key={source.url}>{index > 0 && ' · '}<a href={source.url} target="_blank" rel="noopener">{source.title}</a></span>
-          ))}
-        </p>
+        <Sources label="Official guide" sources={tool.sources} />
       </section>
     );
   };
@@ -41,10 +49,31 @@ export function SetupView({ check, onCheck }: { check?: SavedCheck; onCheck: (ch
     <section className="setup-view" aria-labelledby="setup-title">
       <p className="lesson-breadcrumb"><a href="#learn">All lessons</a></p>
       <div className="lesson-heading"><h1 id="setup-title">Set up your laptop</h1></div>
-      <p className="lead">The labs run on your laptop. Install the tools, then run one check so the dashboard knows you are ready.</p>
+      <p className="lead">
+        Try it and the labs run on your laptop. Check what your laptop needs, install the tools, run one check so the dashboard
+        knows you are ready, then point kubectl at your practice cluster.
+      </p>
+
+      <section className="setup-step" aria-labelledby="setup-needs">
+        <h2 id="setup-needs"><span className="setup-number" aria-hidden="true">1</span>What your laptop needs</h2>
+        <p>{setup.requirements.intro}</p>
+        <ul className="setup-needs">
+          {setup.requirements.items.map(item => (
+            <li key={item.label}>
+              <strong>{item.label}:</strong> {item.text}
+              {item.systems && (
+                <ul>
+                  {setup.systems.map(option => <li key={option.id}>{item.systems![option.id]}</li>)}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
+        <Sources label="Sources" sources={setup.requirements.sources} />
+      </section>
 
       <section className="setup-step" aria-labelledby="setup-system">
-        <h2 id="setup-system"><span className="setup-number" aria-hidden="true">1</span>Choose your system</h2>
+        <h2 id="setup-system"><span className="setup-number" aria-hidden="true">2</span>Choose your system</h2>
         <div className="practice-tabs" role="tablist" aria-label="Your system">
           {setup.systems.map(option => (
             <button key={option.id} type="button" role="tab" aria-selected={system === option.id} onClick={() => setSystem(option.id)}>
@@ -56,7 +85,7 @@ export function SetupView({ check, onCheck }: { check?: SavedCheck; onCheck: (ch
       </section>
 
       <section className="setup-step" aria-labelledby="setup-install">
-        <h2 id="setup-install"><span className="setup-number" aria-hidden="true">2</span>Install the tools</h2>
+        <h2 id="setup-install"><span className="setup-number" aria-hidden="true">3</span>Install the tools</h2>
         <p>Open a terminal and run the commands for each tool you don't have yet. Each card links to the official guide it comes from.</p>
         {system === 'windows' && (
           <section className="setup-tool setup-first" aria-labelledby="setup-wsl">
@@ -66,12 +95,7 @@ export function SetupView({ check, onCheck }: { check?: SavedCheck; onCheck: (ch
                 <li key={step.text}>{step.text}{step.commands && <CommandBlock text={step.commands} name="the WSL install command" />}</li>
               ))}
             </ol>
-            <p className="setup-sources">
-              Official guides:{' '}
-              {setup.windowsFirst.sources.map((source, index) => (
-                <span key={source.url}>{index > 0 && ' · '}<a href={source.url} target="_blank" rel="noopener">{source.title}</a></span>
-              ))}
-            </p>
+            <Sources label="Official guides" sources={setup.windowsFirst.sources} />
           </section>
         )}
         <h3 className="setup-group">For Lab 1 and Lab 2</h3>
@@ -81,13 +105,13 @@ export function SetupView({ check, onCheck }: { check?: SavedCheck; onCheck: (ch
       </section>
 
       <section className="setup-step" aria-labelledby="setup-run">
-        <h2 id="setup-run"><span className="setup-number" aria-hidden="true">3</span>Run the check</h2>
+        <h2 id="setup-run"><span className="setup-number" aria-hidden="true">4</span>Run the check</h2>
         <p>Paste this into your terminal{system === 'windows' ? ' in Ubuntu' : ''}. It prints only tool names and versions, never your account number.</p>
         <CommandBlock text={setup.check} name="the check command" />
       </section>
 
       <section className="setup-step" aria-labelledby="setup-paste">
-        <h2 id="setup-paste"><span className="setup-number" aria-hidden="true">4</span>Paste what it printed</h2>
+        <h2 id="setup-paste"><span className="setup-number" aria-hidden="true">5</span>Paste what it printed</h2>
         <label htmlFor="setup-report">Everything the check printed, starting with <code>lkme-check 1</code></label>
         <textarea id="setup-report" className="setup-report" rows={9} spellCheck={false} value={pasted}
           onChange={event => setPasted(event.target.value)} />
@@ -134,6 +158,20 @@ export function SetupView({ check, onCheck }: { check?: SavedCheck; onCheck: (ch
             </>
           )}
         </div>
+      </section>
+
+      <section className="setup-step" aria-labelledby="setup-kubectl">
+        <h2 id="setup-kubectl"><span className="setup-number" aria-hidden="true">6</span>Point kubectl at your practice cluster</h2>
+        <p>{setup.practiceCluster.intro}{system === 'windows' ? ' Run these commands in Ubuntu.' : ''}</p>
+        {setup.practiceCluster.steps.map((item, index) => (
+          <section key={item.title} className="setup-tool setup-cluster-step" aria-labelledby={`setup-kubectl-${index}`}>
+            <h3 id={`setup-kubectl-${index}`}>{item.title}</h3>
+            <p>{item.text}</p>
+            <CommandBlock text={item.commands} name={`the commands: ${item.title}`} />
+            <p className="setup-expect"><strong>You should see</strong> {item.expect}</p>
+            <Sources label="Official guide" sources={item.sources} />
+          </section>
+        ))}
       </section>
     </section>
   );

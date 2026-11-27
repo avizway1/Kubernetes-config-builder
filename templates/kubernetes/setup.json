@@ -5,6 +5,30 @@
     { "id": "windows", "label": "Windows (WSL 2)" },
     { "id": "linux", "label": "Linux" }
   ],
+  "requirements": {
+    "intro": "Check these before you install anything. They match the first step of the start guide.",
+    "items": [
+      { "label": "Memory", "text": "8 GB of RAM or more. Docker gets half of it by default, and 4 GB is enough for the dashboard and a practice cluster." },
+      { "label": "Disk", "text": "About 10 GB free." },
+      {
+        "label": "System",
+        "text": "One of these, 64-bit:",
+        "systems": {
+          "macos": "macOS, a version Docker Desktop supports: the current release or one of the two before it.",
+          "windows": "Windows 10 22H2 or Windows 11 23H2 or later, Pro, Enterprise, or Education, with WSL 2.",
+          "linux": "Linux with Docker Engine."
+        }
+      },
+      { "label": "Internet", "text": "A steady connection. The practice cluster downloads Kubernetes the first time." },
+      { "label": "Permission to install apps", "text": "On a work laptop you may need help from your IT team." },
+      { "label": "For Lab 2 and EKS only lessons", "text": "An AWS account. AWS charges for the cluster while it runs." }
+    ],
+    "sources": [
+      { "title": "Start guide", "url": "https://github.com/avizway1/learning-kubernetes-made-easy/blob/main/docs/getting-started.html" },
+      { "title": "Docker Desktop for Mac", "url": "https://docs.docker.com/desktop/setup/install/mac-install/" },
+      { "title": "Docker Desktop for Windows", "url": "https://docs.docker.com/desktop/setup/install/windows-install/" }
+    ]
+  },
   "windowsFirst": {
     "title": "First, set up WSL 2",
     "steps": [
@@ -80,5 +104,41 @@
       },
       "sources": [{ "title": "eksctl installation", "url": "https://docs.aws.amazon.com/eks/latest/eksctl/installation.html" }]
     }
-  ]
+  ],
+  "practiceCluster": {
+    "intro": "Anywhere lessons run their Try it commands on a free practice cluster called practice. kubectl finds clusters in a file called the kubeconfig, ~/.kube/config, and sends every command to one of them: the current context.",
+    "steps": [
+      {
+        "title": "Create the practice cluster, once",
+        "text": "k3d creates it inside Docker in about a minute. It adds the cluster to your kubeconfig as k3d-practice and switches kubectl to it.",
+        "commands": "k3d cluster create practice --image rancher/k3s:v1.37.2-k3s1 --wait",
+        "expect": "The last lines say Cluster 'practice' created successfully. If it says the cluster already exists, go to the next step.",
+        "sources": [{ "title": "k3d cluster create", "url": "https://k3d.io/stable/usage/commands/k3d_cluster_create/" }]
+      },
+      {
+        "title": "Check which cluster kubectl uses",
+        "text": "Do this before each Try it, and after Lab 1, Lab 2, or an EKS only lesson, which use other clusters. Deleting a cluster, as Lab 1 does at the end, can switch kubectl to another one.",
+        "commands": "kubectl config current-context\nkubectl get nodes",
+        "expect": "k3d-practice, then one node named k3d-practice-server-0 with STATUS Ready.",
+        "sources": [{ "title": "kubectl quick reference", "url": "https://kubernetes.io/docs/reference/kubectl/quick-reference/" }]
+      },
+      {
+        "title": "If it shows another cluster, switch to the practice cluster",
+        "text": "Another name, or current-context is not set, means your files would go somewhere else. With no current context, kubectl tries localhost:8080, the dashboard itself, and says the server could not find the requested resource. List your clusters, then switch.",
+        "commands": "kubectl config get-contexts\nkubectl config use-context k3d-practice",
+        "expect": "Switched to context \"k3d-practice\". Then run the two check commands again.",
+        "sources": [
+          { "title": "kubectl quick reference", "url": "https://kubernetes.io/docs/reference/kubectl/quick-reference/" },
+          { "title": "Organizing cluster access using kubeconfig files", "url": "https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/" }
+        ]
+      },
+      {
+        "title": "If k3d-practice is not in the list, add it back",
+        "text": "Your kubeconfig can lose the practice cluster while the cluster still runs, for example if the file is replaced. This adds it back and switches to it.",
+        "commands": "k3d cluster list\nk3d kubeconfig merge practice --kubeconfig-merge-default --kubeconfig-switch-context",
+        "expect": "practice in the cluster list, then the path of your kubeconfig. Run the two check commands again. If practice is not in the list, create it with the first command.",
+        "sources": [{ "title": "k3d kubeconfig", "url": "https://k3d.io/stable/usage/kubeconfig/" }]
+      }
+    ]
+  }
 }

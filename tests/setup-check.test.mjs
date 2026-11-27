@@ -1,10 +1,11 @@
 import { deepEqual, equal, match, ok } from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import {
   labMissing, labReady, labTools, readReport, setup, systemLabel, toolLabels, toolNeeds,
 } from '../frontend/src/setup-check.ts';
+import { lessonContent } from '../frontend/src/lesson-builder.ts';
 
 // Real output: macOS from the project Mac in zsh on 2026-11-26, and Linux from the check run in bash inside nginx:1.30.4.
 // WSL 2 adds " WSL" after the system, as the windows-2025 CI job shows. That runner has no Docker Desktop, so this
@@ -141,4 +142,58 @@ test('the setup page covers every tool on macOS, Windows (WSL 2), and Linux with
   }
   equal(setup.windowsFirst.steps[0].commands, 'wsl --install -d Ubuntu');
   ok(setup.windowsFirst.sources.every(source => source.url.startsWith('https://')));
+});
+
+// Charan's changes on 2026-11-27 in specs/setup-check.md.
+test('the setup page opens with what the laptop needs and ends with the practice cluster steps the start guide also gives', () => {
+  const guide = readFileSync(new URL('../docs/getting-started.html', import.meta.url), 'utf8');
+  const needs = setup.requirements.items;
+  deepEqual(needs.map(item => item.label).slice(0, 3), ['Memory', 'Disk', 'System']);
+  // The same values as the start guide's Check your laptop step.
+  ok(needs[0].text.startsWith('8 GB of RAM or more.') && guide.includes('8 GB of RAM or more.'));
+  ok(needs[1].text === 'About 10 GB free.' && guide.includes('about 10 GB free'));
+  deepEqual(Object.keys(needs[2].systems), setup.systems.map(system => system.id));
+  match(needs[2].systems.windows, /Windows 10 22H2 or Windows 11 23H2 or later, Pro, Enterprise, or Education, with WSL 2/);
+  match(guide, /64-bit Windows 10 \(22H2\) or Windows 11 \(23H2 or later\), Pro, Enterprise, or Education/);
+  ok(setup.requirements.sources.every(source => source.url.startsWith('https://')));
+
+  // Create once, check, switch, and add back a lost context, each with what success looks like and an official source.
+  const steps = setup.practiceCluster.steps;
+  deepEqual(steps.map(step => step.commands.split('\n')), [
+    ['k3d cluster create practice --image rancher/k3s:v1.37.2-k3s1 --wait'],
+    ['kubectl config current-context', 'kubectl get nodes'],
+    ['kubectl config get-contexts', 'kubectl config use-context k3d-practice'],
+    ['k3d cluster list', 'k3d kubeconfig merge practice --kubeconfig-merge-default --kubeconfig-switch-context'],
+  ]);
+  for (const step of steps) {
+    ok(step.text && step.expect, step.title);
+    ok(step.sources.length && step.sources.every(source => /^https:\/\/(k3d\.io|kubernetes\.io)\//.test(source.url)), step.title);
+    // The start guide gives the same commands.
+    for (const line of step.commands.split('\n')) ok(guide.includes(line), `the start guide is missing: ${line}`);
+  }
+  match(steps[1].expect, /^k3d-practice, then one node named k3d-practice-server-0 with STATUS Ready\.$/);
+});
+
+test('every command learners copy is plain text a terminal accepts', () => {
+  const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
+  const commands = [
+    ['the check', setup.check],
+    ...setup.tools.flatMap(tool => Object.entries(tool.install).filter(([, install]) => install.commands)
+      .map(([system, install]) => [`${tool.id} on ${system}`, install.commands])),
+    ...setup.windowsFirst.steps.filter(step => step.commands).map(step => ['WSL', step.commands]),
+    ...setup.practiceCluster.steps.map(step => [step.title, step.commands]),
+    ...Object.values(lessonContent).flatMap(lesson => lesson.tryIt.map(item => [lesson.id, item.command])),
+    ...['docs/lab-1-hello-kubernetes.md', 'docs/lab-2-your-app-on-eks.md', 'README.md', 'docs/contributing.md']
+      .flatMap(path => [...read(path).matchAll(/```(?:bash|sh)\n([\s\S]*?)```/g)].map(match => [path, match[1]])),
+    ...[...read('docs/getting-started.html').matchAll(/<pre><code>([\s\S]*?)<\/code><\/pre>/g)]
+      .map(match => ['start guide', match[1].replaceAll('&amp;', '&').replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&quot;', '"')]),
+  ];
+  ok(commands.length > 280, `${commands.length} command blocks`);
+  for (const [where, text] of commands) {
+    // No curly quotes, long dashes, or non-breaking spaces, which shells reject, and no prompt or tab to remove first.
+    match(text, /^[\x20-\x7e\n]+$/, `${where}: ${text}`);
+    ok(!/^\s*\$ /m.test(text), `${where} starts with a prompt: ${text}`);
+    // The start guide's code blocks hold commands only, no markup.
+    if (where === 'start guide') ok(!/<[a-z]/.test(text), `${where}: ${text}`);
+  }
 });

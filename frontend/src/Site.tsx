@@ -47,6 +47,32 @@ export function Learn({ check }: { check?: SavedCheck }) {
         Lessons are written for Amazon EKS with Auto Mode. <strong>Anywhere</strong> lessons also run free on a
         practice cluster on your laptop. <strong>EKS only</strong> lessons use AWS features.
       </p>
+      <section className="level" aria-labelledby="start-here-title">
+        <h2 id="start-here-title">Start here</h2>
+        <p>Set up your laptop before the first lesson. Try it and the labs need it.</p>
+        <ol className="lesson-list">
+          <li className="lesson setup-card">
+            <div className="lesson-text">
+              <h3>Set up your laptop</h3>
+              <p className="lesson-objects">Do this first</p>
+              <p>
+                Check what your laptop needs, install the tools, and point kubectl at a free practice cluster. Each lab
+                unlocks when its tools are ready.
+              </p>
+              <p className="setup-status">
+                {labs.map(lab => (
+                  <span key={lab.id} className={labReady(report, lab.id as LabId) ? 'setup-chip setup-chip-ready' : 'setup-chip'}>
+                    {labReady(report, lab.id as LabId) ? '✓ ' : ''}{lab.title.split(' · ')[0]} tools {labReady(report, lab.id as LabId) ? 'ready' : 'not ready'}
+                  </span>
+                ))}
+              </p>
+            </div>
+            <div className="lesson-meta">
+              <a className="lesson-start" href="#learn/setup">Set up<span className="visually-hidden"> your laptop</span></a>
+            </div>
+          </li>
+        </ol>
+      </section>
       {levels.map(level => (
         <section key={level.id} className="level" aria-labelledby={`${level.id}-title`}>
           <h2 id={`${level.id}-title`}>{level.title}</h2>
@@ -72,25 +98,11 @@ export function Learn({ check }: { check?: SavedCheck }) {
       ))}
       <section className="level" aria-labelledby="labs-title">
         <h2 id="labs-title">Hands-on labs</h2>
-        <p>Do <strong>Set up your laptop</strong> once. Each lab starts with a lesson on its files, then you run it on your laptop.</p>
+        <p>
+          Each lab starts with a lesson on its files, then you run it on your laptop. Its hands-on part unlocks when{' '}
+          <strong>Set up your laptop</strong>, at the top of this page, shows its tools are ready.
+        </p>
         <ol className="lesson-list">
-          <li className="lesson setup-card">
-            <div className="lesson-text">
-              <h3>Set up your laptop</h3>
-              <p className="lesson-objects">Do this once, before the labs</p>
-              <p>Install the tools each lab needs, then run one check. Each lab unlocks when its tools are ready.</p>
-              <p className="setup-status">
-                {labs.map(lab => (
-                  <span key={lab.id} className={labReady(report, lab.id as LabId) ? 'setup-chip setup-chip-ready' : 'setup-chip'}>
-                    {labReady(report, lab.id as LabId) ? '✓ ' : ''}{lab.title.split(' · ')[0]} tools {labReady(report, lab.id as LabId) ? 'ready' : 'not ready'}
-                  </span>
-                ))}
-              </p>
-            </div>
-            <div className="lesson-meta">
-              <a className="lesson-start" href="#learn/setup">Set up<span className="visually-hidden"> your laptop</span></a>
-            </div>
-          </li>
           {labs.map(lab => (
             <li key={lab.id} className="lesson">
               <div className="lesson-text">

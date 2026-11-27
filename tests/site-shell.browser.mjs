@@ -34,16 +34,20 @@ test('the dashboard opens into Learn Kubernetes with the Aviz Academy brand', { 
     // The header has one link, to the lesson list.
     assert.deepEqual(await page.locator('.site-nav a').evaluateAll(links => links.map(link => link.getAttribute('href'))), ['#learn']);
 
-    // Levels 0 to 8 and the labs.
-    assert.equal(await page.locator('section.level').count(), 10);
+    // Set up your laptop, Levels 0 to 8, and the labs. Set up your laptop is the first item, before Level 0.
+    assert.equal(await page.locator('section.level').count(), 11);
+    assert.equal(await page.locator('section.level').first().getAttribute('aria-labelledby'), 'start-here-title');
+    assert.equal(await page.locator('.lesson h3').first().textContent(), 'Set up your laptop');
+    assert.equal(await page.locator('section[aria-labelledby="start-here-title"] + section').getAttribute('aria-labelledby'), 'level-0-title');
     const basics = page.locator('section[aria-labelledby="level-1-title"] .lesson');
     assert.equal(await basics.count(), 8);
     assert.equal(await basics.locator('.lesson-start').count(), 8);
     assert.equal(await page.locator('section[aria-labelledby="level-0-title"] .lesson-start').count(), 2);
     assert.equal(await page.locator('section.level:not([aria-labelledby="labs-title"]) .badge-eks').count(), 7);
-    // The labs list starts with the Set up your laptop card.
-    assert.equal(await page.locator('section[aria-labelledby="labs-title"] .lesson').count(), 3);
-    // Every lesson and lab is built. Each lab opens in the dashboard, after the setup card.
+    // The labs list has only the two labs.
+    assert.equal(await page.locator('section[aria-labelledby="labs-title"] .lesson').count(), 2);
+    assert.equal(await page.locator('section[aria-labelledby="labs-title"] .setup-card').count(), 0);
+    // Every lesson and lab is built. Each lab opens in the dashboard.
     assert.equal(await page.getByText('Coming soon').count(), 0);
     assert.equal(await page.getByRole('link', { name: 'Set up your laptop', exact: true }).getAttribute('href'), '#learn/setup');
     for (const [title, id] of [['Lab 1 · Hello Kubernetes', 'lab-1'], ['Lab 2 · Your app on EKS', 'lab-2']]) {
@@ -123,7 +127,7 @@ test('a lesson builds the file one block at a time and exports exactly what is s
     const whole = await download();
     assert.equal(whole.name, 'pod.yaml');
     assert.equal(whole.text, lessonText(renderLesson(pod, 3, {}, true)));
-    await page.getByRole('button', { name: 'Copy' }).click();
+    await page.getByRole('button', { name: 'Copy', exact: true }).click();
     await page.getByText('Copied to clipboard.').waitFor();
     assert.equal(await page.evaluate(() => navigator.clipboard.readText()), whole.text);
     await page.getByLabel('Show explanations').uncheck();
@@ -570,7 +574,13 @@ test('Set up your laptop unlocks each lab separately, and the unlock survives a 
     assert.deepEqual(await chips(), ['Lab 1 tools not ready', 'Lab 2 tools not ready']);
     assert.equal(await page.locator('.lab-lock-note').count(), 2);
     assert.equal(await setupLinks('pod'), 1);
+    // Anywhere lessons say to check that kubectl uses the practice cluster. EKS only lessons use an EKS cluster.
+    assert.match(await page.locator('.lesson-context').textContent(),
+      /First check that kubectl uses it: this prints k3d-practice\. If it doesn't, step 6 of Set up your laptop shows how to switch\./);
+    assert.equal(await page.locator('.lesson-context a').getAttribute('href'), '#learn/setup');
+    assert.equal(await page.locator('.lesson-context + .command-block code').textContent(), 'kubectl config current-context');
     assert.equal(await setupLinks('pod-identity'), 1);
+    assert.equal(await page.locator('.lesson-context').count(), 0);
     await page.goto(`${appUrl}#learn/lab-1`);
     await page.getByRole('tab', { name: /2 · Do it on your laptop/ }).click();
     await page.getByRole('heading', { name: 'Set up your laptop first' }).waitFor();
@@ -581,9 +591,20 @@ test('Set up your laptop unlocks each lab separately, and the unlock survives a 
     // The setup page gives each system its own commands, and Copy copies them exactly.
     await page.goto(`${appUrl}#learn/setup`);
     await page.getByRole('heading', { name: 'Set up your laptop', level: 1 }).waitFor();
+    // The page opens with what the laptop needs and ends with pointing kubectl at the practice cluster.
+    assert.deepEqual(await page.locator('.setup-step > h2').allTextContents(), ['1What your laptop needs', '2Choose your system',
+      '3Install the tools', '4Run the check', '5Paste what it printed', '6Point kubectl at your practice cluster']);
+    assert.equal(await page.locator('.setup-needs > li').count(), setup.requirements.items.length);
+    assert.match(await page.locator('.setup-needs').textContent(), /Memory: 8 GB of RAM or more\./);
+    assert.deepEqual(await page.locator('.setup-cluster-step h3').allTextContents(), setup.practiceCluster.steps.map(step => step.title));
+    assert.equal(await page.locator('.setup-cluster-step .setup-expect').count(), setup.practiceCluster.steps.length);
+    const switchStep = setup.practiceCluster.steps[2];
+    await page.getByRole('button', { name: `Copy the commands: ${switchStep.title}` }).click();
+    await page.waitForFunction(commands => navigator.clipboard.readText().then(text => text === commands), switchStep.commands);
     for (const system of setup.systems) {
       await page.getByRole('tab', { name: system.label }).click();
       assert.equal(await page.getByRole('heading', { name: 'First, set up WSL 2' }).count(), system.id === 'windows' ? 1 : 0, system.id);
+      assert.equal((await page.locator('#setup-kubectl + p').textContent()).endsWith('Run these commands in Ubuntu.'), system.id === 'windows', system.id);
       const kubectl = setup.tools.find(tool => tool.id === 'kubectl').install[system.id].commands;
       await page.getByRole('button', { name: 'Copy the kubectl install commands' }).click();
       await page.locator('#tool-kubectl').locator('..').getByText('Copied').waitFor();
@@ -772,6 +793,93 @@ test('the setup and lab pages fit a phone screen without sideways scrolling', { 
         for (const summary of await files.all()) await summary.click();
         assert.ok((await overflow()) <= 0, `${lab} steps scroll sideways by ${await overflow()}px`);
       }
+    }
+  } finally {
+    await browser.close();
+  }
+});
+
+// Every command a learner runs can be copied exactly. specs/setup-check.md, Charan's changes on 2026-11-27.
+const addWorkers = 'k3d node create worker --cluster practice --role agent --replicas 2 --image rancher/k3s:v1.37.2-k3s1 --wait';
+
+test('every Try it command has a Copy button that copies exactly that command', { timeout: 240000 }, async () => {
+  const browser = await chromium.launch({ executablePath: process.env.LKME_CHROME_PATH, args: ['--disable-gpu'] });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1366, height: 900 }, permissions: ['clipboard-read', 'clipboard-write'] });
+    page.setDefaultTimeout(8000);
+    let copied = 0;
+    for (const lesson of levels.flatMap(level => level.lessons)) {
+      const content = lessonContent[lesson.id];
+      if (!content.tryIt.length) continue;
+      await page.goto(`${appUrl}#learn/${lesson.id}`);
+      const whole = page.getByRole('button', { name: 'Show whole file' });
+      if (await whole.isEnabled()) await whole.click();
+      const tryIt = page.locator('.lesson-try-it');
+      await tryIt.waitFor();
+      // Anywhere lessons start with the context check, and three-node lessons with the command that adds workers.
+      const commands = [
+        ...(lesson.runsOn === 'eks' ? [] : ['kubectl config current-context']),
+        ...(content.nodes ? [addWorkers] : []),
+        ...content.tryIt.map(item => item.command),
+      ];
+      assert.deepEqual(await tryIt.locator('.command-block code').allTextContents(), commands, lesson.id);
+      // Each Copy button sits inside its command's box.
+      assert.ok(await tryIt.locator('.command-block').evaluateAll(blocks => blocks.every(block => {
+        const box = block.querySelector('pre').getBoundingClientRect();
+        const button = block.querySelector('button').getBoundingClientRect();
+        return button.top >= box.top && button.bottom <= box.bottom && button.right <= box.right;
+      })), `${lesson.id}: a Copy button sticks out of its box`);
+      const buttons = tryIt.locator('.command-block button');
+      for (const [index, command] of commands.entries()) {
+        await page.evaluate(() => navigator.clipboard.writeText(''));
+        await buttons.nth(index).click();
+        await page.waitForFunction(text => navigator.clipboard.readText().then(copy => copy === text), command);
+        copied++;
+      }
+    }
+    assert.equal(copied, 244, `${copied} commands copied`);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('every start guide command copies exactly what it shows, on each system', { timeout: 60000 }, async () => {
+  const guide = readFileSync(new URL('../docs/getting-started.html', import.meta.url), 'utf8');
+  const browser = await chromium.launch({ executablePath: process.env.LKME_CHROME_PATH, args: ['--disable-gpu'] });
+  try {
+    // The browser answers a localhost address with the guide itself, since the clipboard needs a secure origin and no
+    // server runs there. Fonts and other requests are not needed.
+    const guideUrl = 'http://localhost:5199/getting-started.html';
+    const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, permissions: ['clipboard-read', 'clipboard-write'] });
+    const page = await context.newPage();
+    page.setDefaultTimeout(8000);
+    await page.route('**/*', route => route.request().url() === guideUrl
+      ? route.fulfill({ contentType: 'text/html; charset=utf-8', body: guide })
+      : route.abort());
+    await page.goto(guideUrl);
+    let copied = 0;
+    for (const os of ['mac', 'win', 'linux']) {
+      await page.locator(`#os-${os}`).click();
+      // Open the common errors so their commands are checked too.
+      await page.evaluate(() => document.querySelectorAll('details').forEach(details => { details.open = true; }));
+      const blocks = page.locator('.code:visible');
+      for (let index = 0; index < await blocks.count(); index++) {
+        const block = blocks.nth(index);
+        const shown = await block.locator('code').textContent();
+        // Plain text a terminal accepts: no prompt, no tab, and no curly quote or long dash.
+        assert.match(shown, /^[\x20-\x7e\n]+$/, shown);
+        assert.ok(!/^\$ /m.test(shown), shown);
+        assert.equal(await block.locator('pre').evaluate(pre => getComputedStyle(pre).fontVariantLigatures), 'none');
+        await page.evaluate(() => navigator.clipboard.writeText(''));
+        await block.getByRole('button', { name: 'Copy command' }).click();
+        await page.waitForFunction(text => navigator.clipboard.readText().then(copy => copy === text), shown);
+        copied++;
+      }
+    }
+    assert.equal(copied, 19 + 23 + 19, `${copied} commands copied`);
+    // The practice cluster steps are the setup page's commands.
+    for (const step of setup.practiceCluster.steps) {
+      await page.locator('.code code').filter({ hasText: step.commands.split('\n')[0] }).first().waitFor({ state: 'attached' });
     }
   } finally {
     await browser.close();

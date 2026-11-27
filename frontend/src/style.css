@@ -755,20 +755,14 @@ section.lesson-try-it {
   padding-inline-start: 1.25rem;
 }
 
-.lesson-try-it li span {
+.lesson-try-result {
   display: block;
   color: var(--text-muted);
 }
 
-.lesson-try-it code {
+.lesson-try-it p code {
   overflow-wrap: anywhere;
   font-weight: 600;
-}
-
-/* The command that adds worker nodes is long, so it gets its own line below the sentence. */
-.lesson-nodes code {
-  display: block;
-  margin-top: 0.25rem;
 }
 
 /* Set up your laptop: install cards, the check command, and the pasted result. See specs/setup-check.md. */
@@ -876,6 +870,28 @@ section.setup-first {
 .setup-sources {
   color: var(--text-muted);
   font-size: 0.85rem;
+}
+
+/* What your laptop needs, the first step. */
+.setup-needs {
+  margin: 0.5rem 0;
+  padding-inline-start: 1.25rem;
+  line-height: 1.5;
+}
+
+.setup-needs ul {
+  margin: 0.2rem 0;
+  padding-inline-start: 1.25rem;
+}
+
+/* The practice cluster steps stack, since each one follows the last. */
+section.setup-cluster-step + section.setup-cluster-step {
+  margin-block-start: 0.75rem;
+}
+
+.setup-expect {
+  padding-left: 0.6rem;
+  border-left: 3px solid var(--success);
 }
 
 .setup-report {
@@ -998,6 +1014,7 @@ section.setup-first {
 
 .command-block pre,
 .lab-file pre {
+  font-variant-ligatures: none;
   margin: 0;
   padding: 0.6rem 4.75rem 0.6rem 0.75rem;
   border-radius: 0.45rem;
@@ -1012,6 +1029,7 @@ section.setup-first {
   position: absolute;
   top: 0.4rem;
   right: 0.4rem;
+  margin: 0;
   padding: 0.25rem 0.6rem;
   border: 1px solid var(--control-border);
   border-radius: 0.35rem;

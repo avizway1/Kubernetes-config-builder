@@ -19,8 +19,17 @@ export type SetupTool = {
 export type SetupData = {
   check: string;
   systems: { id: SystemId; label: string }[];
+  requirements: {
+    intro: string;
+    items: { label: string; text: string; systems?: Record<SystemId, string> }[];
+    sources: Source[];
+  };
   windowsFirst: { title: string; steps: { text: string; commands?: string }[]; sources: Source[] };
   tools: SetupTool[];
+  practiceCluster: {
+    intro: string;
+    steps: { title: string; text: string; commands: string; expect: string; sources: Source[] }[];
+  };
 };
 
 export const setup = setupData as SetupData;

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { CommandBlock } from './CommandBlock';
 import { ExportActions } from './ExportActions';
 import { LessonEditor } from './LessonEditor';
 import {
@@ -196,7 +197,14 @@ export function LessonView({ lesson, content, progress, onProgress, next, check 
                   it creates, so finish with the delete steps.
                 </p>
               ) : (
-                <p>Save the file, then run these commands against your practice cluster.</p>
+                <>
+                  <p className="lesson-context">
+                    Save the file, then run these commands against your practice cluster. First check that kubectl uses it:
+                    this prints <code>k3d-practice</code>. If it doesn't, step 6 of <a href="#learn/setup">Set up your laptop</a>{' '}
+                    shows how to switch.
+                  </p>
+                  <CommandBlock text="kubectl config current-context" name="the command that checks which cluster kubectl uses" />
+                </>
               )}
               {/* Anywhere lessons run on the Lab 1 tools, and EKS only lessons on the Lab 2 tools. */}
               {!labReady(check ? readReport(check.report) : undefined, lesson.runsOn === 'eks' ? 'lab-2' : 'lab-1') && (
@@ -223,15 +231,19 @@ export function LessonView({ lesson, content, progress, onProgress, next, check 
                 </p>
               )}
               {content.nodes && (
-                <p className="lesson-nodes">
-                  This lesson needs {content.nodes} nodes. If your practice cluster has only one, add two worker nodes first:{' '}
-                  <code>k3d node create worker --cluster practice --role agent --replicas 2 --image rancher/k3s:v1.37.2-k3s1 --wait</code>
-                </p>
+                <div className="lesson-nodes">
+                  <p>This lesson needs {content.nodes} nodes. If your practice cluster has only one, add two worker nodes first:</p>
+                  <CommandBlock text="k3d node create worker --cluster practice --role agent --replicas 2 --image rancher/k3s:v1.37.2-k3s1 --wait"
+                    name="the command that adds two worker nodes" />
+                </div>
               )}
               <ol>
                 {/* A command can appear twice, such as checking a Pod before and after a probe fails. */}
                 {content.tryIt.map((item, index) => (
-                  <li key={`${index}-${item.command}`}><code>{item.command}</code><span>{item.result}</span></li>
+                  <li key={`${index}-${item.command}`}>
+                    <CommandBlock text={item.command} name={`command ${index + 1}`} />
+                    <span className="lesson-try-result">{item.result}</span>
+                  </li>
                 ))}
               </ol>
             </section>
