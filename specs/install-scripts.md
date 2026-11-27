@@ -105,7 +105,7 @@ The Windows script runs in Windows PowerShell 5.1 as administrator, and stops wi
 - [ ] Each script prints the system, CPU, architecture, cores, memory, and free disk before installing anything, and stops on an unsupported system or architecture.
 - [x] On fresh Ubuntu and Debian, the Linux script installs everything, and the check reads kubectl, k3d, AWS CLI, and eksctl as ready.
 - [ ] On macOS and Windows (WSL 2) CI runners, the scripts install kubectl, k3d, AWS CLI, and eksctl, and the check reads them as ready.
-- [ ] A second run skips everything already installed.
+- [x] A second run skips everything already installed.
 - [x] Each script's check command and kubectl version match the setup page.
 - [x] The setup page and the start guide show each system's script first, with Copy, and keep the step-by-step cards.
 - [x] The scripts never accept an agreement, change settings, or sign in for the learner.
@@ -119,7 +119,16 @@ On 2026-11-27, on the project Mac (macOS 27.0.1, Apple M5 Pro, Docker Desktop), 
 - `tests/install-macos.check.mjs` passed on the project Mac in 2.6 seconds. Every tool was already installed, so both runs skipped everything and asked for no password.
 - Each shell script stops on the wrong system with a message that names the right script.
 
-Still to run: the macOS and Windows CI jobs, which install the tools on fresh runners and run the Windows script for the first time.
+On 2026-11-27, CI run [45943331649](https://github.com/avizway1/learning-kubernetes-made-easy/actions/runs/45943331649) passed on `b3b4493`:
+
+- On a `windows-2025` runner (Windows Server 2025 Datacenter, build 26100, AMD64), the Windows script ran for the first time. It printed the system, CPU, architecture, memory, and free disk, found Git 2.56.1, skipped Docker Desktop because of `-SkipDockerDesktop`, and found Ubuntu 26.04.1 LTS ready. Inside Ubuntu, `install-linux.sh` installed unzip, kubectl v1.37.2, k3d v5.9.0, AWS CLI 2.42.4, and eksctl 0.232.0. The check read as Windows (WSL 2), with all four tools ready. The second run skipped everything.
+- On `macos-26` (Apple M1, virtual, macOS 26.7.2) and `macos-26-intel` (Intel Core i7-8700B, macOS 26.6.1), the macOS script installed kubectl v1.37.2, k3d v5.9.0, and eksctl 0.232.0 for each chip, and the check read all four tools as ready. Both runners already had Git and the AWS CLI (2.40.4 and 2.36.29), so the script skipped them. Each second run skipped everything.
+- The Linux script passed again in `ubuntu:26.04` and `debian:13` on AMD64, and in `ubuntu:26.04` on ARM64.
+
+Still open:
+
+- No Mac tested so far lacked the AWS CLI or the Command Line Tools, so the macOS script's AWS CLI package and Git installs haven't run. That keeps the CI runner criterion open.
+- The Windows script's stop on an unsupported architecture hasn't run, because the runner is AMD64. That keeps the print-and-stop criterion open.
 
 ## Known limits
 
