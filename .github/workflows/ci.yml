@@ -130,3 +130,70 @@ jobs:
           wsl --list --verbose
       - name: Follow the Windows card and run the check in Ubuntu
         run: node tests/setup-check-wsl.check.mjs
+
+  install-linux:
+    # scripts/install-linux.sh in fresh Ubuntu and Debian containers, as a learner with sudo, run twice.
+    # A container can't start Docker Engine, so Docker reads as not running. See specs/install-scripts.md.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            images: ubuntu:26.04 debian:13
+          - runner: ubuntu-24.04-arm
+            images: ubuntu:26.04
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+      - name: Run the Linux install script twice in each container
+        env:
+          LKME_INSTALL_IMAGES: ${{ matrix.images }}
+        run: node --test tests/install-linux.check.mjs
+
+  install-macos:
+    # scripts/install-macos.sh on Apple silicon and Intel, run twice. The runners can't run Docker Desktop.
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-26, macos-26-intel]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+      - name: Run the macOS install script twice
+        env:
+          LKME_SKIP_DOCKER: '1'
+        run: node --test tests/install-macos.check.mjs
+
+  install-windows:
+    # scripts/install-windows.ps1 with Ubuntu on WSL 2, run twice. The runner can't run Docker Desktop.
+    runs-on: windows-2025
+    timeout-minutes: 40
+    env:
+      WSL_UTF8: '1'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+      - name: Install Ubuntu on WSL 2
+        timeout-minutes: 15
+        # --no-launch skips the user name prompt, and --web-download works without the Microsoft Store.
+        run: |
+          wsl --install -d Ubuntu --no-launch --web-download
+          wsl --list --verbose
+      - name: Run the Windows install script twice
+        run: node --test tests/install-windows.check.mjs

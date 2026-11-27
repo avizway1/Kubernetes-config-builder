@@ -1,0 +1,2 @@
+# Shell scripts run in bash, also inside Ubuntu on WSL 2, so they keep LF line endings on every checkout.
+*.sh text eol=lf
