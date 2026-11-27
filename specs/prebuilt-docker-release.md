@@ -54,3 +54,24 @@ On 2026-11-26 Charan renamed the project **Learning Kubernetes made easy - Aviz 
 - [x] The `v1.1.0` release has the verified `compose.yaml` attached.
 
 **Results, 2026-11-27.** Charan confirmed the final review. `main` moved forward to `3eda286`, and [v1.1.0](https://github.com/avizway1/learning-kubernetes-made-easy/releases/tag/v1.1.0) was released from it. CI passed on that commit on the branch and again on `main`, including the Docker package check and the WSL 2 setup check. The release workflow built, tested, and scanned both architectures, published the multi-architecture tag, and attached `compose.yaml`. The new package was public from its first push, so no GitHub setting had to change. Its anonymous cold starts took 3.44 seconds on AMD64 and 3.11 seconds on ARM64. On the project Mac (Apple silicon, Docker Desktop), with an empty Docker client configuration and no cached image, a fresh `git clone` took 1.5 seconds. `docker compose up -d` then reached the first page in 3.7 seconds, against 13.6 seconds for v1.0.0. The page opened on Learn Kubernetes with the new title, `tests/check-docker-release.py` passed against it, and the pulled ARM64 image is 23.2 MB. `docker compose down` and `docker rmi` removed the container and the image.
+
+## v1.2.0: set up your laptop first
+
+On 2026-11-27 Charan confirmed the final review of the [Set up your laptop changes](setup-check.md#charans-changes-on-2026-11-27) and asked to release them as **v1.2.0**: Set up your laptop first in the lesson list, step 6 as one path from scratch, a switch command and Copy button on every Anywhere Try it, and the optional step 7 inside the practice cluster's node.
+
+**Inputs.** `setup-first` merged into `main`, `release-image.yml`, and a GitHub release named `v1.2.0`.
+
+**Outputs.**
+
+- `release-image.yml` publishes `ghcr.io/avizway1/learning-kubernetes-made-easy:v1.2.0` for Linux AMD64 and ARM64.
+- `compose.yaml` pulls `ghcr.io/avizway1/learning-kubernetes-made-easy:v1.2.0` by default.
+- The browser storage names are unchanged, so learners keep their saved setup check and lab ticks.
+- Release notes in [docs/releases/v1.2.0.md](../docs/releases/v1.2.0.md).
+
+**Acceptance criteria**
+
+- [ ] CI passes on the release commit, including the Docker package check and the WSL 2 setup check.
+- [x] Charan confirms the final review before the `v1.2.0` release and tag are created.
+- [ ] The release workflow publishes `v1.2.0` for Linux AMD64 and ARM64 at `ghcr.io/avizway1/learning-kubernetes-made-easy`, and the anonymous cold start passes on both.
+- [ ] On the project Mac, with no dashboard image cached, the start guide's commands pull the image and open the dashboard with Set up your laptop first.
+- [ ] The `v1.2.0` release has the verified `compose.yaml` attached.

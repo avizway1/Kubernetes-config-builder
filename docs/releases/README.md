@@ -2,6 +2,7 @@
 
 Release notes for each published version.
 
+- [v1.2.0](v1.2.0.md), set up your laptop first
 - [v1.1.0](v1.1.0.md), Learning Kubernetes made easy
 - [v1.0.0](v1.0.0.md), the first release of the lessons and labs
 

@@ -16,7 +16,7 @@ cd learning-kubernetes-made-easy
 docker compose up -d
 ```
 
-Open [localhost:8080](http://localhost:8080) and start with **Level 0 · Reading YAML**. Docker downloads the v1.1.0 dashboard image the first time, then starts it in seconds. To stop it, run `docker compose down` from the same folder. To get new lessons later, run `git pull` and `docker compose up -d` again.
+Open [localhost:8080](http://localhost:8080), do **Set up your laptop** at the top of the lesson list, then start with **Level 0 · Reading YAML**. Docker downloads the v1.2.0 dashboard image the first time, then starts it in seconds. To stop it, run `docker compose down` from the same folder. To get new lessons later, run `git pull` and `docker compose up -d` again.
 
 The image runs on Linux AMD64 and ARM64, which covers Docker Desktop on Intel and Apple silicon Macs and on Windows. To build it from source instead, see [Contributing](docs/contributing.md#build-the-docker-image-from-source).
 
