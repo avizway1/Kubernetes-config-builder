@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { CommandBlock } from './CommandBlock';
 import {
-  guessSystem, labMissing, labReady, readReport, setup, systemLabel, toolLabels, toolNeeds, type SavedCheck, type SystemId, type ToolId,
+  guessSystem, labMissing, labReady, readReport, setup, systemLabel, toolLabels, toolNeeds, type CommandStep, type SavedCheck, type SystemId,
+  type ToolId,
 } from './setup-check';
 
 const labNames = { 'lab-1': 'Lab 1', 'lab-2': 'Lab 2' } as const;
@@ -51,7 +52,7 @@ export function SetupView({ check, onCheck }: { check?: SavedCheck; onCheck: (ch
       <div className="lesson-heading"><h1 id="setup-title">Set up your laptop</h1></div>
       <p className="lead">
         Try it and the labs run on your laptop. Check what your laptop needs, install the tools, run one check so the dashboard
-        knows you are ready, then point kubectl at your practice cluster.
+        knows you are ready, then point kubectl at your practice cluster and look inside it.
       </p>
 
       <section className="setup-step" aria-labelledby="setup-needs">
@@ -163,15 +164,7 @@ export function SetupView({ check, onCheck }: { check?: SavedCheck; onCheck: (ch
       <section className="setup-step" aria-labelledby="setup-kubectl">
         <h2 id="setup-kubectl"><span className="setup-number" aria-hidden="true">6</span>Create your practice cluster and point kubectl at it</h2>
         <p>{setup.practiceCluster.intro}{system === 'windows' ? ' Run these commands in Ubuntu.' : ''}</p>
-        {setup.practiceCluster.steps.map((item, index) => (
-          <section key={item.title} className="setup-tool setup-cluster-step" aria-labelledby={`setup-kubectl-${index}`}>
-            <h3 id={`setup-kubectl-${index}`}>{item.title}</h3>
-            <p>{item.text}</p>
-            <CommandBlock text={item.commands} name={`the commands: ${item.title}`} />
-            <p className="setup-expect"><strong>You should see</strong> {item.expect}</p>
-            <Sources label="Official guide" sources={item.sources} />
-          </section>
-        ))}
+        {setup.practiceCluster.steps.map((item, index) => commandStep(item, `setup-kubectl-${index}`))}
         <section className="setup-tool setup-cluster-step" aria-labelledby="setup-kubectl-problems">
           <h3 id="setup-kubectl-problems">If something goes wrong</h3>
           <p>Find the message you see, then run its fix.</p>
@@ -187,6 +180,34 @@ export function SetupView({ check, onCheck }: { check?: SavedCheck; onCheck: (ch
           </ul>
         </section>
       </section>
+
+      <section className="setup-step" aria-labelledby="setup-inside">
+        <h2 id="setup-inside"><span className="setup-number" aria-hidden="true">7</span>Look inside your practice cluster</h2>
+        <p>{setup.insideNode.intro}{system === 'windows' ? ' Run these commands in Ubuntu.' : ''}</p>
+        <div className="setup-warning" role="note">
+          <p>{setup.insideNode.warning}</p>
+        </div>
+        {setup.insideNode.steps.map((item, index) => commandStep(item, `setup-inside-${index}`))}
+        <section className="setup-tool setup-cluster-step" aria-labelledby="setup-inside-again">
+          <h3 id="setup-inside-again">If you changed something</h3>
+          <p>{setup.insideNode.startAgain.text}</p>
+          <CommandBlock text={setup.insideNode.startAgain.commands} name="the command that deletes the practice cluster" />
+          <Sources label="Official guide" sources={setup.insideNode.startAgain.sources} />
+        </section>
+      </section>
+    </section>
+  );
+}
+
+// One card on the practice cluster steps: what to do, the commands, what success looks like, and where it comes from.
+function commandStep(item: CommandStep, id: string) {
+  return (
+    <section key={item.title} className="setup-tool setup-cluster-step" aria-labelledby={id}>
+      <h3 id={id}>{item.title}</h3>
+      <p>{item.text}</p>
+      <CommandBlock text={item.commands} name={`the commands: ${item.title}`} />
+      <p className="setup-expect"><strong>You should see</strong> {item.expect}</p>
+      <Sources label={item.sources.length > 1 ? 'Official guides' : 'Official guide'} sources={item.sources} />
     </section>
   );
 }

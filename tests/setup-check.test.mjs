@@ -189,6 +189,34 @@ test('the setup page opens with what the laptop needs and ends with one practice
   for (const problem of problems.slice(0, 3)) ok(guide.includes(problem.message), `the start guide is missing: ${problem.message}`);
 });
 
+test('step 7 opens a shell on the practice node, only reads, and warns learners not to change anything', () => {
+  const guide = readFileSync(new URL('../docs/getting-started.html', import.meta.url), 'utf8');
+  const { intro, warning, steps, startAgain } = setup.insideNode;
+  const commands = steps.map(step => step.commands);
+  // k3d nodes are Docker containers with no SSH server, so docker exec opens the shell.
+  equal(commands[0], 'docker exec -it k3d-practice-server-0 sh');
+  match(intro, /no SSH/);
+  // Every other command only reads, and the last one leaves the node.
+  for (const command of commands.slice(1)) match(command, /^(ps|ls( -l)? \/[\w/.-]+|crictl ps|exit)$/, command);
+  equal(commands.at(-1), 'exit');
+  // Nothing prints the token, a key, or the admin kubeconfig.
+  for (const command of commands) ok(!/token|\.key|k3s\.yaml|cat |less |more /.test(command), command);
+  // The warning comes first: look, don't change, and keep the token and keys private.
+  match(warning, /^Look, don't change\./);
+  match(warning, /Don't edit, move, or delete anything/);
+  match(warning, /Never print or share the token in \/var\/lib\/rancher\/k3s\/server\/token or any \.key file\./);
+  equal(startAgain.commands, 'k3d cluster delete practice');
+  for (const item of [...steps, startAgain]) {
+    ok(item.text && (item.expect ?? true), item.title);
+    ok(item.sources.length && item.sources.every(source =>
+      /^https:\/\/(k3d\.io|kubernetes\.io|docs\.k3s\.io|docs\.docker\.com|docs\.aws\.amazon\.com)\//.test(source.url)), item.title);
+    // The start guide gives the same commands, and the same warning.
+    for (const line of item.commands.split('\n')) ok(guide.includes(line), `the start guide is missing: ${line}`);
+  }
+  ok(guide.includes("<strong>Look, don't change.</strong>"));
+  ok(guide.includes('Never print or share the token in <span class="path">/var/lib/rancher/k3s/server/token</span> or any <span class="path">.key</span> file.'));
+});
+
 test('every command learners copy is plain text a terminal accepts', () => {
   const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
   const commands = [
@@ -197,6 +225,7 @@ test('every command learners copy is plain text a terminal accepts', () => {
       .map(([system, install]) => [`${tool.id} on ${system}`, install.commands])),
     ...setup.windowsFirst.steps.filter(step => step.commands).map(step => ['WSL', step.commands]),
     ...setup.practiceCluster.steps.map(step => [step.title, step.commands]),
+    ...setup.insideNode.steps.map(step => [step.title, step.commands]),
     ...Object.values(lessonContent).flatMap(lesson => lesson.tryIt.map(item => [lesson.id, item.command])),
     ...['docs/lab-1-hello-kubernetes.md', 'docs/lab-2-your-app-on-eks.md', 'README.md', 'docs/contributing.md']
       .flatMap(path => [...read(path).matchAll(/```(?:bash|sh)\n([\s\S]*?)```/g)].map(match => [path, match[1]])),

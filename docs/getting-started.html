@@ -434,6 +434,32 @@ kubectl apply -f pod.yaml
 kubectl get pod web</code></pre></div></div>
       <p class="expect"><b>You should see</b> <code class="inline">pod/web created</code>, then STATUS <code class="inline">Running</code> after a few seconds. Each lesson's Try it panel lists the next commands.</p>
 
+      <h3>Optional: look inside your practice cluster</h3>
+      <p>Your practice cluster's node is a Docker container, so it has no SSH. <code class="inline">docker exec</code> opens a shell inside it instead, the way SSH opens one on a server. On EKS Auto Mode, AWS runs these parts and the nodes allow no SSH, so this is the place to see them.</p>
+      <div class="warn"><p><strong>Look, don't change.</strong> Inside the node you are root, so nothing stops you. Don't edit, move, or delete anything there: K3s uses these files while it runs, and one change can break your practice cluster. Never print or share the token in <span class="path">/var/lib/rancher/k3s/server/token</span> or any <span class="path">.key</span> file. Anyone who has them controls your cluster.</p></div>
+      <div class="cmd">
+        <span class="cmd-label">Open a shell on the node</span>
+        <div class="code"><pre><code>docker exec -it k3d-practice-server-0 sh</code></pre></div>
+      </div>
+      <p class="expect"><b>You should see</b> the prompt change to <code class="inline">~ #</code>. The <code class="inline">#</code> means you are root. Then run these inside the node, one line at a time. Each one only reads.</p>
+      <div class="cmd"><div class="code"><pre><code>ps
+ls -l /var/lib/rancher/k3s/server/db
+ls /var/lib/rancher/k3s/server/tls
+ls /var/lib/rancher/k3s/server/manifests
+crictl ps
+ls /var/log/pods
+exit</code></pre></div></div>
+      <ul>
+        <li><code class="inline">ps</code>: one <span class="path">k3s server</span> process runs the API server, scheduler, and controller manager. A kubeadm cluster runs each as its own Pod.</li>
+        <li><span class="path">server/db</span>: <span class="path">state.db</span>, the SQLite database where everything you apply is saved. Most clusters use etcd.</li>
+        <li><span class="path">server/tls</span>: the certificates and keys the parts of the cluster use to prove who they are.</li>
+        <li><span class="path">server/manifests</span>: files K3s applies by itself, such as <span class="path">coredns.yaml</span>.</li>
+        <li><code class="inline">crictl ps</code>: the containers on this node, with their Pods. Your <span class="path">web</span> Pod is there.</li>
+        <li><span class="path">/var/log/pods</span>: one log folder for each Pod. <code class="inline">kubectl logs</code> reads these.</li>
+        <li><code class="inline">exit</code>: back to your laptop. The cluster keeps running. Docker Desktop may print a tip about <code class="inline">docker debug</code>, which you don't need.</li>
+      </ul>
+      <p>Step 7 of <strong>Set up your laptop</strong>, in the dashboard, explains each one with its official source. Changed something by mistake? Delete the practice cluster with the command at the end of this step, then run the <em>Do this once</em> commands again.</p>
+
       <div class="cmd">
         <span class="cmd-label">Level 5 needs three nodes. When you reach it, add two worker nodes</span>
         <div class="code"><pre><code>k3d node create worker --cluster practice --role agent --replicas 2 --image rancher/k3s:v1.37.2-k3s1 --wait

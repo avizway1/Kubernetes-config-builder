@@ -154,5 +154,85 @@
         "sources": [{ "title": "k3d cluster create", "url": "https://k3d.io/stable/usage/commands/k3d_cluster_create/" }]
       }
     ]
+  },
+  "insideNode": {
+    "intro": "Optional. Do it now, or come back after your first lessons. Your practice cluster's node is a Docker container, so it has no SSH. docker exec opens a shell inside it instead, the way SSH opens one on a server. Then you can see where Kubernetes keeps its parts. On EKS Auto Mode, AWS runs the API server and etcd and the nodes allow no SSH, so your practice cluster is the place to see them.",
+    "warning": "Look, don't change. Inside the node you are root, so nothing stops you. Don't edit, move, or delete anything you see there: K3s uses these files while it runs, and one change can break your practice cluster. Never print or share the token in /var/lib/rancher/k3s/server/token or any .key file. Anyone who has them controls your cluster.",
+    "steps": [
+      {
+        "title": "Open a shell on the node",
+        "text": "Your practice cluster has one node, the Docker container k3d-practice-server-0. This runs a shell inside it.",
+        "commands": "docker exec -it k3d-practice-server-0 sh",
+        "expect": "The prompt changes to ~ #. The # means you are root, inside the node, and the next commands run there.",
+        "sources": [
+          { "title": "docker exec", "url": "https://docs.docker.com/reference/cli/docker/container/exec/" },
+          { "title": "k3d", "url": "https://k3d.io/stable/" }
+        ]
+      },
+      {
+        "title": "See the control plane run",
+        "text": "The control plane is the API server, the scheduler, the controller manager, and the datastore. A kubeadm cluster runs each part as its own Pod, from a file in /etc/kubernetes/manifests. K3s runs them all inside one k3s server process.",
+        "commands": "ps",
+        "expect": "/bin/k3s server, and containerd, which runs the containers. No kube-apiserver, kube-scheduler, or kube-controller-manager process appears.",
+        "sources": [
+          { "title": "K3s architecture", "url": "https://docs.k3s.io/architecture" },
+          { "title": "Kubernetes components", "url": "https://kubernetes.io/docs/concepts/overview/components/" },
+          { "title": "kubeadm implementation details", "url": "https://kubernetes.io/docs/reference/setup-tools/kubeadm/implementation-details/" }
+        ]
+      },
+      {
+        "title": "Where every object is stored",
+        "text": "Everything you apply, from Pods to Secrets, is saved here. Most clusters use etcd for this. K3s uses a SQLite database by default.",
+        "commands": "ls -l /var/lib/rancher/k3s/server/db",
+        "expect": "state.db, the database, and two working files next to it.",
+        "sources": [
+          { "title": "K3s datastore", "url": "https://docs.k3s.io/datastore" },
+          { "title": "K3s backup and restore", "url": "https://docs.k3s.io/datastore/backup-restore" }
+        ]
+      },
+      {
+        "title": "Certificates and keys",
+        "text": "The parts of the cluster prove who they are to each other with these certificates. A kubeadm cluster keeps them in /etc/kubernetes/pki.",
+        "commands": "ls /var/lib/rancher/k3s/server/tls",
+        "expect": ".crt and .key files for each part, such as client-admin.crt and client-scheduler.key.",
+        "sources": [
+          { "title": "K3s certificates", "url": "https://docs.k3s.io/cli/certificate" },
+          { "title": "PKI certificates and requirements", "url": "https://kubernetes.io/docs/setup/best-practices/certificates/" }
+        ]
+      },
+      {
+        "title": "Files K3s applies by itself",
+        "text": "K3s applies the files here like kubectl apply, and writes its own again each time it starts. That is how CoreDNS and metrics-server got into your cluster.",
+        "commands": "ls /var/lib/rancher/k3s/server/manifests",
+        "expect": "coredns.yaml, local-storage.yaml, traefik.yaml, and a metrics-server folder, with a few more.",
+        "sources": [{ "title": "K3s packaged components", "url": "https://docs.k3s.io/installation/packaged-components" }]
+      },
+      {
+        "title": "The containers on this node",
+        "text": "kubectl asks the API server about Pods. crictl asks containerd on this node about the containers that make them up.",
+        "commands": "crictl ps",
+        "expect": "One row for each running container, with its POD and NAMESPACE, such as coredns in kube-system.",
+        "sources": [{ "title": "Debugging Kubernetes nodes with crictl", "url": "https://kubernetes.io/docs/tasks/debug/debug-cluster/crictl/" }]
+      },
+      {
+        "title": "Container logs",
+        "text": "Each container writes its log to a file on its node. When you run kubectl logs, the kubelet reads these files.",
+        "commands": "ls /var/log/pods",
+        "expect": "One folder for each Pod, named after its namespace, Pod name, and ID, such as kube-system_coredns-...",
+        "sources": [{ "title": "Logging architecture", "url": "https://kubernetes.io/docs/concepts/cluster-administration/logging/" }]
+      },
+      {
+        "title": "Leave the node",
+        "text": "This closes the shell. The node and your cluster keep running.",
+        "commands": "exit",
+        "expect": "Your laptop's own prompt comes back. Docker Desktop may also print a What's next tip about docker debug. You don't need it.",
+        "sources": [{ "title": "docker exec", "url": "https://docs.docker.com/reference/cli/docker/container/exec/" }]
+      }
+    ],
+    "startAgain": {
+      "text": "Changed or deleted something by mistake? Delete the practice cluster, then run the Do this once card in step 6 again. You lose only what you applied to the cluster. Your lesson files stay on your laptop.",
+      "commands": "k3d cluster delete practice",
+      "sources": [{ "title": "k3d cluster delete", "url": "https://k3d.io/stable/usage/commands/k3d_cluster_delete/" }]
+    }
   }
 }

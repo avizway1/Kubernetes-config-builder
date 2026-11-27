@@ -28,10 +28,17 @@ export type SetupData = {
   tools: SetupTool[];
   practiceCluster: {
     intro: string;
-    steps: { title: string; text: string; commands: string; expect: string; sources: Source[] }[];
+    steps: CommandStep[];
     problems: { message: string; text: string; commands?: string; sources: Source[] }[];
   };
+  insideNode: {
+    intro: string;
+    warning: string;
+    steps: CommandStep[];
+    startAgain: { text: string; commands: string; sources: Source[] };
+  };
 };
+export type CommandStep = { title: string; text: string; commands: string; expect: string; sources: Source[] };
 
 export const setup = setupData as SetupData;
 

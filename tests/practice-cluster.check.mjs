@@ -1,6 +1,7 @@
 // Run step 6 of Set up your laptop (templates/kubernetes/setup.json) on K3s 1.37.2 with k3d, as a learner whose kubeconfig
 // already holds another cluster and no current context. Cause each message in If something goes wrong, check that it
-// matches, run its fix, and check that the every-time commands work again. See specs/setup-check.md.
+// matches, run its fix, and check that the every-time commands work again. Then run step 7 on the node and check what
+// each card says learners see. See specs/setup-check.md.
 // The test uses its own cluster name and kubeconfig file, so your clusters and ~/.kube/config are untouched.
 // Run from the project root with Docker, k3d, and kubectl: node --test tests/practice-cluster.check.mjs
 import { deepEqual, equal, fail, match, ok } from 'node:assert/strict';
@@ -64,7 +65,7 @@ after(() => {
   rmSync(folder, { recursive: true, force: true });
 });
 
-test('step 6 sets up the practice cluster from scratch, and each message has a fix that works', { timeout: 900000 }, () => {
+test('step 6 sets up the practice cluster from scratch, each message has a fix that works, and step 7 shows the node', { timeout: 900000 }, () => {
   ok(spawnSync('k3d', ['cluster', 'get', cluster], { stdio: 'ignore' }).status !== 0, `Delete the leftover test cluster first: k3d cluster delete ${cluster}`);
   deepEqual(once.length, 3);
   deepEqual(everyTime, ['kubectl config use-context k3d-lkme-practice', 'kubectl get nodes']);
@@ -132,6 +133,33 @@ test('step 6 sets up the practice cluster from scratch, and each message has a f
   match(run(`kubectl apply -f ${pod.filename}`).output, /pod\/web created/);
   equal(run('kubectl wait --for=condition=Ready pod/web --timeout=180s').status, 0);
   equal(run("kubectl get pod web -o jsonpath='{.spec.nodeName}'").stdout, `${context}-server-0`);
+
+  // Step 7: open a shell on the node with the card's command, without a terminal, and run each card's command there.
+  const inside = setup.insideNode.steps.map(step => named(step.commands));
+  equal(inside[0], `docker exec -it ${context}-server-0 sh`);
+  const shell = inside[0].replace(' -it ', ' -i ');
+  // An interactive shell shows the prompt the first card describes.
+  match(run(`printf 'exit\\n' | ${shell} -i`).output, /^~ # /m);
+  // What each card says learners see, with the Pod from the first Try it running.
+  const seen = {
+    ps: [/\/bin\/k3s server$/m, /containerd/],
+    'ls -l /var/lib/rancher/k3s/server/db': [/ state\.db$/m],
+    'ls /var/lib/rancher/k3s/server/tls': [/client-admin\.crt/, /client-scheduler\.key/],
+    'ls /var/lib/rancher/k3s/server/manifests': [/^coredns\.yaml$/m, /^local-storage\.yaml$/m, /^traefik\.yaml$/m, /^metrics-server$/m],
+    'crictl ps': [/^\S+\s+\S+\s.*\sRunning\s+coredns\s.*\skube-system\s*$/m, /\sRunning\s+web\s.*\sweb\s+default\s*$/m],
+    'ls /var/log/pods': [/^kube-system_coredns-/m, /^default_web_/m],
+    exit: [],
+  };
+  deepEqual(inside.slice(1), Object.keys(seen));
+  for (const command of inside.slice(1)) {
+    const result = run(`printf '%s\\nexit\\n' '${command}' | ${shell}`);
+    equal(result.status, 0, `${command}\n${result.output}`);
+    for (const pattern of seen[command]) match(result.stdout, pattern, `${command}:\n${result.stdout}`);
+  }
+  // The control plane runs inside the k3s server process, not as processes of its own.
+  ok(!/kube-apiserver|kube-scheduler|kube-controller-manager/.test(run(`printf 'ps\\nexit\\n' | ${shell}`).stdout));
+  // Looking changed nothing: the every-time card still works.
+  practiseAgain();
 
   // Deleting the cluster removes its context, and k3d switches kubectl to another cluster in the file, as after Lab 1's
   // last step. That is why learners run the every-time commands before each Try it.

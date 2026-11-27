@@ -593,13 +593,21 @@ test('Set up your laptop unlocks each lab separately, and the unlock survives a 
     await page.getByRole('heading', { name: 'Set up your laptop', level: 1 }).waitFor();
     // The page opens with what the laptop needs and ends with pointing kubectl at the practice cluster.
     assert.deepEqual(await page.locator('.setup-step > h2').allTextContents(), ['1What your laptop needs', '2Choose your system',
-      '3Install the tools', '4Run the check', '5Paste what it printed', '6Create your practice cluster and point kubectl at it']);
+      '3Install the tools', '4Run the check', '5Paste what it printed', '6Create your practice cluster and point kubectl at it',
+      '7Look inside your practice cluster']);
     assert.equal(await page.locator('.setup-needs > li').count(), setup.requirements.items.length);
     assert.match(await page.locator('.setup-needs').textContent(), /Memory: 8 GB of RAM or more\./);
     // Step 6 is one path: create once, then switch every time. Then each message learners may see, with its fix.
-    assert.deepEqual(await page.locator('.setup-cluster-step h3').allTextContents(),
+    assert.deepEqual(await page.locator('#setup-kubectl ~ .setup-cluster-step h3').allTextContents(),
       [...setup.practiceCluster.steps.map(step => step.title), 'If something goes wrong']);
-    assert.equal(await page.locator('.setup-cluster-step .setup-expect').count(), setup.practiceCluster.steps.length);
+    assert.equal(await page.locator('#setup-kubectl ~ .setup-cluster-step .setup-expect').count(), setup.practiceCluster.steps.length);
+    // Step 7 warns before its first card, then opens a shell on the node and only reads.
+    assert.equal(await page.getByRole('note').filter({ hasText: "Look, don't change." }).textContent(), setup.insideNode.warning);
+    assert.deepEqual(await page.locator('#setup-inside ~ .setup-cluster-step h3').allTextContents(),
+      [...setup.insideNode.steps.map(step => step.title), 'If you changed something']);
+    const enter = setup.insideNode.steps[0];
+    await page.getByRole('button', { name: `Copy the commands: ${enter.title}` }).click();
+    await page.waitForFunction(commands => navigator.clipboard.readText().then(text => text === commands), enter.commands);
     const everyTime = setup.practiceCluster.steps[1];
     await page.getByRole('button', { name: `Copy the commands: ${everyTime.title}` }).click();
     await page.waitForFunction(commands => navigator.clipboard.readText().then(text => text === commands), everyTime.commands);
@@ -611,6 +619,7 @@ test('Set up your laptop unlocks each lab separately, and the unlock survives a 
       await page.getByRole('tab', { name: system.label }).click();
       assert.equal(await page.getByRole('heading', { name: 'First, set up WSL 2' }).count(), system.id === 'windows' ? 1 : 0, system.id);
       assert.equal((await page.locator('#setup-kubectl + p').textContent()).endsWith('Run these commands in Ubuntu.'), system.id === 'windows', system.id);
+      assert.equal((await page.locator('#setup-inside + p').textContent()).endsWith('Run these commands in Ubuntu.'), system.id === 'windows', system.id);
       const kubectl = setup.tools.find(tool => tool.id === 'kubectl').install[system.id].commands;
       await page.getByRole('button', { name: 'Copy the kubectl install commands' }).click();
       await page.locator('#tool-kubectl').locator('..').getByText('Copied').waitFor();
@@ -883,7 +892,7 @@ test('every start guide command copies exactly what it shows, on each system', {
         copied++;
       }
     }
-    assert.equal(copied, 20 + 24 + 20, `${copied} commands copied`);
+    assert.equal(copied, 22 + 26 + 22, `${copied} commands copied`);
     // The practice cluster steps are the setup page's commands.
     for (const step of setup.practiceCluster.steps) {
       await page.locator('.code code').filter({ hasText: step.commands.split('\n')[0] }).first().waitFor({ state: 'attached' });

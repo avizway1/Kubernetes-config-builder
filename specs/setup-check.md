@@ -1,6 +1,6 @@
 # Set up your laptop
 
-**Status: Plan and mock-ups approved by Charan on 2026-11-26.** Built together with [lab lessons](lab-lessons.md). Charan changed it on 2026-11-27: the card moves to the top of the lesson list, and the page opens with what the laptop needs and ends with the practice cluster and kubeconfig steps. See [Charan's changes on 2026-11-27](#charans-changes-on-2026-11-27).
+**Status: Plan and mock-ups approved by Charan on 2026-11-26.** Built together with [lab lessons](lab-lessons.md). Charan changed it on 2026-11-27: the card moves to the top of the lesson list, and the page opens with what the laptop needs and ends with the practice cluster and kubeconfig steps. Later that day Charan kept K3s as the only practice cluster and added an optional last step that looks inside the practice cluster's node. See [Charan's changes on 2026-11-27](#charans-changes-on-2026-11-27).
 
 ## Goal
 
@@ -30,7 +30,8 @@ Opened at `#learn/setup`, from a **Set up your laptop** card at the top of the l
 3. **Install the tools.** One card per tool, with the version each lab needs, the install commands for the chosen system, and a link to the official install page they come from. Lab 2's tools are in their own group, **Only for Lab 2**.
 4. **Run the check.** One short command block with **Copy**. Learners read it before running it. It never downloads or runs a script.
 5. **Paste what it printed.** The page lists each tool as **Ready** or **Fix this**, with the fix, and says which labs are now unlocked.
-6. **Point kubectl at your practice cluster.** Create the `practice` cluster once, check which cluster kubectl uses, switch to the practice cluster, and add it back to the kubeconfig if it is missing. Each command block says what success looks like.
+6. **Create your practice cluster and point kubectl at it.** Create the `practice` cluster once, switch kubectl to it every time, then fixes for the real messages. Each command block says what success looks like.
+7. **Look inside your practice cluster.** Optional. Open a shell on the node and look, without changing anything, at where K3s keeps the control plane's parts. See item 7 of Charan's changes.
 
 ### Windows
 
@@ -92,7 +93,7 @@ eksctl 0.231.0
 
 ## Charan's changes on 2026-11-27
 
-Charan asked for three changes, which also approve the layout change.
+Charan asked for these changes, which also approve the layout change.
 
 1. **Set up your laptop comes first.** The card moves from the top of **Hands-on labs** to its own section at the top of the lesson list, before Level 0, so learners set up before the first lesson. **Hands-on labs** stays at the bottom and lists only the labs.
 2. **What the laptop needs, first.** The setup page opens with the basic requirements:
@@ -142,6 +143,31 @@ Charan asked for three changes, which also approve the layout change.
    | `Failed to create cluster 'practice' because a cluster with that name already exists` | The cluster was created before. | Nothing to fix. Run the every-time card. | [k3d cluster create](https://k3d.io/stable/usage/commands/k3d_cluster_create/) |
 
    On Windows, every command runs in Ubuntu. Every Anywhere lesson's **Try it** starts with `kubectl config use-context k3d-practice` and its **Copy** button, and links to step 6. The check command stays the same: it checks tools, and Lab 1 creates its own cluster.
+6. **K3s stays the only practice cluster.** Charan asked whether learners with less memory could use kind instead. The answer was no, and Charan chose to drop kind:
+   - K3s is built to be small. It ships as one binary and stores the cluster in SQLite by default ([K3s](https://docs.k3s.io/)). kind was "primarily designed for testing Kubernetes itself" ([kind](https://kind.sigs.k8s.io/)), and its docs give no memory figure for running a cluster.
+   - The autoscaling lesson needs metrics-server, which K3s includes ([K3s packaged components](https://docs.k3s.io/installation/packaged-components)) and kind does not.
+   - Three Level 5 lessons add two workers to the running cluster with `k3d node create`. kind's docs declare nodes only when a cluster is created ([kind configuration](https://kind.sigs.k8s.io/docs/user/configuration/)).
+   - A second tool would make every beginner choose, and double the **Try it** steps, messages, and tests.
+
+   On the project Mac (Docker Desktop with 8.7 GiB), the practice cluster's containers used about 836 MiB a minute after start. Without Traefik, ServiceLB, and the k3d load balancer, which no Anywhere lesson uses, they used about 725 MiB. kind was not measured.
+7. **Look inside the practice cluster.** Charan asked for commands to get into the K3s node, as with SSH, and look at the control plane's important paths, with a warning not to edit them, so learners get a real Kubernetes feel.
+   - k3d runs each node as a Docker container ([k3d](https://k3d.io/stable/)), with no SSH server. `docker exec` "runs a new command in a running container" ([docker exec](https://docs.docker.com/reference/cli/docker/container/exec/)), so `docker exec -it k3d-practice-server-0 sh` opens a shell on the node, as SSH would on a server.
+   - On EKS Auto Mode, AWS manages the API server and etcd, and nodes allow no SSH or SSM access ([EKS Auto Mode](https://docs.aws.amazon.com/eks/latest/userguide/automode.html)). The practice cluster is where learners can see these parts.
+
+   Step 7, **Look inside your practice cluster**, comes after step 6 and is optional. Its cards, with what K3s 1.37.2 showed on the project Mac on 2026-11-27:
+
+   | Card | Command | What learners see | What it teaches | Source |
+   | --- | --- | --- | --- | --- |
+   | **Open a shell on the node** | `docker exec -it k3d-practice-server-0 sh` | The prompt `~ #`. The `#` means root. | The node is a Docker container. | [docker exec](https://docs.docker.com/reference/cli/docker/container/exec/), [k3d](https://k3d.io/stable/) |
+   | **See the control plane run** | `ps` | `/bin/k3s server` and `containerd`, and no `kube-apiserver`, `kube-scheduler`, or `kube-controller-manager` | K3s runs the control plane inside the k3s server process. kubeadm writes a static Pod manifest for each part to `/etc/kubernetes/manifests`. | [K3s architecture](https://docs.k3s.io/architecture), [Kubernetes components](https://kubernetes.io/docs/concepts/overview/components/), [kubeadm implementation details](https://kubernetes.io/docs/reference/setup-tools/kubeadm/implementation-details/) |
+   | **Where every object is stored** | `ls -l /var/lib/rancher/k3s/server/db` | `state.db` | K3s stores the cluster in SQLite by default. Most clusters use etcd. | [K3s datastore](https://docs.k3s.io/datastore), [K3s backup and restore](https://docs.k3s.io/datastore/backup-restore) |
+   | **Certificates and keys** | `ls /var/lib/rancher/k3s/server/tls` | `.crt` and `.key` files, such as `client-admin.crt` and `client-scheduler.key` | The parts of the cluster prove who they are with these. kubeadm keeps them in `/etc/kubernetes/pki`. | [K3s certificates](https://docs.k3s.io/cli/certificate), [PKI certificates and requirements](https://kubernetes.io/docs/setup/best-practices/certificates/) |
+   | **Files K3s applies by itself** | `ls /var/lib/rancher/k3s/server/manifests` | `coredns.yaml`, `local-storage.yaml`, `traefik.yaml`, and a `metrics-server` folder | K3s applies these like `kubectl apply` and writes its own again each time it starts. | [K3s packaged components](https://docs.k3s.io/installation/packaged-components) |
+   | **The containers on this node** | `crictl ps` | One row per container, with its Pod and namespace, such as `coredns` in `kube-system` | Pods are containers that containerd runs on a node. | [crictl](https://kubernetes.io/docs/tasks/debug/debug-cluster/crictl/) |
+   | **Container logs** | `ls /var/log/pods` | One folder per Pod, named namespace, Pod name, and UID, such as `kube-system_coredns-…` | `kubectl logs` reads these files through the kubelet. | [Logging architecture](https://kubernetes.io/docs/concepts/cluster-administration/logging/) |
+   | **Leave the node** | `exit` | The laptop's prompt. The cluster keeps running. Docker Desktop may print a **What's next** tip about `docker debug`. | | [docker exec](https://docs.docker.com/reference/cli/docker/container/exec/) |
+
+   A warning comes before the cards: look, don't change. The shell runs as root, so nothing stops a change. Learners must not edit, move, or delete anything on the node, because K3s uses these files while it runs. They must never print or share the token in `/var/lib/rancher/k3s/server/token` or a `.key` file. "Anyone with access to the server token essentially has full administrator access" ([K3s token](https://docs.k3s.io/cli/token)). Every command after the first only reads. If something breaks anyway, `k3d cluster delete practice` and the **Do this once** card start again ([k3d cluster delete](https://k3d.io/stable/usage/commands/k3d_cluster_delete/)). On Windows, the commands run in Ubuntu. The start guide gives the same commands after **Try your first file**.
 
 **Tests.**
 
@@ -156,7 +182,9 @@ Charan asked for three changes, which also approve the layout change.
   - It runs the **Do this once** card, then the **every time** card after switching to the other cluster.
   - It causes each message in **If something goes wrong**, checks that the message matches, runs the fix, and checks that the every-time card works again.
   - It applies the Pod lesson's download and checks that the Pod runs on the k3d node.
+  - It opens a shell on the node with step 7's command, runs each card's command there, checks what it shows, and checks that the every-time card still works.
   - It deletes the cluster and checks that the context is gone and kubectl has moved to the other cluster.
+- **Step 7.** A unit test checks that the first command opens the shell, every other command is one of `ps`, `ls`, `ls -l`, `crictl ps`, or `exit`, the warning is there, and every source is official. A browser test checks the step's heading and warning and copies its first command.
 
 **Acceptance criteria**
 
@@ -169,11 +197,15 @@ Charan asked for three changes, which also approve the layout change.
 - [x] Every command on the setup page, in **Try it**, in the labs, and in the start guide has a **Copy** button that copies exactly the command, in plain text.
 - [x] Step 6 is one path: create once, switch every time, then fixes for the real messages. Nothing asks the learner to decide which branch applies.
 - [x] Each message in **If something goes wrong** matches what K3s 1.37.2 and k3d 5.9.0 print, and its fix works on a real cluster.
+- [x] Step 7 opens a shell on the practice cluster's node with one command, and every other command in it only reads.
+- [x] What each step 7 card says learners see matches K3s 1.37.2 on a real cluster.
+- [x] The warning says not to edit, move, or delete anything on the node, and never to print or share the token or keys, and says how to start again.
+- [x] The start guide gives the same step 7 commands.
 
 On 2026-11-27, on the project Mac (Apple silicon, Docker Desktop), with Node 26.13.1:
-- `npm run lint`, `npm test` (31 passing), and `npm run build` passed.
-- The browser tests (18 passing in Chrome) passed. They copied all 244 **Try it** command blocks in 35 lessons. They also copied every start guide block, with **If something goes wrong** opened: 20 on macOS, 24 on Windows, and 20 on Linux.
-- `tests/practice-cluster.check.mjs` passed on K3s 1.37.2 with k3d 5.9.0 in 49 seconds. It caused all four messages in **If something goes wrong**, and each fix brought the practice cluster back. The default `~/.kube/config` was unchanged afterwards.
+- `npm run lint`, `npm test` (32 passing), and `npm run build` passed.
+- The browser tests (18 passing in Chrome) passed. They copied all 244 **Try it** command blocks in 35 lessons. They also copied every start guide block, with **If something goes wrong** opened: 22 on macOS, 26 on Windows, and 22 on Linux.
+- `tests/practice-cluster.check.mjs` passed on K3s 1.37.2 with k3d 5.9.0 in 50 seconds. It caused all four messages in **If something goes wrong**, and each fix brought the practice cluster back. It ran step 7's commands on the node, and each showed what its card says. Its first run found that the node's prompt is `~ #`, not `/ #` as first written. A real terminal, through `script`, showed `~ #` too, and Docker Desktop's **What's next** tip after `exit`. The default `~/.kube/config` was unchanged afterwards.
 
 The same day, with the v1.1.0 dashboard running and no current context, kubectl reached the dashboard at `localhost:8080` and answered `the server could not find the requested resource`. That matches what Charan saw.
 
