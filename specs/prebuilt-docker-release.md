@@ -70,8 +70,10 @@ On 2026-11-27 Charan confirmed the final review of the [Set up your laptop chang
 
 **Acceptance criteria**
 
-- [ ] CI passes on the release commit, including the Docker package check and the WSL 2 setup check.
+- [x] CI passes on the release commit, including the Docker package check and the WSL 2 setup check.
 - [x] Charan confirms the final review before the `v1.2.0` release and tag are created.
-- [ ] The release workflow publishes `v1.2.0` for Linux AMD64 and ARM64 at `ghcr.io/avizway1/learning-kubernetes-made-easy`, and the anonymous cold start passes on both.
-- [ ] On the project Mac, with no dashboard image cached, the start guide's commands pull the image and open the dashboard with Set up your laptop first.
-- [ ] The `v1.2.0` release has the verified `compose.yaml` attached.
+- [x] The release workflow publishes `v1.2.0` for Linux AMD64 and ARM64 at `ghcr.io/avizway1/learning-kubernetes-made-easy`, and the anonymous cold start passes on both.
+- [x] On the project Mac, with no dashboard image cached, the start guide's commands pull the image and open the dashboard with Set up your laptop first.
+- [x] The `v1.2.0` release has the verified `compose.yaml` attached.
+
+**Results, 2026-11-27.** Charan confirmed the final review. `main` moved forward to `9545c81`, and [v1.2.0](https://github.com/avizway1/learning-kubernetes-made-easy/releases/tag/v1.2.0) was released from it. CI passed on that commit on the branch and again on `main`, including the Docker package check and the WSL 2 setup check. The release workflow built, tested, and scanned both architectures, published the multi-architecture tag, and attached `compose.yaml`. Its anonymous cold starts took 9.22 seconds on AMD64 and 4.10 seconds on ARM64. On the project Mac (Apple silicon, Docker Desktop), with an empty Docker client configuration and no cached v1.2.0 image, a fresh `git clone` took 4.0 seconds, and `docker compose up -d` reached the first page in 3.8 seconds. Charan's own v1.1.0 dashboard was running on port 8080 under the Compose project name a fresh clone gets, so the test cloned into another folder and moved the port to 18080 with an override file, and Charan's dashboard kept running. The page opened with **Start here · Set up your laptop** above Level 0, `tests/check-docker-release.py` passed against it on that port, and the pulled ARM64 image is 23.2 MB with revision `9545c81`. `docker compose down` and `docker rmi` removed the test container and image.
