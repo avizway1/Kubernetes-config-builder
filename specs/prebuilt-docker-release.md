@@ -77,3 +77,25 @@ On 2026-11-27 Charan confirmed the final review of the [Set up your laptop chang
 - [x] The `v1.2.0` release has the verified `compose.yaml` attached.
 
 **Results, 2026-11-27.** Charan confirmed the final review. `main` moved forward to `9545c81`, and [v1.2.0](https://github.com/avizway1/learning-kubernetes-made-easy/releases/tag/v1.2.0) was released from it. CI passed on that commit on the branch and again on `main`, including the Docker package check and the WSL 2 setup check. The release workflow built, tested, and scanned both architectures, published the multi-architecture tag, and attached `compose.yaml`. Its anonymous cold starts took 9.22 seconds on AMD64 and 4.10 seconds on ARM64. On the project Mac (Apple silicon, Docker Desktop), with an empty Docker client configuration and no cached v1.2.0 image, a fresh `git clone` took 4.0 seconds, and `docker compose up -d` reached the first page in 3.8 seconds. Charan's own v1.1.0 dashboard was running on port 8080 under the Compose project name a fresh clone gets, so the test cloned into another folder and moved the port to 18080 with an override file, and Charan's dashboard kept running. The page opened with **Start here · Set up your laptop** above Level 0, `tests/check-docker-release.py` passed against it on that port, and the pulled ARM64 image is 23.2 MB with revision `9545c81`. `docker compose down` and `docker rmi` removed the test container and image.
+
+## v1.3.0: one install script per system
+
+On 2026-11-27 Charan asked to release the [install scripts](install-scripts.md) as **v1.3.0**: one script each for macOS, Windows, and Ubuntu and Debian that prints the laptop's system, CPU, and architecture, installs every missing tool, and ends with the setup check, shown first in step 3 of Set up your laptop and in the start guide.
+
+**Inputs.** `setup-first` merged into `main`, `release-image.yml`, and a GitHub release named `v1.3.0`.
+
+**Outputs.**
+
+- `release-image.yml` publishes `ghcr.io/avizway1/learning-kubernetes-made-easy:v1.3.0` for Linux AMD64 and ARM64.
+- `compose.yaml` pulls `ghcr.io/avizway1/learning-kubernetes-made-easy:v1.3.0` by default.
+- The setup page's script commands download from `main`, so they work as soon as `main` has the scripts.
+- The browser storage names are unchanged, so learners keep their saved setup check and lab ticks.
+- Release notes in [docs/releases/v1.3.0.md](../docs/releases/v1.3.0.md).
+
+**Acceptance criteria**
+
+- [ ] CI passes on the release commit, including the Docker package check, the WSL 2 setup check, and the macOS, Windows, and Linux install checks.
+- [ ] Charan confirms the final review before the `v1.3.0` release and tag are created.
+- [ ] The release workflow publishes `v1.3.0` for Linux AMD64 and ARM64 at `ghcr.io/avizway1/learning-kubernetes-made-easy`, and the anonymous cold start passes on both.
+- [ ] On the project Mac, with no dashboard image cached, the start guide's commands pull the image and open the dashboard, and step 3 of Set up your laptop opens with the install script.
+- [ ] The `v1.3.0` release has the verified `compose.yaml` attached.

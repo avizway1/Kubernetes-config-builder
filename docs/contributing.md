@@ -96,5 +96,5 @@ CI fails on high or critical npm and Go findings, and on high or critical findin
 Release notes are in [docs/releases](releases/). Tag a release only after Charan confirms the final review.
 
 1. Write the release notes and point `compose.yaml` at the new version on a branch. Merge it into `main` once CI passes and Charan confirms the final review.
-2. Create the GitHub release from that commit, for example `gh release create v1.2.0 --target main --title v1.2.0 --notes-file docs/releases/v1.2.0.md`. Publishing the release starts `release-image.yml`, which builds, tests, and scans both architectures, then publishes `ghcr.io/avizway1/learning-kubernetes-made-easy:<version>`.
+2. Create the GitHub release from that commit, for example `gh release create v1.3.0 --target main --title v1.3.0 --notes-file docs/releases/v1.3.0.md`. Publishing the release starts `release-image.yml`, which builds, tests, and scans both architectures, then publishes `ghcr.io/avizway1/learning-kubernetes-made-easy:<version>`.
 3. The workflow's last jobs start the image without credentials on both architectures, then attach the verified `compose.yaml` to the release. If the package is private, those start jobs fail: set it to public in its GitHub package settings, then rerun the failed jobs.
