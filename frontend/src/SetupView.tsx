@@ -161,7 +161,7 @@ export function SetupView({ check, onCheck }: { check?: SavedCheck; onCheck: (ch
       </section>
 
       <section className="setup-step" aria-labelledby="setup-kubectl">
-        <h2 id="setup-kubectl"><span className="setup-number" aria-hidden="true">6</span>Point kubectl at your practice cluster</h2>
+        <h2 id="setup-kubectl"><span className="setup-number" aria-hidden="true">6</span>Create your practice cluster and point kubectl at it</h2>
         <p>{setup.practiceCluster.intro}{system === 'windows' ? ' Run these commands in Ubuntu.' : ''}</p>
         {setup.practiceCluster.steps.map((item, index) => (
           <section key={item.title} className="setup-tool setup-cluster-step" aria-labelledby={`setup-kubectl-${index}`}>
@@ -172,6 +172,20 @@ export function SetupView({ check, onCheck }: { check?: SavedCheck; onCheck: (ch
             <Sources label="Official guide" sources={item.sources} />
           </section>
         ))}
+        <section className="setup-tool setup-cluster-step" aria-labelledby="setup-kubectl-problems">
+          <h3 id="setup-kubectl-problems">If something goes wrong</h3>
+          <p>Find the message you see, then run its fix.</p>
+          <ul className="setup-problems">
+            {setup.practiceCluster.problems.map(problem => (
+              <li key={problem.message}>
+                <p><code className="setup-message">{problem.message}</code></p>
+                <p>{problem.text}</p>
+                {problem.commands && <CommandBlock text={problem.commands} name={`the fix for: ${problem.message}`} />}
+                <Sources label="Official guide" sources={problem.sources} />
+              </li>
+            ))}
+          </ul>
+        </section>
       </section>
     </section>
   );

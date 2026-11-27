@@ -397,29 +397,34 @@ bash install-k3d.sh</code></pre></div></div>
       </div>
 
       <div class="cmd">
-        <span class="cmd-label">Create the practice cluster, once</span>
-        <div class="code"><pre><code>k3d cluster create practice --image rancher/k3s:v1.37.2-k3s1 --wait</code></pre></div>
-      </div>
-      <p class="expect"><b>You should see</b> <code class="inline">Cluster 'practice' created successfully</code> near the end. k3d adds the cluster to your kubeconfig, the file kubectl reads to find clusters, and switches kubectl to it.</p>
-
-      <h3>Point kubectl at the practice cluster</h3>
-      <p>kubectl sends every command to one cluster: the current context in your kubeconfig, <span class="path">~/.kube/config</span>. Check it before each Try it, and after Lab 1, Lab 2, or an EKS only lesson, which use other clusters.</p>
-      <div class="cmd">
-        <span class="cmd-label">Check which cluster kubectl uses</span>
-        <div class="code"><pre><code>kubectl config current-context
+        <span class="cmd-label">Do this once: create the practice cluster</span>
+        <div class="code"><pre><code>k3d cluster create practice --image rancher/k3s:v1.37.2-k3s1 --wait
+kubectl config use-context k3d-practice
 kubectl get nodes</code></pre></div>
       </div>
-      <p class="expect"><b>You should see</b> <code class="inline">k3d-practice</code>, then one node named <code class="inline">k3d-practice-server-0</code> with STATUS <code class="inline">Ready</code>.</p>
-      <p>If it prints another name or <code class="inline">current-context is not set</code>, switch to the practice cluster. With no current context, kubectl tries <span class="path">localhost:8080</span>, which is the dashboard, and says <code class="inline">the server could not find the requested resource</code>.</p>
+      <p class="expect"><b>You should see</b> <code class="inline">Cluster 'practice' created successfully</code>, then <code class="inline">Switched to context "k3d-practice".</code>, then one node named <code class="inline">k3d-practice-server-0</code> with STATUS <code class="inline">Ready</code>.</p>
+
+      <h3>Every time you practise: point kubectl at it</h3>
+      <p>kubectl can know several clusters, such as an EKS cluster from Lab 2. It sends every command to the one you chose last. Start Docker Desktop, then run these two lines before your first Try it, even if you ran them yesterday.</p>
       <div class="cmd">
-        <span class="cmd-label">Switch to the practice cluster</span>
-        <div class="code"><pre><code>kubectl config get-contexts
-kubectl config use-context k3d-practice</code></pre></div>
+        <div class="code"><pre><code>kubectl config use-context k3d-practice
+kubectl get nodes</code></pre></div>
       </div>
-      <p class="expect"><b>You should see</b> <code class="inline">Switched to context "k3d-practice".</code></p>
-      <p>If <code class="inline">k3d-practice</code> isn't in the list but <code class="inline">k3d cluster list</code> shows <code class="inline">practice</code>, add it back to your kubeconfig and switch to it. See k3d's <a href="https://k3d.io/stable/usage/kubeconfig/" target="_blank" rel="noopener">kubeconfig guide</a>.</p>
-      <div class="cmd"><div class="code"><pre><code>k3d cluster list
+      <p class="expect"><b>You should see</b> <code class="inline">Switched to context "k3d-practice".</code>, then the node with STATUS <code class="inline">Ready</code>. Now every Try it command goes to your practice cluster.</p>
+
+      <details>
+        <summary>If something goes wrong</summary>
+        <div>
+          <p><code class="inline">error: no context exists with the name: "k3d-practice"</code>: kubectl doesn't know the practice cluster. If the first line lists <span class="path">practice</span>, the second adds it back. If not, run the <em>Do this once</em> commands. See k3d's <a href="https://k3d.io/stable/usage/kubeconfig/" target="_blank" rel="noopener">kubeconfig guide</a>.</p>
+          <div class="cmd"><div class="code"><pre><code>k3d cluster list
 k3d kubeconfig merge practice --kubeconfig-merge-default --kubeconfig-switch-context</code></pre></div></div>
+          <p><code class="inline">The connection to the server ... was refused</code>: run the every-time commands first. If you still see this, the practice cluster isn't running. Start Docker Desktop, then start the cluster.</p>
+          <div class="cmd"><div class="code"><pre><code>k3d cluster start practice</code></pre></div></div>
+          <p><code class="inline">the server could not find the requested resource</code>: kubectl isn't pointing at any cluster, so it reached the dashboard at <span class="path">localhost:8080</span>. Point it at the practice cluster.</p>
+          <div class="cmd"><div class="code"><pre><code>kubectl config use-context k3d-practice</code></pre></div></div>
+          <p><code class="inline">a cluster with that name already exists</code>: you created it before, so there is nothing to fix. Run the every-time commands.</p>
+        </div>
+      </details>
 
       <h3>Try your first file</h3>
       <p>In the lesson <em>Run one container</em>, click <strong>Show whole file</strong>, then <strong>Download</strong>. Your browser saves <span class="path">pod.yaml</span> in your Downloads folder. Then run:</p>

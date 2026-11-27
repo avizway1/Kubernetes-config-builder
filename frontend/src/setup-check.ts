@@ -29,6 +29,7 @@ export type SetupData = {
   practiceCluster: {
     intro: string;
     steps: { title: string; text: string; commands: string; expect: string; sources: Source[] }[];
+    problems: { message: string; text: string; commands?: string; sources: Source[] }[];
   };
 };
 

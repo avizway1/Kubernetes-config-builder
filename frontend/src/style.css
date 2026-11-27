@@ -889,6 +889,26 @@ section.setup-cluster-step + section.setup-cluster-step {
   margin-block-start: 0.75rem;
 }
 
+.setup-problems {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.setup-problems li {
+  padding-block-start: 0.6rem;
+  border-top: 1px solid var(--border);
+}
+
+/* An error message exactly as the terminal prints it. */
+.setup-message {
+  color: var(--error);
+  font-variant-ligatures: none;
+  overflow-wrap: anywhere;
+}
+
 .setup-expect {
   padding-left: 0.6rem;
   border-left: 3px solid var(--success);

@@ -145,7 +145,7 @@ test('the setup page covers every tool on macOS, Windows (WSL 2), and Linux with
 });
 
 // Charan's changes on 2026-11-27 in specs/setup-check.md.
-test('the setup page opens with what the laptop needs and ends with the practice cluster steps the start guide also gives', () => {
+test('the setup page opens with what the laptop needs and ends with one practice cluster path the start guide also gives', () => {
   const guide = readFileSync(new URL('../docs/getting-started.html', import.meta.url), 'utf8');
   const needs = setup.requirements.items;
   deepEqual(needs.map(item => item.label).slice(0, 3), ['Memory', 'Disk', 'System']);
@@ -157,21 +157,36 @@ test('the setup page opens with what the laptop needs and ends with the practice
   match(guide, /64-bit Windows 10 \(22H2\) or Windows 11 \(23H2 or later\), Pro, Enterprise, or Education/);
   ok(setup.requirements.sources.every(source => source.url.startsWith('https://')));
 
-  // Create once, check, switch, and add back a lost context, each with what success looks like and an official source.
-  const steps = setup.practiceCluster.steps;
+  // One path from scratch: create once, then switch every time. No step asks the learner to decide which branch applies.
+  const { steps, problems } = setup.practiceCluster;
   deepEqual(steps.map(step => step.commands.split('\n')), [
-    ['k3d cluster create practice --image rancher/k3s:v1.37.2-k3s1 --wait'],
-    ['kubectl config current-context', 'kubectl get nodes'],
-    ['kubectl config get-contexts', 'kubectl config use-context k3d-practice'],
-    ['k3d cluster list', 'k3d kubeconfig merge practice --kubeconfig-merge-default --kubeconfig-switch-context'],
+    ['k3d cluster create practice --image rancher/k3s:v1.37.2-k3s1 --wait', 'kubectl config use-context k3d-practice', 'kubectl get nodes'],
+    ['kubectl config use-context k3d-practice', 'kubectl get nodes'],
   ]);
   for (const step of steps) {
     ok(step.text && step.expect, step.title);
-    ok(step.sources.length && step.sources.every(source => /^https:\/\/(k3d\.io|kubernetes\.io)\//.test(source.url)), step.title);
-    // The start guide gives the same commands.
-    for (const line of step.commands.split('\n')) ok(guide.includes(line), `the start guide is missing: ${line}`);
+    ok(!/^If /.test(step.title), `${step.title} is a branch, not a step`);
   }
-  match(steps[1].expect, /^k3d-practice, then one node named k3d-practice-server-0 with STATUS Ready\.$/);
+  // Then one fix for each message learners see, as K3s 1.37.2 and k3d 5.9.0 print it.
+  deepEqual(problems.map(problem => problem.message), [
+    'error: no context exists with the name: "k3d-practice"',
+    'The connection to the server ... was refused',
+    'the server could not find the requested resource',
+    "Failed to create cluster 'practice' because a cluster with that name already exists",
+  ]);
+  deepEqual(problems.map(problem => problem.commands ?? ''), [
+    'k3d cluster list\nk3d kubeconfig merge practice --kubeconfig-merge-default --kubeconfig-switch-context',
+    'k3d cluster start practice',
+    'kubectl config use-context k3d-practice',
+    '',
+  ]);
+  for (const item of [...steps, ...problems]) {
+    ok(item.sources.length && item.sources.every(source => /^https:\/\/(k3d\.io|kubernetes\.io)\//.test(source.url)), item.title ?? item.message);
+    // The start guide gives the same commands.
+    for (const line of (item.commands ?? '').split('\n').filter(Boolean)) ok(guide.includes(line), `the start guide is missing: ${line}`);
+  }
+  // The start guide shows the same messages, apart from the long create message, which it shortens.
+  for (const problem of problems.slice(0, 3)) ok(guide.includes(problem.message), `the start guide is missing: ${problem.message}`);
 });
 
 test('every command learners copy is plain text a terminal accepts', () => {

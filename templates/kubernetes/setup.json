@@ -106,38 +106,52 @@
     }
   ],
   "practiceCluster": {
-    "intro": "Anywhere lessons run their Try it commands on a free practice cluster called practice. kubectl finds clusters in a file called the kubeconfig, ~/.kube/config, and sends every command to one of them: the current context.",
+    "intro": "Anywhere lessons run their Try it commands on a free practice cluster called practice. kubectl can know several clusters, such as an EKS cluster from Lab 2. It sends every command to the one you chose last, so you choose the practice cluster before you practise.",
     "steps": [
       {
-        "title": "Create the practice cluster, once",
-        "text": "k3d creates it inside Docker in about a minute. It adds the cluster to your kubeconfig as k3d-practice and switches kubectl to it.",
-        "commands": "k3d cluster create practice --image rancher/k3s:v1.37.2-k3s1 --wait",
-        "expect": "The last lines say Cluster 'practice' created successfully. If it says the cluster already exists, go to the next step.",
-        "sources": [{ "title": "k3d cluster create", "url": "https://k3d.io/stable/usage/commands/k3d_cluster_create/" }]
+        "title": "Do this once: create the practice cluster",
+        "text": "Docker must be running. This creates the cluster in about a minute, points kubectl at it, and lists its node.",
+        "commands": "k3d cluster create practice --image rancher/k3s:v1.37.2-k3s1 --wait\nkubectl config use-context k3d-practice\nkubectl get nodes",
+        "expect": "Cluster 'practice' created successfully, then Switched to context \"k3d-practice\", then one node named k3d-practice-server-0 with STATUS Ready.",
+        "sources": [
+          { "title": "k3d cluster create", "url": "https://k3d.io/stable/usage/commands/k3d_cluster_create/" },
+          { "title": "kubectl quick reference", "url": "https://kubernetes.io/docs/reference/kubectl/quick-reference/" }
+        ]
       },
       {
-        "title": "Check which cluster kubectl uses",
-        "text": "Do this before each Try it, and after Lab 1, Lab 2, or an EKS only lesson, which use other clusters. Deleting a cluster, as Lab 1 does at the end, can switch kubectl to another one.",
-        "commands": "kubectl config current-context\nkubectl get nodes",
-        "expect": "k3d-practice, then one node named k3d-practice-server-0 with STATUS Ready.",
-        "sources": [{ "title": "kubectl quick reference", "url": "https://kubernetes.io/docs/reference/kubectl/quick-reference/" }]
-      },
-      {
-        "title": "If it shows another cluster, switch to the practice cluster",
-        "text": "Another name, or current-context is not set, means your files would go somewhere else. With no current context, kubectl tries localhost:8080, the dashboard itself, and says the server could not find the requested resource. List your clusters, then switch.",
-        "commands": "kubectl config get-contexts\nkubectl config use-context k3d-practice",
-        "expect": "Switched to context \"k3d-practice\". Then run the two check commands again.",
+        "title": "Every time you practise: point kubectl at it",
+        "text": "Start Docker Desktop first. Then run these two lines before your first Try it, even if you ran them yesterday. Lab 1, Lab 2, and EKS only lessons point kubectl at other clusters.",
+        "commands": "kubectl config use-context k3d-practice\nkubectl get nodes",
+        "expect": "Switched to context \"k3d-practice\", then the node with STATUS Ready. Now every Try it command goes to your practice cluster.",
         "sources": [
           { "title": "kubectl quick reference", "url": "https://kubernetes.io/docs/reference/kubectl/quick-reference/" },
           { "title": "Organizing cluster access using kubeconfig files", "url": "https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/" }
         ]
+      }
+    ],
+    "problems": [
+      {
+        "message": "error: no context exists with the name: \"k3d-practice\"",
+        "text": "kubectl doesn't know the practice cluster. If the first line lists practice, the second adds it back. If not, use the Do this once card.",
+        "commands": "k3d cluster list\nk3d kubeconfig merge practice --kubeconfig-merge-default --kubeconfig-switch-context",
+        "sources": [{ "title": "k3d kubeconfig", "url": "https://k3d.io/stable/usage/kubeconfig/" }]
       },
       {
-        "title": "If k3d-practice is not in the list, add it back",
-        "text": "Your kubeconfig can lose the practice cluster while the cluster still runs, for example if the file is replaced. This adds it back and switches to it.",
-        "commands": "k3d cluster list\nk3d kubeconfig merge practice --kubeconfig-merge-default --kubeconfig-switch-context",
-        "expect": "practice in the cluster list, then the path of your kubeconfig. Run the two check commands again. If practice is not in the list, create it with the first command.",
-        "sources": [{ "title": "k3d kubeconfig", "url": "https://k3d.io/stable/usage/kubeconfig/" }]
+        "message": "The connection to the server ... was refused",
+        "text": "Run the every-time card first. If you still see this, the practice cluster isn't running. Start Docker Desktop, then start the cluster.",
+        "commands": "k3d cluster start practice",
+        "sources": [{ "title": "k3d cluster start", "url": "https://k3d.io/stable/usage/commands/k3d_cluster_start/" }]
+      },
+      {
+        "message": "the server could not find the requested resource",
+        "text": "kubectl isn't pointing at any cluster, so it reached the dashboard at localhost:8080. Point it at the practice cluster.",
+        "commands": "kubectl config use-context k3d-practice",
+        "sources": [{ "title": "kubectl quick reference", "url": "https://kubernetes.io/docs/reference/kubectl/quick-reference/" }]
+      },
+      {
+        "message": "Failed to create cluster 'practice' because a cluster with that name already exists",
+        "text": "You created it before, so there is nothing to fix. Run the every-time card.",
+        "sources": [{ "title": "k3d cluster create", "url": "https://k3d.io/stable/usage/commands/k3d_cluster_create/" }]
       }
     ]
   }

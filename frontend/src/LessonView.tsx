@@ -199,11 +199,10 @@ export function LessonView({ lesson, content, progress, onProgress, next, check 
               ) : (
                 <>
                   <p className="lesson-context">
-                    Save the file, then run these commands against your practice cluster. First check that kubectl uses it:
-                    this prints <code>k3d-practice</code>. If it doesn't, step 6 of <a href="#learn/setup">Set up your laptop</a>{' '}
-                    shows how to switch.
+                    Save the file, then run these commands against your practice cluster. Run this first, so they go there. No
+                    practice cluster yet? Step 6 of <a href="#learn/setup">Set up your laptop</a> creates it.
                   </p>
-                  <CommandBlock text="kubectl config current-context" name="the command that checks which cluster kubectl uses" />
+                  <CommandBlock text="kubectl config use-context k3d-practice" name="the command that points kubectl at your practice cluster" />
                 </>
               )}
               {/* Anywhere lessons run on the Lab 1 tools, and EKS only lessons on the Lab 2 tools. */}

@@ -117,33 +117,44 @@ Charan asked for three changes, which also approve the layout change.
    - EKS tools add their clusters to the same file.
    - On the project Mac on 2026-11-27, the kubeconfig held only an EKS context and no current context. With no current context, kubectl falls back to `localhost:8080`, which is the dashboard's own port. With the dashboard running, kubectl answers `the server could not find the requested resource`.
 
-   The new last step gives the commands, each with what success looks like:
-
-   | Command | Why | Source |
-   | --- | --- | --- |
-   | `k3d cluster create practice --image rancher/k3s:v1.37.2-k3s1 --wait` | Creates the practice cluster once, as the start guide does. | [k3d cluster create](https://k3d.io/stable/usage/commands/k3d_cluster_create/) |
-   | `kubectl config current-context` | Shows which cluster kubectl uses. Success is `k3d-practice`. | [kubectl quick reference](https://kubernetes.io/docs/reference/kubectl/quick-reference/) |
-   | `kubectl get nodes` | Proves kubectl reaches it. Success is `k3d-practice-server-0` with STATUS `Ready`. | |
-   | `kubectl config get-contexts` and `kubectl config use-context k3d-practice` | Lists the clusters and switches to the practice cluster, for example after Lab 2 or an EKS only lesson. | [kubectl quick reference](https://kubernetes.io/docs/reference/kubectl/quick-reference/) |
-   | `k3d kubeconfig merge practice --kubeconfig-merge-default --kubeconfig-switch-context` | Adds the practice cluster back to the kubeconfig when `k3d cluster list` shows it but `get-contexts` does not. | [k3d kubeconfig](https://k3d.io/stable/usage/kubeconfig/) |
-
-   On Windows, every command runs in Ubuntu. The **Try it** panel of every Anywhere lesson says to check that `kubectl config current-context` prints `k3d-practice`, and links to the setup page. The check command stays the same: it checks tools, and Lab 1 creates its own cluster.
+   The last step, **Create your practice cluster and point kubectl at it**, is one path a beginner follows in order. See item 5.
 4. **Every command can be copied and pasted.** Charan asked for this the same day.
    - Every **Try it** command gets its own block with a **Copy** button, as on the setup and lab pages. So do the context check and the command that adds worker nodes. Selecting a command no longer picks up the result line below it.
    - Every command stays plain ASCII text, with no prompt, tab, curly quote, or long dash.
    - Command fonts show `--` as two hyphens, never one long dash, so `--image` can't be misread as `—image`.
+5. **One path from scratch.** Charan asked whether the dashboard had a command to point kubectl at K3s. It had one, but as the third card of step 6, under "If it shows another cluster". To follow it, a learner first had to read their current context and decide it was wrong. Entry-level learners need one path that always works, so step 6 now has three cards:
+
+   | Card | Commands | What success looks like | Source |
+   | --- | --- | --- | --- |
+   | **Do this once: create the practice cluster** | `k3d cluster create practice --image rancher/k3s:v1.37.2-k3s1 --wait`, then `kubectl config use-context k3d-practice`, then `kubectl get nodes` | `Cluster 'practice' created successfully`, `Switched to context "k3d-practice".`, then `k3d-practice-server-0` with STATUS `Ready` | [k3d cluster create](https://k3d.io/stable/usage/commands/k3d_cluster_create/), [kubectl quick reference](https://kubernetes.io/docs/reference/kubectl/quick-reference/) |
+   | **Every time you practise: point kubectl at it** | `kubectl config use-context k3d-practice`, then `kubectl get nodes` | The same switch message and Ready node | [kubectl quick reference](https://kubernetes.io/docs/reference/kubectl/quick-reference/), [Organizing cluster access](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/) |
+   | **If something goes wrong** | One fix for each real message | The every-time block works again | Below |
+
+   Learners switch every time instead of checking first, because switching is safe to repeat and needs no decision. The every-time card says to start Docker Desktop first. The cluster's containers use Docker's `unless-stopped` restart policy, so they come back when Docker starts.
+
+   **If something goes wrong** lists each message as K3s 1.37.2 and k3d 5.9.0 print it on 2026-11-27, with its fix:
+
+   | Message | Cause | Fix | Source |
+   | --- | --- | --- | --- |
+   | `error: no context exists with the name: "k3d-practice"` | kubectl doesn't know the practice cluster. | `k3d cluster list`. If it shows `practice`, `k3d kubeconfig merge practice --kubeconfig-merge-default --kubeconfig-switch-context`. If not, the **Do this once** card. | [k3d kubeconfig](https://k3d.io/stable/usage/kubeconfig/) |
+   | `The connection to the server … was refused` | The cluster isn't running, or kubectl has no current context and the dashboard isn't running. | Run the every-time card. If the message stays, start Docker Desktop, then `k3d cluster start practice`. | [k3d cluster start](https://k3d.io/stable/usage/commands/k3d_cluster_start/) |
+   | `the server could not find the requested resource` | kubectl has no current context, so it reached the dashboard at `localhost:8080`. | `kubectl config use-context k3d-practice` | [kubectl quick reference](https://kubernetes.io/docs/reference/kubectl/quick-reference/) |
+   | `Failed to create cluster 'practice' because a cluster with that name already exists` | The cluster was created before. | Nothing to fix. Run the every-time card. | [k3d cluster create](https://k3d.io/stable/usage/commands/k3d_cluster_create/) |
+
+   On Windows, every command runs in Ubuntu. Every Anywhere lesson's **Try it** starts with `kubectl config use-context k3d-practice` and its **Copy** button, and links to step 6. The check command stays the same: it checks tools, and Lab 1 creates its own cluster.
 
 **Tests.**
 
-- **Unit.** The setup data opens with the requirements and ends with the practice cluster steps. Every practice cluster command block has a source. The start guide uses the same create, check, and switch commands.
-- **Browser.** The setup card is the first item in the lesson list, before Level 0. The setup page's first step is **What your laptop needs**, and its last step shows the kubeconfig commands. An Anywhere lesson's **Try it** shows the context check, and an EKS only lesson's does not.
+- **Unit.** The setup data opens with the requirements and ends with the practice cluster cards. Every card and fix has a source. The start guide gives the same commands and messages.
+- **Browser.** The setup card is the first item in the lesson list, before Level 0. The setup page's first step is **What your laptop needs**, and its last step shows the kubeconfig commands. An Anywhere lesson's **Try it** starts with the switch command, and an EKS only lesson's does not.
 - **Copy.**
   - A unit test checks that every command in the setup data, the lessons, the lab guides, the README, the contributing guide, and the start guide is plain text with no prompt.
   - A browser test clicks every **Try it** **Copy** button in every lesson and checks that the clipboard holds exactly that command.
   - Another browser test does the same for every start guide command on macOS, Windows, and Linux, and checks that ligatures are off.
 - **Real cluster.** `tests/practice-cluster.check.mjs` reads the practice cluster commands from the setup data and runs them on K3s 1.37.2, under a test cluster name, with its own kubeconfig.
   - It starts from an EKS-style context and no current context, as on the project Mac.
-  - It removes the practice context to test the merge command.
+  - It runs the **Do this once** card, then the **every time** card after switching to the other cluster.
+  - It causes each message in **If something goes wrong**, checks that the message matches, runs the fix, and checks that the every-time card works again.
   - It applies the Pod lesson's download and checks that the Pod runs on the k3d node.
   - It deletes the cluster and checks that the context is gone and kubectl has moved to the other cluster.
 
@@ -156,11 +167,13 @@ Charan asked for three changes, which also approve the layout change.
 - [x] The practice cluster commands pass on K3s 1.37.2, starting from a kubeconfig that holds another cluster and no current context.
 - [x] The start guide and README match the new order and commands.
 - [x] Every command on the setup page, in **Try it**, in the labs, and in the start guide has a **Copy** button that copies exactly the command, in plain text.
+- [x] Step 6 is one path: create once, switch every time, then fixes for the real messages. Nothing asks the learner to decide which branch applies.
+- [x] Each message in **If something goes wrong** matches what K3s 1.37.2 and k3d 5.9.0 print, and its fix works on a real cluster.
 
 On 2026-11-27, on the project Mac (Apple silicon, Docker Desktop), with Node 26.13.1:
 - `npm run lint`, `npm test` (31 passing), and `npm run build` passed.
-- The browser tests (18 passing in Chrome) passed. They copied all 244 **Try it** command blocks in 35 lessons. They also copied every start guide block: 19 on macOS, 23 on Windows, and 19 on Linux.
-- `tests/practice-cluster.check.mjs` passed on K3s 1.37.2 with k3d 5.9.0 in 40 seconds. The default `~/.kube/config` was unchanged afterwards.
+- The browser tests (18 passing in Chrome) passed. They copied all 244 **Try it** command blocks in 35 lessons. They also copied every start guide block, with **If something goes wrong** opened: 20 on macOS, 24 on Windows, and 20 on Linux.
+- `tests/practice-cluster.check.mjs` passed on K3s 1.37.2 with k3d 5.9.0 in 49 seconds. It caused all four messages in **If something goes wrong**, and each fix brought the practice cluster back. The default `~/.kube/config` was unchanged afterwards.
 
 The same day, with the v1.1.0 dashboard running and no current context, kubectl reached the dashboard at `localhost:8080` and answered `the server could not find the requested resource`. That matches what Charan saw.
 

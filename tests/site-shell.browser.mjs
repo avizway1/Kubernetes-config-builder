@@ -576,9 +576,9 @@ test('Set up your laptop unlocks each lab separately, and the unlock survives a 
     assert.equal(await setupLinks('pod'), 1);
     // Anywhere lessons say to check that kubectl uses the practice cluster. EKS only lessons use an EKS cluster.
     assert.match(await page.locator('.lesson-context').textContent(),
-      /First check that kubectl uses it: this prints k3d-practice\. If it doesn't, step 6 of Set up your laptop shows how to switch\./);
+      /Run this first, so they go there\. No practice cluster yet\? Step 6 of Set up your laptop creates it\./);
     assert.equal(await page.locator('.lesson-context a').getAttribute('href'), '#learn/setup');
-    assert.equal(await page.locator('.lesson-context + .command-block code').textContent(), 'kubectl config current-context');
+    assert.equal(await page.locator('.lesson-context + .command-block code').textContent(), 'kubectl config use-context k3d-practice');
     assert.equal(await setupLinks('pod-identity'), 1);
     assert.equal(await page.locator('.lesson-context').count(), 0);
     await page.goto(`${appUrl}#learn/lab-1`);
@@ -593,14 +593,20 @@ test('Set up your laptop unlocks each lab separately, and the unlock survives a 
     await page.getByRole('heading', { name: 'Set up your laptop', level: 1 }).waitFor();
     // The page opens with what the laptop needs and ends with pointing kubectl at the practice cluster.
     assert.deepEqual(await page.locator('.setup-step > h2').allTextContents(), ['1What your laptop needs', '2Choose your system',
-      '3Install the tools', '4Run the check', '5Paste what it printed', '6Point kubectl at your practice cluster']);
+      '3Install the tools', '4Run the check', '5Paste what it printed', '6Create your practice cluster and point kubectl at it']);
     assert.equal(await page.locator('.setup-needs > li').count(), setup.requirements.items.length);
     assert.match(await page.locator('.setup-needs').textContent(), /Memory: 8 GB of RAM or more\./);
-    assert.deepEqual(await page.locator('.setup-cluster-step h3').allTextContents(), setup.practiceCluster.steps.map(step => step.title));
+    // Step 6 is one path: create once, then switch every time. Then each message learners may see, with its fix.
+    assert.deepEqual(await page.locator('.setup-cluster-step h3').allTextContents(),
+      [...setup.practiceCluster.steps.map(step => step.title), 'If something goes wrong']);
     assert.equal(await page.locator('.setup-cluster-step .setup-expect').count(), setup.practiceCluster.steps.length);
-    const switchStep = setup.practiceCluster.steps[2];
-    await page.getByRole('button', { name: `Copy the commands: ${switchStep.title}` }).click();
-    await page.waitForFunction(commands => navigator.clipboard.readText().then(text => text === commands), switchStep.commands);
+    const everyTime = setup.practiceCluster.steps[1];
+    await page.getByRole('button', { name: `Copy the commands: ${everyTime.title}` }).click();
+    await page.waitForFunction(commands => navigator.clipboard.readText().then(text => text === commands), everyTime.commands);
+    assert.deepEqual(await page.locator('.setup-message').allTextContents(), setup.practiceCluster.problems.map(problem => problem.message));
+    const stopped = setup.practiceCluster.problems[1];
+    await page.getByRole('button', { name: `Copy the fix for: ${stopped.message}` }).click();
+    await page.waitForFunction(commands => navigator.clipboard.readText().then(text => text === commands), stopped.commands);
     for (const system of setup.systems) {
       await page.getByRole('tab', { name: system.label }).click();
       assert.equal(await page.getByRole('heading', { name: 'First, set up WSL 2' }).count(), system.id === 'windows' ? 1 : 0, system.id);
@@ -816,9 +822,10 @@ test('every Try it command has a Copy button that copies exactly that command', 
       if (await whole.isEnabled()) await whole.click();
       const tryIt = page.locator('.lesson-try-it');
       await tryIt.waitFor();
-      // Anywhere lessons start with the context check, and three-node lessons with the command that adds workers.
+      // Anywhere lessons start with the command that points kubectl at the practice cluster, and three-node lessons with
+      // the command that adds workers.
       const commands = [
-        ...(lesson.runsOn === 'eks' ? [] : ['kubectl config current-context']),
+        ...(lesson.runsOn === 'eks' ? [] : ['kubectl config use-context k3d-practice']),
         ...(content.nodes ? [addWorkers] : []),
         ...content.tryIt.map(item => item.command),
       ];
@@ -876,7 +883,7 @@ test('every start guide command copies exactly what it shows, on each system', {
         copied++;
       }
     }
-    assert.equal(copied, 19 + 23 + 19, `${copied} commands copied`);
+    assert.equal(copied, 20 + 24 + 20, `${copied} commands copied`);
     // The practice cluster steps are the setup page's commands.
     for (const step of setup.practiceCluster.steps) {
       await page.locator('.code code').filter({ hasText: step.commands.split('\n')[0] }).first().waitFor({ state: 'attached' });
